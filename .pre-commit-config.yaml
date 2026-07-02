@@ -5,13 +5,17 @@ repos:
         name: archi validate (modelintegriteit)
         entry: uv run archi validate
         language: system
-        files: ^models/.*\.archimate$
+        # ook bij tooling- en conventiewijzigingen: de validator leest
+        # docs/conventies.md en de checks zelf kunnen veranderen
+        files: ^(models/.*\.archimate$|docs/conventies\.md$|tools/archi_tool/)
         pass_filenames: false
       - id: archi-render
-        name: archi render (views naar Mermaid)
+        name: archi render (views naar Mermaid en HTML)
         entry: uv run archi render
         language: system
-        files: ^models/.*\.archimate$
+        # ook bij tooling-wijzigingen: een aangepaste renderer moet de
+        # gecommitte views meteen bijwerken, anders raken ze verouderd
+        files: ^(models/.*\.archimate$|tools/archi_tool/)
         pass_filenames: false
       - id: pytest
         name: pytest (archi_tool)

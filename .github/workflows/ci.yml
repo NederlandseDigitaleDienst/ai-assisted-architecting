@@ -1,0 +1,31 @@
+# Dezelfde checks als de pre-commit hooks, maar server-side afgedwongen
+# (hooks zijn lokaal te omzeilen met --no-verify). Draait op Ubuntu én
+# Windows, zodat platformonafhankelijkheid en byte-identieke renders geen
+# papieren claim zijn. `normalize` vergt een Archi-installatie en blijft
+# lokale discipline (zie CLAUDE.md).
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.2.0
+      - run: uv sync
+      - run: uv run archi validate
+      - run: uv run archi render
+      - name: gecommitte views synchroon met het model (ADR 0002)
+        shell: bash
+        run: |
+          git add --intent-to-add .
+          git diff --exit-code
+      - run: uv run pytest
