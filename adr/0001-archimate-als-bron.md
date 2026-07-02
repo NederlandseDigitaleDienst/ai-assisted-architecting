@@ -17,7 +17,7 @@ bestand; architecten openen hetzelfde bestand in Archi zonder import.
 
 ## Besluit
 
-1. `models/model.archimate` is de bron van waarheid. Alle andere vormen
+1. `models/ado.archimate` is de bron van waarheid. Alle andere vormen
    (AEF-export, afbeeldingen) zijn afgeleid en ongeversioneerd.
 2. Wijzigingen lopen via de CLI in `tools/archi_tool` (surgical edits op de
    XML, gevolgd door automatische validatie) óf via de Archi-GUI.

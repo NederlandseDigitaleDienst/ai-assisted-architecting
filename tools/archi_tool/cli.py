@@ -17,7 +17,7 @@ from .normalize import normalize
 from .validate import validate
 from .views import add_view
 
-DEFAULT_MODEL = "models/model.archimate"
+DEFAULT_MODEL = "models/ado.archimate"
 DEFAULT_CONVENTIONS = "docs/conventies.md"
 
 

@@ -6,7 +6,7 @@ zonder import-stap te openen in Archi.
 
 ## Hoe het werkt
 
-`models/model.archimate` is de bron. Wijzigen kan op twee gelijkwaardige
+`models/ado.archimate` is de bron. Wijzigen kan op twee gelijkwaardige
 manieren: via de CLI (`uv run archi ...`, meestal aangestuurd door een
 AI-sessie) of gewoon in de Archi-GUI. In beide gevallen geldt vóór commit:
 `just validate` (integriteitschecks) en `just normalize` (canonieke

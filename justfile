@@ -26,4 +26,4 @@ test:
 
 # Model openen in Archi
 open:
-    open models/model.archimate
+    open models/ado.archimate

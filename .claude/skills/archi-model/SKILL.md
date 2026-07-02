@@ -1,6 +1,6 @@
 ---
 name: archi-model
-description: Werkwijze voor het .archimate-model - elementen, relaties en properties wijzigen via de archi-CLI, valideren en normaliseren. Gebruik bij elke wijziging aan models/model.archimate, bij "voeg element/bouwblok/doel/relatie toe", "wijzig het model", "verwijder element", of vragen over de modelconventies.
+description: Werkwijze voor het .archimate-model - elementen, relaties en properties wijzigen via de archi-CLI, valideren en normaliseren. Gebruik bij elke wijziging aan models/ado.archimate, bij "voeg element/bouwblok/doel/relatie toe", "wijzig het model", "verwijder element", of vragen over de modelconventies.
 ---
 
 # Werken aan het .archimate-model
@@ -12,7 +12,7 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
 
 ## Harde regels
 
-- **Nooit handmatig XML bewerken** in `models/model.archimate`; alle mutaties
+- **Nooit handmatig XML bewerken** in `models/ado.archimate`; alle mutaties
   via `uv run archi ...`. De CLI valideert automatisch en weigert op te slaan
   bij integriteitsfouten.
 - Bestaande ids nooit wijzigen; nieuwe ids genereert de tooling.

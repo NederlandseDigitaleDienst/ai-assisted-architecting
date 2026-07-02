@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Wat dit repo is
 
 Experiment "AI-assisted architecting": een ArchiMate-model in **native
-Archi-formaat** (`models/model.archimate`) als bron van waarheid, direct te
+Archi-formaat** (`models/ado.archimate`) als bron van waarheid, direct te
 openen in Archi én via Claude te manipuleren met de deterministische CLI in
 `tools/archi_tool`. Geen conversielaag; zie `adr/0001-archimate-als-bron.md`.
 
@@ -24,7 +24,7 @@ just open             # model openen in Archi
 
 ## Harde regels
 
-- **Bron van waarheid**: `models/model.archimate`. AEF-exports, afbeeldingen
+- **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen
   en `.bak`-bestanden zijn afgeleid en gitignored.
 - **Nooit handmatig XML bewerken** in het modelbestand — alle mutaties via de
   `archi`-CLI (valideert automatisch, weigert opslaan bij fouten). Voor
