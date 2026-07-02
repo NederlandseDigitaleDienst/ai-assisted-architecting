@@ -59,9 +59,19 @@ def edge_syntax(rel) -> str:
     return f'-->|"{escape_label(label)}"|' if label else "-->"
 
 
+def clean_acc_text(text: str) -> str:
+    """Single-line text for accTitle/accDescr (no newlines or braces)."""
+    return " ".join(text.replace("{", "(").replace("}", ")").split())
+
+
 def render_view(model, diagram) -> str:
     index = model.id_index()
     lines = ["flowchart TD"]
+    # accessible name and description, like regelrecht does for its docs
+    lines.append(f"  accTitle: {clean_acc_text(diagram.get('name') or 'View')}")
+    documentation = model.documentation(diagram)
+    if documentation:
+        lines.append(f"  accDescr: {clean_acc_text(documentation)}")
     mermaid_id_by_object = {}
     layer_members = {}
     counter = 0

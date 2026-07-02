@@ -16,6 +16,7 @@ def test_render_flat_view(model):
     assert output.startswith(MARKER)
     assert "# Testview" in output
     assert "flowchart TD" in output
+    assert "accTitle: Testview" in output
     assert 'n1["Gebied Alfa"]' in output
     assert 'n2["Bouwblok Beta"]' in output
     assert "n1 --o n2" in output           # aggregation, unlabeled
