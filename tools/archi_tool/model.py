@@ -177,6 +177,19 @@ class ArchiModel:
                 f"Onbekend relatietype '{rel_type}'. Toegestaan: {known}")
         src = self.resolve(source)
         tgt = self.resolve(target)
+        # resolve() also matches views and relations by name; only elements
+        # are valid endpoints (ArchiMate allows a relation endpoint solely
+        # for Association)
+        for role, node in (("source", src), ("target", tgt)):
+            if is_diagram(node):
+                raise ModelError(
+                    f"{role} '{node.get('name')}' is een view; relaties "
+                    "kunnen geen views verbinden")
+            if is_relationship(node) and rel_type != "Association":
+                raise ModelError(
+                    f"{role} '{node.get('name')}' is zelf een relatie; "
+                    "alleen een AssociationRelationship mag een relatie "
+                    "als eindpunt hebben")
         attrs = {XSI_TYPE: f"archimate:{rel_type}Relationship",
                  "id": new_id(),
                  "source": src.get("id"), "target": tgt.get("id")}
