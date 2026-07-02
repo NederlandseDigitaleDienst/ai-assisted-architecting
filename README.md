@@ -46,16 +46,26 @@ justfile                     Vaste taken
 ## Aan de slag
 
 Nodig: [uv](https://docs.astral.sh/uv/), [just](https://just.systems/) en
-[Archi](https://www.archimatetool.com/) voor normalisatie. Archi wordt
-gezocht op `/Applications/Archi.app`; een ander pad geef je op via de env var
-`ARCHI_APP`.
+[Archi](https://www.archimatetool.com/) voor normalisatie. Op macOS:
 
 ```bash
-just setup       # eenmalig: venv, dependencies en pre-commit hooks
+brew install uv just
+brew install --cask archi
+```
+
+Archi wordt gezocht op `/Applications/Archi.app`; een ander pad geef je op
+via de env var `ARCHI_APP`. Python en pre-commit hoef je niet zelf te
+installeren: uv regelt de Python-versie en pre-commit is een dev-dependency.
+
+```bash
+just setup       # eenmalig per clone: venv, dependencies en pre-commit hooks
 just stats       # wat zit erin
 just open        # model openen in Archi
 just serve       # gerenderde HTML-views op http://localhost:8766
 ```
+
+Sla `just setup` niet over: zonder de pre-commit hooks kun je committen
+zonder validatie en met verouderde renders.
 
 Alle vaste taken:
 

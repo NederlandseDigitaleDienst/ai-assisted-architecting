@@ -34,6 +34,29 @@ Vuistregel: vaste taken via `just`, geparametriseerde commando's via
 `uv run archi`. Elk commando accepteert `--model <pad>` voor een ander
 bestand dan `models/ado.archimate`.
 
+## Prerequisites: controleren en zo nodig installeren
+
+Ga er niet vanuit dat de omgeving compleet is. Controleer bij het eerste
+commando dat faalt (of proactief aan het begin van een sessie) en installeer
+wat ontbreekt, zonder de gebruiker ernaartoe te sturen:
+
+- `uv` ontbreekt (`command -v uv`): installeer met
+  `curl -LsSf https://astral.sh/uv/install.sh | sh`, of `brew install uv`
+  als Homebrew aanwezig is. uv regelt zelf een passende Python (>=3.11).
+- `just` ontbreekt (`command -v just`): `brew install just`.
+- Venv of dependencies ontbreken (`.venv/` bestaat niet, of `uv run archi`
+  faalt op imports): `uv sync`.
+- Pre-commit hooks ontbreken (`.git/hooks/pre-commit` bestaat niet of bevat
+  geen pre-commit-aanroep): `uv run pre-commit install`. pre-commit zelf is
+  een dev-dependency en komt mee met `uv sync`; er is geen globale
+  installatie nodig.
+- Archi ontbreekt (`/Applications/Archi.app` bestaat niet en `ARCHI_APP` is
+  niet gezet): `brew install --cask archi`, of meld dat alleen `normalize`
+  hierdoor niet kan; valideren, renderen en muteren werken zonder Archi.
+
+`just setup` dekt de venv en de hooks in één keer, maar vereist dat uv en
+just er al zijn.
+
 ## Testen
 
 - Hele suite: `just test`
