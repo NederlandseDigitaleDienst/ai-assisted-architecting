@@ -12,6 +12,10 @@ setup:
 validate:
     uv run archi validate
 
+# Views renderen naar Mermaid (views/) en NLDD-HTML (views/html/)
+render:
+    uv run archi render
+
 # Serialisatie canoniek maken via de headless Archi CLI (doen vóór commit)
 normalize:
     uv run archi normalize

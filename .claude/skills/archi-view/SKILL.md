@@ -33,8 +33,9 @@ uv run archi add-view --name "<naam>" --layout <grid|cluster> \
 
 1. `just validate` (draait ook automatisch bij het opslaan door de CLI).
 2. `just normalize` vóór commit.
-3. `uv run archi render` — ververst de Mermaid-weergaven in `views/` zodat de
-   view ook op GitHub zichtbaar is (de pre-commit hook dwingt dit af).
+3. `just render` — ververst de weergaven in `views/` (Mermaid, zichtbaar op
+   GitHub) en `views/html/` (NLDD; lokaal bekijken met `just serve`). De
+   pre-commit hook dwingt dit af.
 4. Fijnslijpen van de layout kan daarna gewoon in de Archi-GUI; het bestand
    is de bron, dus die aanpassing is een normale modelwijziging (opnieuw
    normaliseren, renderen en committen).

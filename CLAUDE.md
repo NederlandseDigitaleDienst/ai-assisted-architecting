@@ -13,15 +13,21 @@ openen in Archi én via Claude te manipuleren met de deterministische CLI in
 
 ```bash
 just setup            # eenmalig: uv sync + pre-commit install
-uv run archi stats|list|show|tree          # inspectie
-uv run archi add-element|add-relation|set-property|rename|remove ...
-uv run archi add-view --name ... --layout grid|cluster
-uv run archi render   # views naar Mermaid (views/) én NLDD-HTML (views/html/), ook pre-commit hook
 just validate         # integriteitschecks (ook pre-commit hook)
+just render           # views naar Mermaid (views/) én NLDD-HTML (views/html/), ook pre-commit hook
 just normalize        # canonieke serialisatie via headless Archi (~15 s)
+just stats            # aantallen per type, relaties en views
 just test             # pytest
 just open             # model openen in Archi
+just serve            # gerenderde HTML-views op http://localhost:8766
+
+# Commando's met argumenten lopen via de CLI zelf:
+uv run archi list|show|tree ...            # inspectie
+uv run archi add-element|add-relation|set-property|rename|remove ...
+uv run archi add-view --name ... --layout grid|cluster
 ```
+
+Vuistregel: vaste taken via `just`, geparametriseerde commando's via `uv run archi`.
 
 ## Harde regels
 

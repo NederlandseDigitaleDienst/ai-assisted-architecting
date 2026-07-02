@@ -35,8 +35,8 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
 4. `just validate` — moet schoon zijn.
 5. `just normalize` — Archi serialiseert canoniek; verplicht vóór commit
    zodat de diff klein blijft (duurt ~15 s, headless Archi).
-6. `uv run archi render` — ververst de Mermaid-weergaven in `views/`
-   (de pre-commit hook dwingt dit af; gerenderde views committen mee).
+6. `just render` — ververst de gerenderde weergaven in `views/` en
+   `views/html/` (de pre-commit hook dwingt dit af; renders committen mee).
 7. Commit (semantisch, Nederlands) → push → PR.
 
 ## Valkuilen
