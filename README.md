@@ -46,16 +46,32 @@ justfile                     Vaste taken
 ## Aan de slag
 
 Nodig: [uv](https://docs.astral.sh/uv/), [just](https://just.systems/) en
-[Archi](https://www.archimatetool.com/) voor normalisatie. Op macOS:
+[Archi](https://www.archimatetool.com/) voor normalisatie.
+
+macOS:
 
 ```bash
 brew install uv just
 brew install --cask archi
 ```
 
-Archi wordt gezocht op `/Applications/Archi.app`; een ander pad geef je op
-via de env var `ARCHI_APP`. Python en pre-commit hoef je niet zelf te
-installeren: uv regelt de Python-versie en pre-commit is een dev-dependency.
+Windows (PowerShell):
+
+```powershell
+winget install --id astral-sh.uv -e
+winget install --id Casey.Just -e
+winget install --id Archi.Archi -e
+```
+
+Linux: uv via `curl -LsSf https://astral.sh/uv/install.sh | sh`, just via je
+packagemanager, Archi als tgz van
+[archimatetool.com/download](https://www.archimatetool.com/download/).
+
+Archi wordt automatisch gevonden op `/Applications/Archi.app` (macOS),
+`C:\Program Files\Archi\Archi.exe` (Windows) en `/opt/Archi/Archi` (Linux);
+een ander pad geef je op via de env var `ARCHI_APP`. Python en pre-commit
+hoef je niet zelf te installeren: uv regelt de Python-versie en pre-commit
+is een dev-dependency.
 
 ```bash
 just setup       # eenmalig per clone: venv, dependencies en pre-commit hooks

@@ -260,7 +260,8 @@ class ArchiModel:
     def save(self, path=None):
         etree.indent(self.root, space="  ")
         body = etree.tostring(self.root, encoding="unicode")
-        with open(path or self.path, "w", encoding="utf-8") as f:
+        # newline="\n" keeps LF on every platform (no CRLF churn on Windows)
+        with open(path or self.path, "w", encoding="utf-8", newline="\n") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(body)
             f.write("\n")

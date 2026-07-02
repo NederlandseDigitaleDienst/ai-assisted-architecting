@@ -1,0 +1,7 @@
+# LF overal, ook op Windows-checkouts: voorkomt CRLF-churn in diffs en
+# houdt de normalize/render-output byte-identiek tussen platforms.
+* text=auto eol=lf
+*.archimate text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.py text eol=lf

@@ -1,5 +1,8 @@
 # Taakrunner voor ai-assisted-architecting. `just` toont deze lijst.
 
+# Op Windows draaien recipes in PowerShell (geen sh nodig)
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
 default:
     @just --list
 
@@ -28,9 +31,9 @@ stats:
 test:
     uv run pytest
 
-# Model openen in Archi
+# Model openen in Archi (os-bewust: open / Start-Process / xdg-open)
 open:
-    open models/ado.archimate
+    {{ if os() == "macos" { "open" } else if os() == "windows" { "Start-Process" } else { "xdg-open" } }} models/ado.archimate
 
 # Gerenderde HTML-views lokaal serveren op http://localhost:8766
 serve:

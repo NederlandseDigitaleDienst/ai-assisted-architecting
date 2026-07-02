@@ -8,25 +8,37 @@ workspace (-data) avoids lock conflicts with a running Archi GUI.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import tempfile
 
 from .model import ModelError
 
-ARCHI_APP_DEFAULT = "/Applications/Archi.app/Contents/MacOS/Archi"
+ARCHI_CANDIDATES = [
+    "/Applications/Archi.app/Contents/MacOS/Archi",   # macOS
+    r"C:\Program Files\Archi\Archi.exe",              # Windows (winget/inno, machine scope)
+    "/opt/Archi/Archi",                               # Linux tgz
+]
 
 
 def find_archi_binary():
-    binary = os.environ.get("ARCHI_APP", ARCHI_APP_DEFAULT)
-    return binary if os.path.exists(binary) else None
+    override = os.environ.get("ARCHI_APP")
+    if override:
+        # an explicit override must not silently fall through to defaults
+        return override if os.path.exists(override) else None
+    for candidate in ARCHI_CANDIDATES:
+        if os.path.exists(candidate):
+            return candidate
+    return shutil.which("Archi")
 
 
 def normalize(path) -> None:
     binary = find_archi_binary()
     if not binary:
         raise ModelError(
-            "Archi niet gevonden. Installeer Archi in /Applications of zet "
-            "de env var ARCHI_APP naar het pad van de Archi-binary.")
+            "Archi niet gevonden. Installeer Archi (macOS: brew install "
+            "--cask archi; Windows: winget install --id Archi.Archi -e) of "
+            "zet de env var ARCHI_APP naar het pad van de Archi-binary.")
     absolute = os.path.abspath(path)
     with tempfile.TemporaryDirectory() as workspace:
         result = subprocess.run(

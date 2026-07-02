@@ -154,7 +154,8 @@ def render_index(model, entries) -> str:
 def write_if_changed(path: Path, content: str) -> bool:
     if path.exists() and path.read_text(encoding="utf-8") == content:
         return False
-    path.write_text(content, encoding="utf-8")
+    # newline="\n" keeps LF on every platform (no CRLF churn on Windows)
+    path.write_text(content, encoding="utf-8", newline="\n")
     return True
 
 
