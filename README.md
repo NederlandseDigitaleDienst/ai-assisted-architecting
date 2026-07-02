@@ -103,12 +103,18 @@ of op naam, zolang die uniek is:
 ```bash
 uv run archi list --type Capability --property "Capability-niveau=gebied"
 uv run archi show "Gegevensuitwisseling"
+uv run archi tree
 uv run archi add-element --type Capability --name "..." \
     --property "Capability-niveau=bouwblok" --property "Omschrijving=..."
 uv run archi add-relation --type Aggregation \
     --source "Gegevensuitwisseling" --target "..." --name "bevat"
+uv run archi set-property "Gegevensuitwisseling" "Omschrijving=..."
+uv run archi rename "Oude naam" "Nieuwe naam"
+uv run archi set-documentation "Gegevensuitwisseling" "..."
+uv run archi remove "Gegevensuitwisseling" --cascade
 uv run archi add-view --name "..." --layout cluster \
     --type Capability --relation Aggregation
+uv run archi set-model-name "..."
 uv run archi --help
 ```
 
@@ -117,7 +123,9 @@ uv run archi --help
 Branch afsplitsen, wijzigen, `just validate`, `just normalize`, committen en
 een PR openen. De pre-commit hook rendert de views mee; verandert er iets in
 `views/`, dan faalt de commit een keer en stage je de verse renders erbij.
-De architect-eigenaar reviewt en merget.
+CI draait dezelfde checks (validatie, actuele renders, tests) op Ubuntu en
+Windows, dus een omzeilde hook strandt alsnog op de PR. De
+architect-eigenaar reviewt en merget.
 
 De belangrijkste afspraak: een schrijver tegelijk op het modelbestand. Een
 enkel XML-bestand merget slecht, dus parallelle branches met modelwijzigingen

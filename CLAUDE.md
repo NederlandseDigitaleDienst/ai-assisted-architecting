@@ -83,8 +83,11 @@ geverifieerd op 2026-07-02.
   procedures: skills `archi-model` en `archi-view`.
 - Ids (`id-<uuid4>`) zijn onveranderlijk; de tooling genereert nieuwe.
 - Vóór elke commit die het model raakt: `just validate`, `just normalize` en
-  `just render`. De pre-commit hooks dwingen validate en render af; normalize
-  niet (te traag voor een hook), dus die stap is discipline.
+  `just render`. De pre-commit hooks dwingen validate, render en pytest af
+  (ook bij tooling-wijzigingen); normalize niet (te traag voor een hook), dus
+  die stap is discipline. CI (`.github/workflows/ci.yml`) draait dezelfde
+  checks op Ubuntu en Windows en faalt als de gecommitte views niet synchroon
+  zijn met het model.
 - Nieuwe property-keys eerst vastleggen in `docs/conventies.md` §3; de
   validator waarschuwt op onbekende keys. Structurele beslissingen krijgen
   een ADR in `adr/`.
@@ -104,9 +107,11 @@ geverifieerd op 2026-07-02.
   zijn relatief aan hun parent. `remove` ruimt bij cascade ook
   view-objecten, connections en `targetConnections`-attributen op.
 - `validate.py`: integriteitschecks plus conventiecheck tegen
-  `docs/conventies.md` (sectie "## Property-keys", backticked keys).
+  `docs/conventies.md` (sectie "Property-keys", eventueel genummerd; telt
+  alleen bullets die met een backticked key beginnen).
 - `normalize.py`: load+save-roundtrip door de headless Archi CLI. Binary via
-  env var `ARCHI_APP`, default `/Applications/Archi.app/...`.
+  env var `ARCHI_APP`, anders het eerste bestaande pad uit `ARCHI_CANDIDATES`
+  (macOS, Windows machine- en user-scope, Linux).
 - `views.py`: view-generatie met grid- of cluster-layout (geport uit het
   ADO-exportscript).
 - `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
