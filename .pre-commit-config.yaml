@@ -7,6 +7,12 @@ repos:
         language: system
         files: ^models/.*\.archimate$
         pass_filenames: false
+      - id: archi-render
+        name: archi render (views naar Mermaid)
+        entry: uv run archi render
+        language: system
+        files: ^models/.*\.archimate$
+        pass_filenames: false
       - id: pytest
         name: pytest (archi_tool)
         entry: uv run pytest -q

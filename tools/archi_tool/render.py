@@ -1,0 +1,173 @@
+"""Render views from a .archimate model to Mermaid markdown.
+
+Mermaid does its own auto-layout, so this renders the *content* of a view
+(elements, nesting, drawn relations), not the pixel-exact Archi layout.
+Nested diagram objects become subgraphs; connection line styles follow the
+relation type. Output files carry a marker comment so stale files can be
+cleaned up safely.
+"""
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
+
+MARKER = "<!-- Gegenereerd door `archi render` — niet handmatig bewerken -->"
+
+LAYER_STYLES = {
+    "strategy": "fill:#FAC75A,stroke:#D4882A,color:#633806",
+    "business": "fill:#FFF580,stroke:#D4B830,color:#5C4A00",
+    "application": "fill:#B4E2FA,stroke:#4A9CC9,color:#0D3D57",
+    "technology": "fill:#C9E7B7,stroke:#7BAF5E,color:#2E4A1E",
+    "motivation": "fill:#CECBF6,stroke:#7F77DD,color:#26215C",
+    "implementation_migration": "fill:#FBD5B5,stroke:#D18A47,color:#5C3305",
+    "other": "fill:#D3D1C7,stroke:#888780,color:#444441",
+}
+
+# ArchiMate-ish approximations: circle for containment (no diamond in
+# Mermaid), dotted for the dashed ArchiMate lines (influence, realization).
+CONTAINMENT_TYPES = {"AggregationRelationship", "CompositionRelationship"}
+DOTTED_TYPES = {"InfluenceRelationship", "RealizationRelationship"}
+
+EDGE_LEGEND = ("pijlstijlen: `--o` bevat (aggregatie/compositie), "
+               "`-.->` gestippeld (beïnvloedt/realiseert), `-->` overig")
+
+
+def slugify(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return slug or "view"
+
+
+def escape_label(name: str) -> str:
+    return (name or "(naamloos)").replace('"', "#quot;")
+
+
+def edge_syntax(rel) -> str:
+    rel_type = xsi_type(rel) if rel is not None else ""
+    label = rel.get("name") if rel is not None else None
+    if rel_type in CONTAINMENT_TYPES:
+        return "--o"  # containment label (bevat) would only add noise
+    if rel_type in DOTTED_TYPES:
+        return f'-.->|"{escape_label(label)}"|' if label else "-.->"
+    return f'-->|"{escape_label(label)}"|' if label else "-->"
+
+
+def render_view(model, diagram) -> str:
+    index = model.id_index()
+    lines = ["flowchart TD"]
+    mermaid_id_by_object = {}
+    layer_members = {}
+    counter = 0
+
+    def register(obj, element):
+        nonlocal counter
+        counter += 1
+        mermaid_id = f"n{counter}"
+        mermaid_id_by_object[obj.get("id")] = mermaid_id
+        layer = FOLDER_BY_ELEMENT_TYPE.get(xsi_type(element))
+        if layer:
+            layer_members.setdefault(layer, []).append(mermaid_id)
+        return mermaid_id
+
+    def walk(objects, depth):
+        indent = "  " * depth
+        for obj in objects:
+            element = index.get(obj.get("archimateElement") or "")
+            if element is None:
+                continue  # notes/groups without a model element
+            mermaid_id = register(obj, element)
+            label = escape_label(element.get("name"))
+            children = obj.findall("child")
+            if children:
+                lines.append(f'{indent}subgraph {mermaid_id}["{label}"]')
+                walk(children, depth + 1)
+                lines.append(f"{indent}end")
+            else:
+                lines.append(f'{indent}{mermaid_id}["{label}"]')
+
+    walk(diagram.findall("child"), 1)
+
+    def is_descendant(node, ancestor):
+        parent = node.getparent()
+        while parent is not None:
+            if parent is ancestor:
+                return True
+            parent = parent.getparent()
+        return False
+
+    for conn in diagram.iter("sourceConnection"):
+        source_id = mermaid_id_by_object.get(conn.get("source"))
+        target_id = mermaid_id_by_object.get(conn.get("target"))
+        if not source_id or not target_id:
+            continue
+        source_obj = index.get(conn.get("source"))
+        target_obj = index.get(conn.get("target"))
+        rel = index.get(conn.get("archimateRelationship") or "")
+        # nesting already expresses containment; skip the redundant arrow
+        if (rel is not None and xsi_type(rel) in CONTAINMENT_TYPES
+                and is_descendant(target_obj, source_obj)):
+            continue
+        lines.append(f"  {source_id} {edge_syntax(rel)} {target_id}")
+
+    for layer, members in sorted(layer_members.items()):
+        lines.append(f"  classDef {layer} {LAYER_STYLES[layer]}")
+        lines.append(f"  class {','.join(members)} {layer}")
+
+    parts = [MARKER, "", f"# {diagram.get('name') or '(naamloze view)'}", ""]
+    documentation = model.documentation(diagram)
+    if documentation:
+        parts += [documentation, ""]
+    parts += ["```mermaid", *lines, "```", "",
+              f"*Gegenereerd uit `{Path(model.path).as_posix()}` — "
+              f"{EDGE_LEGEND}.*", ""]
+    return "\n".join(parts)
+
+
+def render_index(model, entries) -> str:
+    rows = [MARKER, "", "# Views", "",
+            f"Gerenderde views uit `{Path(model.path).as_posix()}`. "
+            "Deze bestanden worden gegenereerd door `archi render`; "
+            "bewerk ze niet handmatig.", ""]
+    for name, filename in entries:
+        rows.append(f"- [{name}]({filename})")
+    rows.append("")
+    return "\n".join(rows)
+
+
+def write_if_changed(path: Path, content: str) -> bool:
+    if path.exists() and path.read_text(encoding="utf-8") == content:
+        return False
+    path.write_text(content, encoding="utf-8")
+    return True
+
+
+def render_all(model, out_dir) -> tuple[list, list]:
+    """Render every view; returns (written, removed) path lists."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    written, produced, entries = [], set(), []
+
+    for diagram in model.diagrams():
+        name = diagram.get("name") or diagram.get("id")
+        filename = slugify(name) + ".md"
+        path = out / filename
+        if write_if_changed(path, render_view(model, diagram)):
+            written.append(path)
+        produced.add(path.name)
+        entries.append((name, filename))
+
+    index_path = out / "README.md"
+    if write_if_changed(index_path, render_index(model, entries)):
+        written.append(index_path)
+    produced.add(index_path.name)
+
+    removed = []
+    for stale in out.glob("*.md"):
+        if stale.name in produced:
+            continue
+        first_line = stale.read_text(encoding="utf-8").split("\n", 1)[0]
+        if first_line.strip() == MARKER:
+            stale.unlink()
+            removed.append(stale)
+    return written, removed

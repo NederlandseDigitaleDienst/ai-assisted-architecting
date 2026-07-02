@@ -16,6 +16,7 @@ just setup            # eenmalig: uv sync + pre-commit install
 uv run archi stats|list|show|tree          # inspectie
 uv run archi add-element|add-relation|set-property|rename|remove ...
 uv run archi add-view --name ... --layout grid|cluster
+uv run archi render   # views naar Mermaid-markdown in views/ (ook pre-commit hook)
 just validate         # integriteitschecks (ook pre-commit hook)
 just normalize        # canonieke serialisatie via headless Archi (~15 s)
 just test             # pytest
@@ -25,7 +26,9 @@ just open             # model openen in Archi
 ## Harde regels
 
 - **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen
-  en `.bak`-bestanden zijn afgeleid en gitignored.
+  en `.bak`-bestanden zijn afgeleid en gitignored. Uitzondering: `views/`
+  bevat gegenereerde Mermaid-weergaven die wél gecommit worden (ADR 0002) —
+  nooit handmatig bewerken, `archi render` houdt ze synchroon.
 - **Nooit handmatig XML bewerken** in het modelbestand — alle mutaties via de
   `archi`-CLI (valideert automatisch, weigert opslaan bij fouten). Voor
   procedures: skills `archi-model` en `archi-view`.

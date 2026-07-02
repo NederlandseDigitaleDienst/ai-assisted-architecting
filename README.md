@@ -16,12 +16,17 @@ serialisatie door headless Archi, zodat diffs klein en reviewbaar blijven).
 
 ```
 models/                      Het model (bron van waarheid, 1 bestand)
+views/                       Gerenderde views (Mermaid, gegenereerd — zie ADR 0002)
 docs/                        Norm: conventies.md, spelregels.md
 adr/                         Architectuurbeslissingen
 tools/archi_tool/            Deterministische CLI (uv, Python, lxml)
 tests/                       pytest-suite met klein fixture-model
 .claude/skills/              AI-procedures: archi-model, archi-view
 ```
+
+De views uit het model zijn direct op GitHub te bekijken in
+[`views/`](views/) — gerenderd als Mermaid, dus zichtbaar in elke
+markdown-renderer zonder Archi.
 
 ## Aan de slag
 

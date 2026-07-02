@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
+from .render import render_all
 from .validate import validate
 from .views import add_view
 
@@ -201,6 +202,17 @@ def cmd_normalize(model, args):
     return 0
 
 
+def cmd_render(model, args):
+    written, removed = render_all(model, args.out)
+    for path in written:
+        print(f"Geschreven: {path}")
+    for path in removed:
+        print(f"Verwijderd (view bestaat niet meer): {path}")
+    if not written and not removed:
+        print("Views zijn al actueel.")
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="archi", description=__doc__,
@@ -260,6 +272,11 @@ def build_parser():
     p = sub.add_parser("set-model-name", help="modelnaam wijzigen")
     p.add_argument("name")
 
+    p = sub.add_parser("render",
+                       help="views renderen naar Mermaid-markdown (views/)")
+    p.add_argument("--out", default="views",
+                   help="doelmap voor de markdown-bestanden (default: views)")
+
     p = sub.add_parser("add-view", help="view genereren met berekende layout")
     p.add_argument("--name", required=True)
     p.add_argument("--layout", choices=["grid", "cluster"], default="grid")
@@ -287,6 +304,7 @@ COMMANDS = {
     "remove": cmd_remove,
     "set-model-name": cmd_set_model_name,
     "add-view": cmd_add_view,
+    "render": cmd_render,
 }
 
 
