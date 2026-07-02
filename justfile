@@ -27,3 +27,7 @@ test:
 # Model openen in Archi
 open:
     open models/ado.archimate
+
+# Gerenderde HTML-views lokaal serveren op http://localhost:8766
+serve:
+    uv run python -m http.server 8766 --directory views/html
