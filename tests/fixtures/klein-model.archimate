@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archimate:model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:archimate="http://www.archimatetool.com/archimate" name="Klein testmodel" id="id-model-1" version="5.0.0">
+  <folder name="Strategy" id="id-folder-strategy" type="strategy">
+    <element xsi:type="archimate:Capability" name="Gebied Alfa" id="id-el-alfa">
+      <property key="Capability-niveau" value="gebied"/>
+    </element>
+    <element xsi:type="archimate:Capability" name="Bouwblok Beta" id="id-el-beta">
+      <property key="Capability-niveau" value="bouwblok"/>
+    </element>
+  </folder>
+  <folder name="Business" id="id-folder-business" type="business"/>
+  <folder name="Application" id="id-folder-application" type="application"/>
+  <folder name="Technology &amp; Physical" id="id-folder-technology" type="technology"/>
+  <folder name="Motivation" id="id-folder-motivation" type="motivation">
+    <element xsi:type="archimate:Goal" name="Doel Gamma" id="id-el-gamma">
+      <documentation>Een toetsbaar doel voor het testmodel.</documentation>
+    </element>
+  </folder>
+  <folder name="Implementation &amp; Migration" id="id-folder-impl" type="implementation_migration"/>
+  <folder name="Other" id="id-folder-other" type="other"/>
+  <folder name="Relations" id="id-folder-relations" type="relations">
+    <element xsi:type="archimate:AggregationRelationship" id="id-rel-agg" source="id-el-alfa" target="id-el-beta"/>
+    <element xsi:type="archimate:InfluenceRelationship" id="id-rel-inf" name="draagt bij aan" source="id-el-beta" target="id-el-gamma"/>
+  </folder>
+  <folder name="Views" id="id-folder-views" type="diagrams">
+    <element xsi:type="archimate:ArchimateDiagramModel" name="Testview" id="id-view-1">
+      <child xsi:type="archimate:DiagramObject" id="id-obj-alfa" archimateElement="id-el-alfa">
+        <bounds x="60" y="60" width="220" height="70"/>
+        <sourceConnection xsi:type="archimate:Connection" id="id-conn-1" source="id-obj-alfa" target="id-obj-beta" archimateRelationship="id-rel-agg"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-obj-beta" targetConnections="id-conn-1" archimateElement="id-el-beta">
+        <bounds x="60" y="190" width="220" height="70"/>
+      </child>
+    </element>
+  </folder>
+</archimate:model>
