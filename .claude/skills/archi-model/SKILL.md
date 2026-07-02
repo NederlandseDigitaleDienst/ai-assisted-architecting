@@ -1,14 +1,14 @@
 ---
 name: archi-model
-description: Werkwijze voor het .archimate-model - elementen, relaties en properties wijzigen via de archi-CLI, valideren en normaliseren. Gebruik bij elke wijziging aan models/ado.archimate, bij "voeg element/bouwblok/doel/relatie toe", "wijzig het model", "verwijder element", of vragen over de modelconventies.
+description: Werkwijze voor het .archimate-model - elementen, relaties en properties wijzigen via de archi-CLI, valideren en normaliseren. Gebruik bij elke wijziging aan models/ado.archimate, bij "voeg element/bouwblok/doel/relatie toe", "wijzig het model", "verwijder element", "hernoem", of vragen over de modelconventies.
 ---
 
 # Werken aan het .archimate-model
 
 ## Leesvolgorde
 
-1. `docs/conventies.md` — types in gebruik, property-keys, naamgeving
-2. `docs/spelregels.md` — workflow en de één-schrijver-afspraak
+1. `docs/conventies.md`: types in gebruik, property-keys, naamgeving
+2. `docs/spelregels.md`: workflow en de een-schrijver-afspraak
 
 ## Harde regels
 
@@ -16,33 +16,60 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
   via `uv run archi ...`. De CLI valideert automatisch en weigert op te slaan
   bij integriteitsfouten.
 - Bestaande ids nooit wijzigen; nieuwe ids genereert de tooling.
-- Nieuwe property-keys eerst toevoegen aan `docs/conventies.md` §3.
+- Nieuwe property-keys eerst toevoegen aan `docs/conventies.md` §3, anders
+  waarschuwt de validator. Nieuwe elementtypes of structurele keuzes krijgen
+  een ADR in `adr/`.
+- Elk commando accepteert `--model <pad>` voor een ander modelbestand;
+  zonder vlag geldt `models/ado.archimate`.
 
 ## Modelwijziging doorvoeren
 
-1. Branch afsplitsen (nooit direct op `main`); check dat er geen andere
-   model-PR openstaat (één schrijver tegelijk).
-2. Verkennen: `uv run archi stats` / `list --type ...` / `show <id|naam>`.
-3. Wijzigen, bijvoorbeeld:
+1. Branch afsplitsen (nooit direct op `main`). Check dat er geen andere
+   model-PR openstaat: een schrijver tegelijk.
+2. Kijk eerst wat er staat:
+   ```bash
+   just stats
+   uv run archi list --type Capability --property "Capability-niveau=gebied"
+   uv run archi show "Gegevensuitwisseling"    # id of unieke naam
+   uv run archi tree
+   ```
+3. Wijzig via de CLI. Elementen en relaties zijn aanspreekbaar op id of op
+   naam zolang die uniek is; bij een dubbele naam somt de CLI de kandidaten
+   op en gebruik je het id.
    ```bash
    uv run archi add-element --type Capability --name "..." \
        --property "Capability-niveau=bouwblok" --property "Omschrijving=..."
-   uv run archi add-relation --type Aggregation --source "<gebied>" --target "<bouwblok>" --name "bevat"
-   uv run archi set-property <id> "Omschrijving=..."
-   uv run archi remove <id>            # --cascade voor relaties/view-objecten
+   uv run archi add-relation --type Aggregation \
+       --source "<gebied>" --target "<bouwblok>" --name "bevat"
+   uv run archi set-property <ref> "Omschrijving=..."
+   uv run archi rename <ref> "Nieuwe naam"
+   uv run archi set-documentation <ref> "..."
+   uv run archi remove <ref>              # --cascade indien nodig, zie onder
    ```
-   Elementen en relaties zijn aanspreekbaar op id of (unieke) naam.
-4. `just validate` — moet schoon zijn.
-5. `just normalize` — Archi serialiseert canoniek; verplicht vóór commit
-   zodat de diff klein blijft (duurt ~15 s, headless Archi).
-6. `just render` — ververst de gerenderde weergaven in `views/` en
-   `views/html/` (de pre-commit hook dwingt dit af; renders committen mee).
-7. Commit (semantisch, Nederlands) → push → PR.
+4. `just validate`. Moet schoon zijn; waarschuwingen over property-keys los
+   je op in de conventielijst of door de key aan te passen.
+5. `just normalize`. Verplicht vóór commit: Archi serialiseert canoniek en
+   houdt de diff klein. Duurt ongeveer 15 seconden (headless Archi).
+6. `just render`. Ververst `views/` en `views/html/`; de gerenderde
+   bestanden committen mee.
+7. Commit (semantisch, Nederlands), push, PR openen. De architect-eigenaar
+   reviewt en merget.
 
-## Valkuilen
+De pre-commit hooks draaien validate en render nogmaals. Faalt de commit
+omdat render bestanden bijwerkte, stage die dan en commit opnieuw; dat is het
+normale pad, geen fout.
 
-- `remove` zonder `--cascade` weigert bewust als er relaties of
-  view-objecten naar het element verwijzen; dat is een signaal om eerst te
-  kijken wat er aan hangt (`show <id>`), niet om blind `--cascade` te doen.
-- Als iemand het bestand in de Archi-GUI heeft bewerkt: gewoon doorwerken,
-  maar altijd eerst `just validate` en vóór commit `just normalize`.
+## Verwijderen en de cascade
+
+`remove` zonder `--cascade` weigert als er relaties of view-objecten naar het
+element verwijzen. Dat is een signaal om eerst `show <ref>` te doen en te
+zien wat eraan hangt. Met `--cascade` verdwijnen ook de verwijzende relaties,
+de view-objecten en hun connections, inclusief het opschonen van
+`targetConnections`-attributen. Gebruik het bewust, niet als reflex.
+
+## Als iemand in de Archi-GUI heeft gewerkt
+
+Dat is toegestaan; het bestand is de bron. Draai daarna wel de volledige rij:
+`just validate`, `just normalize`, `just render`, en commit het geheel.
+Validate wijst eventuele hangende verwijzingen aan die de GUI-bewerking
+heeft achtergelaten.

@@ -4,17 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Wat dit repo is
 
-Experiment "AI-assisted architecting": een ArchiMate-model in **native
-Archi-formaat** (`models/ado.archimate`) als bron van waarheid, direct te
-openen in Archi én via Claude te manipuleren met de deterministische CLI in
-`tools/archi_tool`. Geen conversielaag; zie `adr/0001-archimate-als-bron.md`.
+Experiment "AI-assisted architecting": een ArchiMate-model in native
+Archi-formaat (`models/ado.archimate`) als bron van waarheid, direct te
+openen in Archi en via de deterministische CLI in `tools/archi_tool` te
+manipuleren. Er is geen conversielaag; de afweging staat in
+`adr/0001-archimate-als-bron.md`, het besluit om gegenereerde renders te
+committen in `adr/0002-views-als-mermaid-in-git.md`.
 
 ## Commando's
 
 ```bash
 just setup            # eenmalig: uv sync + pre-commit install
 just validate         # integriteitschecks (ook pre-commit hook)
-just render           # views naar Mermaid (views/) én NLDD-HTML (views/html/), ook pre-commit hook
+just render           # views naar Mermaid (views/) en NLDD-HTML (views/html/), ook pre-commit hook
 just normalize        # canonieke serialisatie via headless Archi (~15 s)
 just stats            # aantallen per type, relaties en views
 just test             # pytest
@@ -23,42 +25,71 @@ just serve            # gerenderde HTML-views op http://localhost:8766
 
 # Commando's met argumenten lopen via de CLI zelf:
 uv run archi list|show|tree ...            # inspectie
-uv run archi add-element|add-relation|set-property|rename|remove ...
+uv run archi add-element|add-relation|set-property|rename|set-documentation|remove ...
 uv run archi add-view --name ... --layout grid|cluster
+uv run archi set-model-name ...
 ```
 
-Vuistregel: vaste taken via `just`, geparametriseerde commando's via `uv run archi`.
+Vuistregel: vaste taken via `just`, geparametriseerde commando's via
+`uv run archi`. Elk commando accepteert `--model <pad>` voor een ander
+bestand dan `models/ado.archimate`.
+
+## Testen
+
+- Hele suite: `just test`
+- Eén test: `uv run pytest tests/test_model.py::test_remove_cascade_cleans_views_and_relations`
+- Tests werken op een kopie van `tests/fixtures/klein-model.archimate` via de
+  `model`- en `model_path`-fixtures in `tests/conftest.py`. Nieuwe checks in
+  `validate.py` horen een test te krijgen die het fixture-model gericht
+  corrumpeert en de foutmelding asserteert.
 
 ## Harde regels
 
-- **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen
-  en `.bak`-bestanden zijn afgeleid en gitignored. Uitzondering: `views/`
-  bevat gegenereerde Mermaid-weergaven die wél gecommit worden (ADR 0002) —
-  nooit handmatig bewerken, `archi render` houdt ze synchroon.
-- **Nooit handmatig XML bewerken** in het modelbestand — alle mutaties via de
-  `archi`-CLI (valideert automatisch, weigert opslaan bij fouten). Voor
+- **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen en
+  `.bak`-bestanden zijn afgeleid en gitignored. Uitzondering: `views/` bevat
+  gegenereerde weergaven die wel gecommit worden (ADR 0002); nooit handmatig
+  bewerken, `just render` houdt ze synchroon.
+- **Nooit handmatig XML bewerken** in het modelbestand. Alle mutaties via de
+  `archi`-CLI, die valideert automatisch en weigert opslaan bij fouten. Voor
   procedures: skills `archi-model` en `archi-view`.
 - Ids (`id-<uuid4>`) zijn onveranderlijk; de tooling genereert nieuwe.
-- Vóór elke commit die het model raakt: `just validate` én `just normalize`
-  (Archi is de canonieke serializer; dit houdt diffs klein).
-- Nieuwe property-keys eerst vastleggen in `docs/conventies.md` §3 — de
-  validator waarschuwt op onbekende keys. Structurele beslissingen in `adr/`.
+- Vóór elke commit die het model raakt: `just validate`, `just normalize` en
+  `just render`. De pre-commit hooks dwingen validate en render af; normalize
+  niet (te traag voor een hook), dus die stap is discipline.
+- Nieuwe property-keys eerst vastleggen in `docs/conventies.md` §3; de
+  validator waarschuwt op onbekende keys. Structurele beslissingen krijgen
+  een ADR in `adr/`.
 - **Eén schrijver tegelijk** op het modelbestand: geen parallelle branches
-  met modelwijzigingen (spelregels §4 — XML merget slecht).
+  met modelwijzigingen (spelregels §4; XML merget slecht).
 - Wijzigingen via branch → commit → PR (`docs/spelregels.md`). Semantische
   Nederlandstalige commit-berichten.
 
 ## Architectuur van de tooling
 
-`tools/archi_tool/` (uv-project, entrypoint `archi` in pyproject):
-`model.py` (laden/muteren/opslaan met lxml; het formaat: root in de
-archimate-namespace, verder unqualified elementen, concepten via
-`xsi:type="archimate:..."`, relatietypes eindigen op `Relationship`),
-`validate.py` (integriteitschecks + conventiecheck tegen
-`docs/conventies.md`), `normalize.py` (load+save-roundtrip door de headless
-Archi CLI; pad via env var `ARCHI_APP`, default `/Applications/Archi.app`),
-`views.py` (grid- en cluster-layout, geport uit het ADO-exportscript),
-`cli.py` (argparse-subcommands, muteert alleen bij schone validatie).
+`tools/archi_tool/` is een uv-project met entrypoint `archi` (pyproject):
+
+- `model.py`: laden, muteren en opslaan met lxml. Het formaat: alleen het
+  rootelement zit in de archimate-namespace, de rest is unqualified;
+  concepten dragen `xsi:type="archimate:..."`; relatietypes eindigen op
+  `Relationship` (Amerikaanse spelling); bounds van geneste view-objecten
+  zijn relatief aan hun parent. `remove` ruimt bij cascade ook
+  view-objecten, connections en `targetConnections`-attributen op.
+- `validate.py`: integriteitschecks plus conventiecheck tegen
+  `docs/conventies.md` (sectie "## Property-keys", backticked keys).
+- `normalize.py`: load+save-roundtrip door de headless Archi CLI. Binary via
+  env var `ARCHI_APP`, default `/Applications/Archi.app/...`.
+- `views.py`: view-generatie met grid- of cluster-layout (geport uit het
+  ADO-exportscript).
+- `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
+  toegankelijkheid en het ArchiMate-laagkleurenpalet (`LAYER_PALETTE`).
+- `render_html.py`: views naar NLDD-gestileerde HTML met de layout uit het
+  model. Let op: NLDD-primitives zijn zelf al `light-dark()`-paren, dus
+  nooit dubbel wikkelen. Diagram-canvas is bewust altijd licht.
+- `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
+  validatie.
+
+Gegenereerde bestanden in `views/` dragen een markercommentaar (eerste
+regel); alleen bestanden met die marker worden overschreven of opgeruimd.
 
 Alles in dit repo is Nederlandstalig (modelinhoud, docs, commits); code en
 comments zijn Engels.

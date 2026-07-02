@@ -1,41 +1,64 @@
 ---
 name: archi-view
-description: Genereer een view (diagram) in het .archimate-model met deterministische layout. Gebruik bij "maak een view", "genereer een diagram", "visualiseer de gebieden/bouwblokken", of als een selectie van elementen zichtbaar moet worden in Archi.
+description: Genereer of verwijder een view (diagram) in het .archimate-model met deterministische layout. Gebruik bij "maak een view", "genereer een diagram", "visualiseer de gebieden/bouwblokken", "verwijder view", of als een selectie van elementen zichtbaar moet worden in Archi of op GitHub.
 ---
 
-# View genereren in het .archimate-model
+# Views genereren in het .archimate-model
 
-Views worden onderdeel van het modelbestand zelf en zijn direct zichtbaar in
-Archi (Models-boom → Views). Genereren:
+Views worden onderdeel van het modelbestand zelf. Ze zijn daarna op drie
+plekken zichtbaar: in Archi (Models-boom, map Views), als Mermaid op GitHub
+(`views/<slug>.md`) en als NLDD-HTML (`views/html/<slug>.html`, bekijken met
+`just serve`). De slug volgt uit de viewnaam; beide indexbestanden worden
+automatisch bijgewerkt.
+
+## Genereren
 
 ```bash
 uv run archi add-view --name "<naam>" --layout <grid|cluster> \
     [--type Capability ...] [--relation Aggregation ...] [--property key=value]
 ```
 
+Voorbeeld, de bestaande relatieweergave:
+
+```bash
+uv run archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken (relatieweergave)" \
+    --layout cluster --type Capability --relation Aggregation
+```
+
 ## Layoutkeuze
 
-- **`grid`** — alle geselecteerde elementen in een eenvoudig raster; alle
-  geselecteerde relaties als verbindingen. Goed voor kleine selecties en
-  overzichten zonder hiërarchie.
-- **`cluster`** — groepeert op structurele relaties (Aggregation/Composition
-  binnen de selectie): het bronelement komt als kop boven zijn doelelementen,
-  met ruimte voor de relatiepijlen. Goed voor gebied→bouwblok-achtige
-  structuren. Elementen zonder koppeling komen los achteraan.
+- **`grid`**: alle geselecteerde elementen in een raster, alle geselecteerde
+  relaties als verbindingen. Geschikt voor kleine selecties zonder
+  hiërarchie.
+- **`cluster`**: groepeert op structurele relaties (Aggregation en
+  Composition binnen de selectie). Het bronelement komt als kop boven zijn
+  doelelementen, met ruimte voor de pijlen. Elementen zonder koppeling komen
+  los achteraan. Dit is de keuze voor gebied-naar-bouwblok-structuren.
 
 ## Selectie
 
-- `--type` (herhaalbaar) filtert op elementtype, `--property key=value` op een
-  property, `--relation` (herhaalbaar) beperkt welke relaties getekend worden.
-- Zonder filters gaat het hele model de view in — vrijwel nooit de bedoeling.
+`--type` en `--relation` zijn herhaalbaar; `--property key=value` filtert op
+een property-waarde. Zonder filters gaat het hele model de view in, en dat is
+vrijwel nooit de bedoeling. Een lege selectie geeft een foutmelding in plaats
+van een lege view.
 
 ## Na het genereren
 
 1. `just validate` (draait ook automatisch bij het opslaan door de CLI).
 2. `just normalize` vóór commit.
-3. `just render` — ververst de weergaven in `views/` (Mermaid, zichtbaar op
-   GitHub) en `views/html/` (NLDD; lokaal bekijken met `just serve`). De
-   pre-commit hook dwingt dit af.
-4. Fijnslijpen van de layout kan daarna gewoon in de Archi-GUI; het bestand
-   is de bron, dus die aanpassing is een normale modelwijziging (opnieuw
-   normaliseren, renderen en committen).
+3. `just render`, zodat de nieuwe view ook in `views/` en `views/html/`
+   staat; de pre-commit hook dwingt dit af en de renders committen mee.
+4. Layout fijnslijpen kan daarna in de Archi-GUI. Het bestand is de bron,
+   dus zo'n aanpassing is een gewone modelwijziging: opnieuw normaliseren,
+   renderen en committen.
+
+## Verwijderen
+
+```bash
+uv run archi remove "<viewnaam of id>"
+```
+
+Een view heeft zelden inkomende verwijzingen, dus dit kan meestal zonder
+`--cascade`. Daarna `just render`: de bijbehorende bestanden in `views/`
+worden opgeruimd (alleen bestanden met het generatie-markercommentaar; iets
+wat een mens daar zelf heeft neergezet blijft staan).
