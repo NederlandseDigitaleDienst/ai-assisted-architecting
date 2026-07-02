@@ -44,6 +44,11 @@ def test_render_view_html_structure(model):
     assert "</defs>" in output
     assert output.index("</defs>") < output.index("<line")
     assert "@nldd/design-system@" in output
+    # navigation back to the index and a legend inside the canvas
+    assert 'href="index.html"' in output
+    assert 'class="legend"' in output
+    assert "Strategie" in output      # layer chip for the fixture's boxes
+    assert "bevat" in output          # containment edge hint (aggregation)
 
 
 def test_render_all_html_index_and_cleanup(model, tmp_path):
@@ -57,6 +62,7 @@ def test_render_all_html_index_and_cleanup(model, tmp_path):
     index = (out / "index.html").read_text(encoding="utf-8")
     assert 'href="testview.html"' in index
     assert "<nldd-card" in index
+    assert 'class="thumb-svg"' in index   # miniature per view card
     assert not stale.exists()
 
     written, removed = render_all_html(model, out)

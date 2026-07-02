@@ -23,6 +23,29 @@ NLDD_JS = f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}/+esm
 
 CANVAS_MARGIN = 40
 
+LAYER_LABELS = {
+    "strategy": "Strategie",
+    "business": "Bedrijf",
+    "application": "Applicatie",
+    "technology": "Technologie",
+    "motivation": "Motivatie",
+    "implementation_migration": "Implementatie & migratie",
+    "other": "Overig",
+}
+
+# two stacked ArchiMate-colored blocks with a connector, as inline data URI
+# so the pages stay fully self-contained ("#" must be encoded as %23)
+FAVICON = (
+    "data:image/svg+xml,"
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
+    "%3Crect x='3' y='4' width='17' height='10' rx='2' fill='%23FAC75A' "
+    "stroke='%23D4882A'/%3E"
+    "%3Crect x='12' y='19' width='17' height='10' rx='2' fill='%23CECBF6' "
+    "stroke='%237F77DD'/%3E"
+    "%3Cpath d='M11 14v4h6v1' fill='none' stroke='%235b5b66' "
+    "stroke-width='1.5'/%3E"
+    "%3C/svg%3E")
+
 
 def absolute_boxes(diagram, index) -> list:
     """Resolve diagram objects to absolute canvas coordinates."""
@@ -98,6 +121,61 @@ def layer_of(element) -> str:
     return FOLDER_BY_ELEMENT_TYPE.get(xsi_type(element), "other")
 
 
+def legend_html(boxes, edges) -> str:
+    """Legend chips for the layers and line styles present in the view.
+    Lives inside the always-light canvas, hence the fixed colors."""
+    parts = []
+    for layer in sorted({layer_of(b["element"]) for b in boxes}):
+        fill, stroke, _ = LAYER_PALETTE[layer]
+        parts.append(
+            f'<span class="legend-item"><span class="swatch" '
+            f'style="background:{fill};border-color:{stroke}"></span>'
+            f'{LAYER_LABELS.get(layer, layer)}</span>')
+    if any(e["containment"] for e in edges):
+        parts.append(
+            '<span class="legend-item"><svg width="26" height="10" '
+            'viewBox="0 0 26 10" aria-hidden="true">'
+            '<line x1="8" y1="5" x2="26" y2="5" class="edge"/>'
+            '<path d="M1,5 L5,2 L9,5 L5,8 z" fill="#ffffff" '
+            'stroke="#5b5b66"/></svg>bevat</span>')
+    if any(e["dotted"] for e in edges):
+        parts.append(
+            '<span class="legend-item"><svg width="26" height="10" '
+            'viewBox="0 0 26 10" aria-hidden="true">'
+            '<line x1="0" y1="5" x2="20" y2="5" class="edge dotted"/>'
+            '<path d="M19,2 L26,5 L19,8 z" fill="#5b5b66"/></svg>'
+            'beïnvloedt of realiseert</span>')
+    if any(not e["dotted"] and not e["containment"] for e in edges):
+        parts.append(
+            '<span class="legend-item"><svg width="26" height="10" '
+            'viewBox="0 0 26 10" aria-hidden="true">'
+            '<line x1="0" y1="5" x2="20" y2="5" class="edge"/>'
+            '<path d="M19,2 L26,5 L19,8 z" fill="#5b5b66"/></svg>'
+            'overige relatie</span>')
+    if not parts:
+        return ""
+    return '<div class="legend">' + "".join(parts) + "</div>"
+
+
+def view_thumbnail_svg(boxes) -> str:
+    """Miniature of the view layout: colored rectangles, no text."""
+    if not boxes:
+        return ""
+    width = max(b["x"] + b["w"] for b in boxes)
+    height = max(b["y"] + b["h"] for b in boxes)
+    rects = []
+    for box in boxes:
+        fill, stroke, _ = LAYER_PALETTE[layer_of(box["element"])]
+        opacity = ' fill-opacity="0.35"' if box["container"] else ""
+        rects.append(
+            f'<rect x="{box["x"]}" y="{box["y"]}" width="{box["w"]}" '
+            f'height="{box["h"]}" rx="6" fill="{fill}"{opacity} '
+            f'stroke="{stroke}" vector-effect="non-scaling-stroke"/>')
+    return (f'<svg class="thumb-svg" viewBox="-12 -12 {width + 24} '
+            f'{height + 24}" preserveAspectRatio="xMidYMid meet" '
+            f'aria-hidden="true">{"".join(rects)}</svg>')
+
+
 def layer_css() -> str:
     rules = []
     for layer, (fill, stroke, text) in LAYER_PALETTE.items():
@@ -128,10 +206,26 @@ PAGE_CSS = """
       font-size: 13px; line-height: 1.3; }
     .leaf { display: flex; align-items: center; justify-content: center;
       text-align: center; padding: 4px 10px; border-radius: 6px;
-      border: 1px solid; box-shadow: 0 1px 2px rgb(0 0 0 / 0.10); }
+      border: 1px solid; box-shadow: 0 1px 2px rgb(0 0 0 / 0.10);
+      transition: box-shadow 0.15s ease; }
+    .leaf:hover { box-shadow: 0 3px 10px rgb(0 0 0 / 0.20); }
     .container { border-radius: 10px; border: 1.5px solid;
       padding: 10px 14px; font-weight: 550; }
-    .card-link { text-decoration: none; color: inherit; display: block; }
+    /* legend sits inside the light canvas: fixed light-surface colors */
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 18px;
+      align-items: center; padding: 10px 14px;
+      border-top: 1px solid #e6e6eb; font-size: 12.5px; color: #55555e; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-item svg { flex: none; }
+    .swatch { width: 12px; height: 12px; border-radius: 3px;
+      border: 1px solid; display: inline-block; flex: none; }
+    .card-link { text-decoration: none; color: inherit; display: block;
+      height: 100%; }
+    /* thumbnails mirror the diagram canvas: always light */
+    .thumb { background: #ffffff; border: 1px solid #e6e6eb;
+      border-radius: 8px; height: 150px; padding: 10px;
+      display: flex; align-items: center; justify-content: center; }
+    .thumb-svg { width: 100%; height: 100%; }
     .meta { color: var(--primitives-color-neutral-600); font-size: 14px; }
 """
 
@@ -144,6 +238,7 @@ def page_shell(title: str, body: str) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title>
+<link rel="icon" href="{FAVICON}">
 <link rel="stylesheet" href="{NLDD_CSS}">
 <script type="module">import "{NLDD_JS}";</script>
 <style>
@@ -154,9 +249,9 @@ def page_shell(title: str, body: str) -> str:
 <body>
 <nldd-app-view>
   <nldd-page>
-    <nldd-container padding="24" sm-padding="8">
+    <nldd-simple-section width="full">
 {body}
-    </nldd-container>
+    </nldd-simple-section>
   </nldd-page>
 </nldd-app-view>
 </body>
@@ -213,6 +308,9 @@ def render_view_html(model, diagram) -> str:
     doc_html = (f"      <p class=\"doc\">{html.escape(documentation)}</p>\n"
                 if documentation else "")
     body = (
+        f'      <nldd-link href="index.html" size="sm" '
+        f'start-icon="arrow-left" text="Alle views"></nldd-link>\n'
+        f'      <nldd-spacer size="8"></nldd-spacer>\n'
         f'      <nldd-title size="2"><h1>{html.escape(name)}</h1></nldd-title>\n'
         f'{doc_html}'
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
@@ -222,37 +320,39 @@ def render_view_html(model, diagram) -> str:
         f'          {"".join(svg)}\n'
         f'          {"".join(divs)}\n'
         f'        </div>\n'
+        f'        {legend_html(boxes, edges)}\n'
         f'      </div>\n'
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <p class="meta">{len(boxes)} elementen, {len(edges)} '
-        f'getekende verbindingen — gegenereerd uit '
-        f'<code>{html.escape(Path(model.path).as_posix())}</code> · '
-        f'<a href="index.html">alle views</a></p>')
+        f'getekende verbindingen · gegenereerd uit '
+        f'<code>{html.escape(Path(model.path).as_posix())}</code></p>')
     return page_shell(name, body)
 
 
 def render_index_html(model, entries) -> str:
     cards = []
-    for name, filename, n_boxes, n_edges in entries:
+    for name, filename, n_boxes, n_edges, thumbnail in entries:
         cards.append(
             f'        <a class="card-link" href="{filename}">'
             f'<nldd-card accessible-label="{html.escape(name)}">'
             f'<nldd-container padding="16">'
+            f'<div class="thumb">{thumbnail}</div>'
+            f'<nldd-spacer size="12"></nldd-spacer>'
             f'<nldd-title size="4"><h2>{html.escape(name)}</h2></nldd-title>'
-            f'<p class="meta">{n_boxes} elementen, {n_edges} verbindingen</p>'
+            f'<p class="meta">{n_boxes} elementen · {n_edges} verbindingen</p>'
             f'</nldd-container>'
             f'</nldd-card></a>')
     body = (
-        f'      <nldd-title size="2"><h1>{html.escape(model.name)} — views'
+        f'      <nldd-title size="2"><h1>{html.escape(model.name)}'
         f'</h1></nldd-title>\n'
-        f'      <p class="doc">Weergaven gegenereerd uit '
+        f'      <p class="doc">Views gegenereerd uit '
         f'<code>{html.escape(Path(model.path).as_posix())}</code>, '
         f'met de layout zoals die in het model is vastgelegd.</p>\n'
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <nldd-collection layout="grid" item-width="320px">\n'
         + "\n".join(cards) + "\n"
         f'      </nldd-collection>')
-    return page_shell(f"{model.name} — views", body)
+    return page_shell(f"{model.name} · views", body)
 
 
 def render_all_html(model, out_dir) -> tuple[list, list]:
@@ -271,7 +371,8 @@ def render_all_html(model, out_dir) -> tuple[list, list]:
         produced.add(path.name)
         boxes = absolute_boxes(diagram, index)
         edges = diagram_edges(model, diagram, {b["id"]: b for b in boxes})
-        entries.append((name, filename, len(boxes), len(edges)))
+        entries.append((name, filename, len(boxes), len(edges),
+                        view_thumbnail_svg(boxes)))
 
     index_path = out / "index.html"
     if write_if_changed(index_path, render_index_html(model, entries)):
