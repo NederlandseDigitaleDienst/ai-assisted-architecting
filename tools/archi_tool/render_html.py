@@ -121,11 +121,13 @@ def layer_css() -> str:
 
 
 PAGE_CSS = """
-    .doc { max-width: 72ch; color: light-dark(#414149, #c5c5cd); }
+    /* NLDD primitives are light-dark() pairs themselves: use a single token
+       and it follows the color scheme — never wrap them in light-dark(). */
+    .doc { max-width: 72ch; color: var(--primitives-color-neutral-700); }
     /* the diagram canvas is always light, like an image: the ArchiMate
        palette is designed for a light surface */
     .diagram-wrap { overflow-x: auto; border-radius: 12px;
-      border: 1px solid light-dark(#e0e0e5, #45454d);
+      border: 1px solid var(--primitives-color-neutral-200);
       background: #ffffff; }
     .diagram { position: relative; }
     .diagram > svg { position: absolute; inset: 0; }
@@ -139,7 +141,7 @@ PAGE_CSS = """
     .container { border-radius: 10px; border: 1.5px solid;
       padding: 10px 14px; font-weight: 550; }
     .card-link { text-decoration: none; color: inherit; display: block; }
-    .meta { color: light-dark(#5b5b66, #a0a0ab); font-size: 14px; }
+    .meta { color: var(--primitives-color-neutral-600); font-size: 14px; }
 """
 
 
