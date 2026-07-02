@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
 from .render import (CONTAINMENT_TYPES, DOTTED_TYPES, LAYER_PALETTE, MARKER,
-                     slugify, write_if_changed)
+                     is_descendant, slugify, write_if_changed)
 
 NLDD_VERSION = "0.8.64"
 NLDD_CSS = (f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}"
@@ -66,15 +66,6 @@ def border_point(box, toward_x, toward_y):
 
 def diagram_edges(model, diagram, box_by_object_id) -> list:
     index = model.id_index()
-
-    def is_descendant(node, ancestor):
-        parent = node.getparent()
-        while parent is not None:
-            if parent is ancestor:
-                return True
-            parent = parent.getparent()
-        return False
-
     edges = []
     for conn in diagram.iter("sourceConnection"):
         source = box_by_object_id.get(conn.get("source"))
