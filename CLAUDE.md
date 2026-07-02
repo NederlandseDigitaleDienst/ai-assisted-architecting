@@ -16,7 +16,7 @@ just setup            # eenmalig: uv sync + pre-commit install
 uv run archi stats|list|show|tree          # inspectie
 uv run archi add-element|add-relation|set-property|rename|remove ...
 uv run archi add-view --name ... --layout grid|cluster
-uv run archi render   # views naar Mermaid-markdown in views/ (ook pre-commit hook)
+uv run archi render   # views naar Mermaid (views/) én NLDD-HTML (views/html/), ook pre-commit hook
 just validate         # integriteitschecks (ook pre-commit hook)
 just normalize        # canonieke serialisatie via headless Archi (~15 s)
 just test             # pytest

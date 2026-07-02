@@ -15,6 +15,7 @@ from pathlib import Path
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
 from .render import render_all
+from .render_html import render_all_html
 from .validate import validate
 from .views import add_view
 
@@ -204,11 +205,12 @@ def cmd_normalize(model, args):
 
 def cmd_render(model, args):
     written, removed = render_all(model, args.out)
-    for path in written:
+    html_written, html_removed = render_all_html(model, Path(args.out) / "html")
+    for path in written + html_written:
         print(f"Geschreven: {path}")
-    for path in removed:
+    for path in removed + html_removed:
         print(f"Verwijderd (view bestaat niet meer): {path}")
-    if not written and not removed:
+    if not (written or removed or html_written or html_removed):
         print("Views zijn al actueel.")
     return 0
 

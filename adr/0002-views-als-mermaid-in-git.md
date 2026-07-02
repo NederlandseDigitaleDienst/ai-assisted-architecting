@@ -15,10 +15,13 @@ GitHub rendert alleen gecommitte markdown.
 
 ## Besluit
 
-1. `archi render` rendert elke view naar `views/<slug>.md` met een
-   Mermaid-diagram, plus een index (`views/README.md`). De bestanden dragen
-   een markercommentaar en worden nooit handmatig bewerkt; verdwenen views
-   worden opgeruimd.
+1. `archi render` rendert elke view in twee vormen: `views/<slug>.md` met een
+   Mermaid-diagram (auto-layout, rendert op GitHub zelf) plus een index
+   (`views/README.md`), en `views/html/<slug>.html` met een NLDD-gestileerde
+   HTML-weergave die de layout uit het model volgt (pixelgetrouw, lokaal te
+   openen in de browser; NLDD-componenten van de CDN, gepind op versie).
+   Alle bestanden dragen een markercommentaar en worden nooit handmatig
+   bewerkt; verdwenen views worden opgeruimd.
 2. Deze bestanden worden **gecommit** — een bewuste, afgebakende uitzondering
    op ADR 0001. Synchronisatie wordt afgedwongen door een pre-commit hook die
    bij elke modelwijziging opnieuw rendert; een commit met een verouderde

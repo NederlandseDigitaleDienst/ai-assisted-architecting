@@ -15,14 +15,20 @@ from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
 
 MARKER = "<!-- Gegenereerd door `archi render` — niet handmatig bewerken -->"
 
+# (fill, stroke, text) per ArchiMate layer — same palette as the ADO
+# diagram conventions (Strategy amber, Motivation purple, Business lemon)
+LAYER_PALETTE = {
+    "strategy": ("#FAC75A", "#D4882A", "#633806"),
+    "business": ("#FFF580", "#D4B830", "#5C4A00"),
+    "application": ("#B4E2FA", "#4A9CC9", "#0D3D57"),
+    "technology": ("#C9E7B7", "#7BAF5E", "#2E4A1E"),
+    "motivation": ("#CECBF6", "#7F77DD", "#26215C"),
+    "implementation_migration": ("#FBD5B5", "#D18A47", "#5C3305"),
+    "other": ("#D3D1C7", "#888780", "#444441"),
+}
 LAYER_STYLES = {
-    "strategy": "fill:#FAC75A,stroke:#D4882A,color:#633806",
-    "business": "fill:#FFF580,stroke:#D4B830,color:#5C4A00",
-    "application": "fill:#B4E2FA,stroke:#4A9CC9,color:#0D3D57",
-    "technology": "fill:#C9E7B7,stroke:#7BAF5E,color:#2E4A1E",
-    "motivation": "fill:#CECBF6,stroke:#7F77DD,color:#26215C",
-    "implementation_migration": "fill:#FBD5B5,stroke:#D18A47,color:#5C3305",
-    "other": "fill:#D3D1C7,stroke:#888780,color:#444441",
+    layer: f"fill:{fill},stroke:{stroke},color:{text}"
+    for layer, (fill, stroke, text) in LAYER_PALETTE.items()
 }
 
 # ArchiMate-ish approximations: circle for containment (no diamond in

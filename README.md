@@ -24,9 +24,11 @@ tests/                       pytest-suite met klein fixture-model
 .claude/skills/              AI-procedures: archi-model, archi-view
 ```
 
-De views uit het model zijn direct op GitHub te bekijken in
-[`views/`](views/) — gerenderd als Mermaid, dus zichtbaar in elke
-markdown-renderer zonder Archi.
+De views uit het model zijn op twee manieren te bekijken zonder Archi:
+als Mermaid-diagram in [`views/`](views/) (rendert direct op GitHub), en
+als NLDD-gestileerde HTML in [`views/html/`](views/html/) die de layout
+uit het model pixelgetrouw volgt — lokaal te openen met
+`open views/html/index.html`.
 
 ## Aan de slag
 
