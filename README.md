@@ -1,5 +1,8 @@
 # AI-assisted architecting
 
+[![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
+[![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](LICENSE)
+
 Experiment van Bureau Architectuur Digitale Overheid: een ArchiMate-model in
 het native Archi-formaat als bron van waarheid, bijgehouden met AI-assistentie
 en deterministische tooling. Het modelbestand opent direct in Archi, zonder
@@ -144,3 +147,7 @@ Het seedmodel is de export van het ADO-niveau-1-model uit
 waar JSON de bron is en ArchiMate een exportformaat. Dit repo draait die
 verhouding om: het Archi-bestand is de bron, en al het andere wordt eruit
 gegenereerd.
+
+## Licentie
+
+[EUPL-1.2](LICENSE).
