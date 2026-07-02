@@ -12,6 +12,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from lxml import etree
+
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
 from .render import render_all
@@ -126,7 +128,7 @@ def cmd_tree(model, args):
 
 def cmd_validate(model, args):
     if report_validation(model, args.model):
-        print("OK: model is consistent.")
+        print("OK: het model is consistent.")
         return 0
     return 1
 
@@ -156,17 +158,26 @@ def cmd_set_property(model, args):
     if not sep:
         raise ModelError(f"Property moet key=value zijn, kreeg: '{args.pair}'")
     model.set_property(args.ref, key, value)
-    return save_validated(model, args)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Property gezet op '{args.ref}': {key} = {value}")
+    return status
 
 
 def cmd_rename(model, args):
     model.rename(args.ref, args.name)
-    return save_validated(model, args)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Hernoemd: '{args.ref}' heet nu '{args.name}'")
+    return status
 
 
 def cmd_set_documentation(model, args):
     model.set_documentation(args.ref, args.text)
-    return save_validated(model, args)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Documentatie gezet op '{args.ref}'")
+    return status
 
 
 def cmd_remove(model, args):
@@ -179,7 +190,10 @@ def cmd_remove(model, args):
 
 def cmd_set_model_name(model, args):
     model.set_model_name(args.name)
-    return save_validated(model, args)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Modelnaam gewijzigd naar '{args.name}'")
+    return status
 
 
 def cmd_add_view(model, args):
@@ -215,9 +229,18 @@ def cmd_render(model, args):
     return 0
 
 
+DESCRIPTION = """CLI voor deterministische bewerking van native .archimate-modellen.
+
+Gebruik: archi <subcommando> [--model PAD] ...
+Muterende subcommando's valideren het model in het geheugen en weigeren op
+te slaan zolang er fouten zijn. Draai `archi normalize` vóór het committen,
+zodat de serialisatie Archi-canoniek blijft.
+"""
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="archi", description=__doc__,
+        prog="archi", description=DESCRIPTION,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", default=DEFAULT_MODEL,
                         help=f"pad naar het .archimate-bestand "
@@ -240,8 +263,9 @@ def build_parser():
                    help="serialisatie canoniek maken via de Archi CLI")
 
     p = sub.add_parser("add-element", help="element toevoegen")
-    p.add_argument("--type", required=True)
-    p.add_argument("--name", required=True)
+    p.add_argument("--type", required=True,
+                   help="elementtype (bv. Capability)")
+    p.add_argument("--name", required=True, help="naam van het element")
     p.add_argument("--folder", help="folder-type; default volgt uit het type")
     p.add_argument("--property", action="append", help="key=value (herhaalbaar)")
     p.add_argument("--documentation")
@@ -254,25 +278,25 @@ def build_parser():
     p.add_argument("--name", help="NL-label op de relatie")
 
     p = sub.add_parser("set-property", help="property zetten of bijwerken")
-    p.add_argument("ref")
+    p.add_argument("ref", help="id of (unieke) naam")
     p.add_argument("pair", help="key=value")
 
     p = sub.add_parser("rename", help="element of relatie hernoemen")
-    p.add_argument("ref")
-    p.add_argument("name")
+    p.add_argument("ref", help="id of (unieke) naam")
+    p.add_argument("name", help="nieuwe naam")
 
     p = sub.add_parser("set-documentation", help="documentatie zetten")
-    p.add_argument("ref")
-    p.add_argument("text")
+    p.add_argument("ref", help="id of (unieke) naam")
+    p.add_argument("text", help="documentatietekst")
 
     p = sub.add_parser("remove", help="element of relatie verwijderen")
-    p.add_argument("ref")
+    p.add_argument("ref", help="id of (unieke) naam")
     p.add_argument("--cascade", action="store_true",
                    help="verwijder ook relaties en view-objecten die ernaar "
                         "verwijzen")
 
     p = sub.add_parser("set-model-name", help="modelnaam wijzigen")
-    p.add_argument("name")
+    p.add_argument("name", help="nieuwe modelnaam")
 
     p = sub.add_parser("render",
                        help="views renderen naar Mermaid-markdown (views/)")
@@ -280,7 +304,7 @@ def build_parser():
                    help="doelmap voor de markdown-bestanden (default: views)")
 
     p = sub.add_parser("add-view", help="view genereren met berekende layout")
-    p.add_argument("--name", required=True)
+    p.add_argument("--name", required=True, help="naam van de nieuwe view")
     p.add_argument("--layout", choices=["grid", "cluster"], default="grid")
     p.add_argument("--type", action="append",
                    help="elementtype in de selectie (herhaalbaar)")
@@ -313,10 +337,17 @@ COMMANDS = {
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        # normalize must not depend on lxml parsing the file first: Archi is
+        # the canonical serializer and may load what lxml refuses
+        if args.command == "normalize":
+            return cmd_normalize(None, args)
         model = ArchiModel(args.model)
         return COMMANDS[args.command](model, args)
     except ModelError as exc:
         print(f"FOUT: {exc}", file=sys.stderr)
+        return 1
+    except (etree.XMLSyntaxError, OSError) as exc:
+        print(f"FOUT: kan {args.model} niet lezen: {exc}", file=sys.stderr)
         return 1
 
 
