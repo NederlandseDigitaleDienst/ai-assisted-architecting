@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: archi-validate
+        name: archi validate (modelintegriteit)
+        entry: uv run archi validate
+        language: system
+        files: ^models/.*\.archimate$
+        pass_filenames: false
+      - id: pytest
+        name: pytest (archi_tool)
+        entry: uv run pytest -q
+        language: system
+        files: ^(tools/|tests/|pyproject\.toml)
+        pass_filenames: false
