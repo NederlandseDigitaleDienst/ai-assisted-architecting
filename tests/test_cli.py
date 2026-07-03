@@ -99,3 +99,19 @@ def test_tree_shows_nested_folders(model_path, capsys):
     assert "Strategy (strategy): 1 item(s)" in output
     assert "  Thema X: 1 item(s)" in output
     assert "Bouwblok Beta" in output
+
+
+def test_add_view_with_explicit_elements(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "add-view",
+                         "--name", "Selectie", "--layout", "grid",
+                         "--element", "Gebied Alfa",
+                         "--element", "id-el-gamma")
+    assert status == 0
+    assert "View 'Selectie' aangemaakt: 2 objecten" in output
+
+
+def test_add_view_with_unknown_element_fails(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "add-view",
+                         "--name", "Selectie", "--element", "Bestaat Niet")
+    assert status == 1
+    assert "Niet gevonden" in output

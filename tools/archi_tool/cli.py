@@ -206,12 +206,18 @@ def cmd_set_model_name(model, args):
 
 
 def cmd_add_view(model, args):
+    extra = [model.resolve(ref) for ref in (args.element or [])]
+    for node in extra:
+        if not is_element(node):
+            raise ModelError(
+                f"'{node.get('name') or node.get('id')}' is geen element")
     diagram = add_view(model, args.name, layout=args.layout,
                        element_types=set(args.type) if args.type else None,
                        relation_types=(set(args.relation)
                                        if args.relation else None),
                        prop=args.property, root=args.root,
-                       related=args.related)
+                       related=args.related,
+                       extra_elements=extra or None)
     status = save_validated(model, args)
     if status == 0:
         objects = len(diagram.findall("child"))
@@ -370,6 +376,9 @@ def build_parser():
     p.add_argument("--related", action="store_true",
                    help="voeg ook direct gerelateerde elementen toe "
                         "(één stap, alleen samen met --root zinvol)")
+    p.add_argument("--element", action="append",
+                   help="element (id of unieke naam) toevoegen aan de "
+                        "selectie (herhaalbaar)")
 
     return parser
 

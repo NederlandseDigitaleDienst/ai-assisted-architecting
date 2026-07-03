@@ -66,21 +66,27 @@ def related_ids(model, ids) -> set:
 
 
 def select(model, element_types=None, relation_types=None, prop=None,
-           root=None, related=False):
+           root=None, related=False, extra_elements=None):
     if root:
         ids = containment_closure(model, root)
         if related:
             ids = ids | related_ids(model, ids)
         # document order keeps the selection (and thus layout) deterministic
         elements = [e for e in model.elements() if e.get("id") in ids]
-    else:
+    elif element_types or prop or not extra_elements:
         elements = model.elements()
+    else:
+        elements = []
     if element_types:
         elements = [e for e in elements if xsi_type(e) in element_types]
     if prop:
         key, _, value = prop.partition("=")
         elements = [e for e in elements
                     if model.properties(e).get(key) == value]
+    if extra_elements:
+        seen = {e.get("id") for e in elements}
+        elements = elements + [e for e in extra_elements
+                               if e.get("id") not in seen]
     ids = {e.get("id") for e in elements}
     relations = [r for r in model.relationships()
                  if r.get("source") in ids and r.get("target") in ids]
@@ -163,9 +169,11 @@ def cluster_positions(elements, relations):
 
 
 def add_view(model, name, layout="grid", element_types=None,
-             relation_types=None, prop=None, root=None, related=False):
+             relation_types=None, prop=None, root=None, related=False,
+             extra_elements=None):
     elements, relations = select(model, element_types, relation_types, prop,
-                                 root=root, related=related)
+                                 root=root, related=related,
+                                 extra_elements=extra_elements)
     if not elements:
         raise ModelError("Selectie is leeg; geen view aangemaakt")
 
