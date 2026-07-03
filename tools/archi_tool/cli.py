@@ -255,7 +255,7 @@ def cmd_slides(model, args):
         removed = []
     else:
         written, removed = render_all_slides(
-            model, Path(args.decks), Path(args.out), auto=not args.no_auto)
+            model, Path(args.decks), Path(args.out))
     for path in written:
         print(f"Geschreven: {path}")
     for path in removed:
@@ -348,15 +348,12 @@ def build_parser():
                             "(views/html/slides/)")
     p.add_argument("--deck", action="append",
                    help="specifiek deckbestand (.toml); herhaalbaar; "
-                        "default: alle decks in de decks-map plus het "
-                        "automatische deck")
+                        "default: alle decks in de decks-map")
     p.add_argument("--decks", default="decks",
                    help="map met deckdefinities in TOML (default: decks)")
     p.add_argument("--out", default="views/html/slides",
                    help="doelmap voor de HTML-bestanden "
                         "(default: views/html/slides)")
-    p.add_argument("--no-auto", action="store_true",
-                   help="het automatische deck 'alle-views' overslaan")
 
     p = sub.add_parser("add-view", help="view genereren met berekende layout")
     p.add_argument("--name", required=True, help="naam van de nieuwe view")

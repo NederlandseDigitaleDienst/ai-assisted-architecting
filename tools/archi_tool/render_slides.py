@@ -1,14 +1,15 @@
 """Render slide decks from a .archimate model to standalone HTML.
 
-A deck is either defined in a TOML file (decks/*.toml) or generated from
-all views in the model (the auto deck). Every deck renders to a single
-self-contained HTML file: inline CSS and vanilla JS, with the pinned NLDD
-CSS from the CDN as the only external reference (the deck uses NLDD design
-tokens, not web components, so the component bundle is not loaded).
-View slides embed the real diagram via render_html.diagram_canvas, so the
-architecture content always comes from the model; the deck file only
-carries the narrative. Output is deterministic: no timestamps (the title
-date is filled client-side), stable ordering, marker comment first line.
+A deck is a TOML file (decks/*.toml) telling one linear story: title,
+sections, embedded views, prose and bullets, closing. View slides embed
+the real diagram via render_html.diagram_canvas, so the architecture
+content always comes from the model; the deck file only carries the
+narrative. Every deck renders to a single self-contained HTML file:
+inline CSS and vanilla JS, with the pinned NLDD CSS from the CDN as the
+only external reference (the deck uses NLDD design tokens, not web
+components, so the component bundle is not loaded). Output is
+deterministic: no timestamps (the title date is filled client-side),
+stable ordering, marker comment first line.
 """
 from __future__ import annotations
 
@@ -18,11 +19,8 @@ from pathlib import Path
 
 from .model import ModelError
 from .render import MARKER, slugify, write_if_changed
-from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, absolute_boxes,
-                          diagram_canvas, layer_css, legend_html,
-                          view_thumbnail_svg)
-
-AUTO_SLUG = "alle-views"
+from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, diagram_canvas,
+                          layer_css, legend_html)
 
 RIJKSBLAUW = "#154273"
 GOUD = "#ffb612"
@@ -32,13 +30,14 @@ SLIDE_KEYS = {
     "title": {"type", "title", "lead", "notes"},
     "section": {"type", "title", "lead", "notes"},
     "view": {"type", "view", "title", "intro", "notes"},
+    "text": {"type", "title", "lead", "body", "notes"},
     "bullets": {"type", "title", "lead", "bullets", "gov", "notes"},
-    "agenda": {"type", "title", "notes"},
     "closing": {"type", "title", "lead", "link", "notes"},
 }
 REQUIRED_SLIDE_KEYS = {
     "section": ("title",),
     "view": ("view",),
+    "text": ("body",),
     "bullets": ("title", "bullets"),
     "closing": ("title",),
 }
@@ -69,7 +68,7 @@ DECK_CSS = """\
       gap: 0.4rem 1.6rem; font-size: 1.05rem; opacity: 0.85; }
     .byline .speaker { font-weight: 600; }
     .slide-section h2 { font-size: clamp(2.4rem, 5.5vw, 5rem); }
-    .slide-bullets h2, .slide-agenda h2 {
+    .slide-bullets h2, .slide-text h2 {
       font-size: clamp(2rem, 4vw, 3.4rem); }
     ul.bullets { margin: 2rem 0 0; padding: 0; list-style: none;
       display: grid; gap: 1.1rem; max-width: 62ch;
@@ -84,20 +83,10 @@ DECK_CSS = """\
       font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
     .gov-note { margin: 0.7rem 0 0; font-size: 1.05rem; opacity: 0.9;
       max-width: 60ch; }
-    .agenda { margin: 2rem 0 0; padding: 0; list-style: none;
-      display: grid; gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-    .agenda a { display: flex; flex-direction: column; gap: 0.7rem;
-      padding: 1rem 1.1rem; border-radius: 12px; text-decoration: none;
-      color: #ffffff; background: rgb(255 255 255 / 0.08);
-      border: 1px solid rgb(255 255 255 / 0.22); }
-    .agenda a:hover, .agenda a:focus-visible {
-      background: rgb(255 255 255 / 0.16); border-color: #ffb612; }
-    .agenda .num {
-      font-family: var(--primitives-font-family-monospace, monospace);
-      font-size: 0.85rem; color: #ffb612; }
-    .agenda .agenda-thumb { background: #ffffff; border-radius: 8px;
-      height: 110px; padding: 8px; display: flex; }
+    .prose { margin: 1.6rem 0 0; display: grid; gap: 0.9rem;
+      font-size: clamp(1.05rem, 1.8vw, 1.45rem); line-height: 1.5;
+      max-width: 65ch; }
+    .prose p { margin: 0; }
     /* extra bottom padding keeps the legend clear of the fixed chrome */
     .slide-view { padding: 2.2rem clamp(2rem, 5vw, 4.5rem) 3.4rem; }
     .view-head { flex: none; }
@@ -235,13 +224,6 @@ DECK_JS = """\
     else { document.documentElement.requestFullscreen(); }
   }
 
-  function agendaIndex() {
-    for (var i = 0; i < total; i++) {
-      if (slides[i].classList.contains('slide-agenda')) { return i; }
-    }
-    return 0;
-  }
-
   function fromHash() {
     var n = parseInt(location.hash.slice(1), 10);
     return isNaN(n) ? 0 : n - 1;
@@ -259,7 +241,6 @@ DECK_JS = """\
       case 'f': toggleFullscreen(); break;
       case 'n': notesPanel.hidden = !notesPanel.hidden; break;
       case 'a': autoplayTimer ? stopAutoplay() : startAutoplay(); break;
-      case 'Escape': show(agendaIndex()); break;
     }
   });
 
@@ -285,19 +266,6 @@ DECK_JS = """\
   show(fromHash());
 })();
 """
-
-
-def default_deck(model) -> dict:
-    """Zero-config deck: title, agenda, every view, closing."""
-    slides = [{"type": "title"}]
-    diagrams = model.diagrams()
-    if diagrams:
-        slides.append({"type": "agenda"})
-        for diagram in diagrams:
-            slides.append({"type": "view", "diagram": diagram})
-    slides.append({"type": "closing", "title": "Dank"})
-    return {"title": model.name, "slug": AUTO_SLUG, "speaker": None,
-            "affiliation": None, "lead": None, "slides": slides}
 
 
 def load_deck(path: Path, model) -> dict:
@@ -351,9 +319,6 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
             _check_str(deck[key], source, "", key)
 
     slug = slugify(deck.get("slug") or default_slug)
-    if slug == AUTO_SLUG:
-        raise ModelError(f"Deck '{source}': slug '{AUTO_SLUG}' is "
-                         f"gereserveerd voor het automatische deck")
 
     raw_slides = deck.get("slides")
     if not isinstance(raw_slides, list) or not raw_slides:
@@ -382,7 +347,7 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
                 raise ModelError(f"Deck '{source}'{where}: verplicht veld "
                                  f"'{key}' ontbreekt voor type '{kind}'")
         slide = dict(raw)
-        for key in ("title", "lead", "intro", "notes", "gov"):
+        for key in ("title", "lead", "intro", "notes", "gov", "body"):
             if key in slide:
                 _check_str(slide[key], source, where, key)
         if kind == "view":
@@ -484,28 +449,17 @@ def _slide_bullets(slide: dict) -> str:
     return "".join(parts)
 
 
-def _slide_agenda(model, deck: dict, slide: dict) -> str:
-    index = model.id_index()
-    items = []
-    for j, other in enumerate(deck["slides"], start=1):
-        if other["type"] == "section":
-            items.append(
-                f'<li><a href="#{j}"><span class="num">{j:02d}</span>'
-                f'<span class="agenda-title">'
-                f'{html.escape(other["title"])}</span></a></li>')
-        elif other["type"] == "view":
-            diagram = other["diagram"]
-            title = (other.get("title") or diagram.get("name")
-                     or "(naamloze view)")
-            thumb = view_thumbnail_svg(absolute_boxes(diagram, index))
-            items.append(
-                f'<li><a href="#{j}"><span class="num">{j:02d}</span>'
-                f'<span class="agenda-title">{html.escape(title)}</span>'
-                f'<span class="agenda-thumb">{thumb}</span></a></li>')
-    title = slide.get("title") or "Agenda"
-    return ('<div class="accent"></div>'
-            f"<h2>{html.escape(title)}</h2>"
-            f'<ul class="agenda">{"".join(items)}</ul>')
+def _slide_text(slide: dict) -> str:
+    parts = ['<div class="accent"></div>']
+    if slide.get("title"):
+        parts.append(f"<h2>{html.escape(slide['title'])}</h2>")
+    if slide.get("lead"):
+        parts.append(f'<p class="lead">{html.escape(slide["lead"])}</p>')
+    paragraphs = "".join(
+        f"<p>{html.escape(p.strip())}</p>"
+        for p in slide["body"].split("\n\n") if p.strip())
+    parts.append(f'<div class="prose">{paragraphs}</div>')
+    return "".join(parts)
 
 
 def _slide_closing(slide: dict) -> str:
@@ -529,10 +483,10 @@ def render_slide_html(model, deck: dict, slide: dict, n: int) -> str:
         inner = _slide_section(slide)
     elif kind == "view":
         inner = _slide_view(model, slide, n)
+    elif kind == "text":
+        inner = _slide_text(slide)
     elif kind == "bullets":
         inner = _slide_bullets(slide)
-    elif kind == "agenda":
-        inner = _slide_agenda(model, deck, slide)
     else:
         inner = _slide_closing(slide)
     surface = "light" if kind == "view" else "dark"
@@ -580,19 +534,15 @@ n notities &middot; a autoplay</div>
 """
 
 
-def render_all_slides(model, decks_dir, out_dir,
-                      auto: bool = True) -> tuple[list, list]:
-    """Render the auto deck plus every decks/*.toml; returns
-    (written, removed) path lists. A missing decks dir is not an error:
-    only the auto deck is rendered then."""
+def render_all_slides(model, decks_dir, out_dir) -> tuple[list, list]:
+    """Render every decks/*.toml; returns (written, removed) path lists.
+    A missing or empty decks dir is not an error: nothing is rendered and
+    stale generated decks are cleaned up."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    decks = []
-    if auto:
-        decks.append(default_deck(model))
-    for path in sorted(Path(decks_dir).glob("*.toml")):
-        decks.append(load_deck(path, model))
+    decks = [load_deck(path, model)
+             for path in sorted(Path(decks_dir).glob("*.toml"))]
 
     slugs = set()
     for deck in decks:

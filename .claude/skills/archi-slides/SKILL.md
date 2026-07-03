@@ -1,16 +1,16 @@
 ---
 name: archi-slides
-description: Genereer NLDD-gestileerde HTML-slidedecks uit het .archimate-model, vanuit decks/*.toml of automatisch uit alle views. Gebruik bij "maak een presentatie", "genereer slides", "maak een slidedeck", "presenteer de views", of als een deck in decks/ moet worden toegevoegd, aangepast of verwijderd.
+description: Genereer NLDD-gestileerde HTML-slidedecks uit het .archimate-model vanuit decks/*.toml, een lineair verhaal met views uit het model afgewisseld met tekst. Gebruik bij "maak een presentatie", "genereer slides", "maak een slidedeck", "presenteer de views", of als een deck in decks/ moet worden toegevoegd, aangepast of verwijderd.
 ---
 
 # Slidedecks genereren uit het .archimate-model
 
-Een deck is een TOML-bestand in `decks/` met de verhaallijn; de
+Een deck is een TOML-bestand in `decks/` met één lineaire verhaallijn:
+titel, secties, views uit het model, afgewisseld met tekst en bullets. De
 architectuurbeelden komen bij het renderen rechtstreeks uit het model.
 `archi render` (en dus `just render` en de pre-commit hook) rendert elk deck
 naar één zelfstandig HTML-bestand in `views/html/slides/<slug>.html`,
 bekijken met `just serve` op `http://localhost:8766/slides/<slug>.html`.
-Er is altijd ook een automatisch deck `alle-views.html` met alle views.
 De achtergrond staat in `adr/0003-slidedecks-als-toml-in-git.md`.
 
 ## Een deck schrijven
@@ -26,9 +26,6 @@ lead = "Ondertitel."                 # optioneel
 type = "title"                       # datum wordt client-side ingevuld
 
 [[slides]]
-type = "agenda"                      # klikbare inhoudsopgave met thumbnails
-
-[[slides]]
 type = "section"                     # hoofdstukscheider in Rijksblauw
 title = "Hoofdstuk"
 lead = "Optionele toelichting."
@@ -39,6 +36,15 @@ view = "Viewnaam of view-id"         # verplicht; moet bestaan in het model
 title = "Eigen titel"                # optioneel; default de viewnaam
 intro = "Eigen intro"                # optioneel; default de view-documentatie
 notes = "Sprekersnotitie."           # optioneel op elk slidetype
+
+[[slides]]
+type = "text"                        # lopende tekst tussen de views
+title = "Optionele kop"
+body = """
+Alinea's gescheiden door een witregel.
+
+Tweede alinea.
+"""
 
 [[slides]]
 type = "bullets"
@@ -59,11 +65,9 @@ Toegestane sleutels per type (alles daarbuiten is een harde fout):
 | `title` | `title`, `lead`, `notes` |
 | `section` | `title` (verplicht), `lead`, `notes` |
 | `view` | `view` (verplicht), `title`, `intro`, `notes` |
+| `text` | `body` (verplicht), `title`, `lead`, `notes` |
 | `bullets` | `title` en `bullets` (verplicht), `lead`, `gov`, `notes` |
-| `agenda` | `title`, `notes` |
 | `closing` | `title` (verplicht), `lead`, `link`, `notes` |
-
-De slug `alle-views` is gereserveerd voor het automatische deck.
 
 ## Renderen
 
@@ -71,7 +75,6 @@ De slug `alle-views` is gereserveerd voor het automatische deck.
 just render                          # alles: views, HTML én decks
 uv run archi slides                  # alleen de decks
 uv run archi slides --deck decks/ado.toml   # één deck, zonder opruiming
-uv run archi slides --no-auto        # zonder het automatische deck
 ```
 
 Een deck dat naar een niet-bestaande view verwijst laat het renderen falen
@@ -80,8 +83,8 @@ met een foutmelding die de beschikbare views opsomt.
 ## In de browser
 
 Pijltjestoetsen/spatie navigeren, `f` volledig scherm, `n` sprekersnotities,
-`a` autoplay, Esc springt naar de agenda, `#5` in de URL is een deeplink
-naar slide 5. Printen via de browser geeft één slide per pagina (PDF-export).
+`a` autoplay, `#5` in de URL is een deeplink naar slide 5. Printen via de
+browser geeft één slide per pagina (PDF-export).
 
 ## Na het genereren
 

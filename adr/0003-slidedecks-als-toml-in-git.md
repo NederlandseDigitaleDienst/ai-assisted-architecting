@@ -15,13 +15,14 @@ als losse plaatjes uit de pas gaan lopen met het model.
 ## Besluit
 
 1. **Decks zijn data.** Een presentatie is een TOML-bestand in `decks/`
-   (stdlib-`tomllib`, geen nieuwe dependency) met de verhaallijn: titel,
-   spreker, en een geordende lijst slides (`title`, `section`, `view`,
-   `bullets`, `agenda`, `closing`). View-slides verwijzen naar een view in
-   het model op naam of id; het diagram wordt bij het renderen getekend met
-   dezelfde code als de HTML-views (layout, iconen en legenda uit het model).
-   Daarnaast is er een automatisch deck (`alle-views`) met alle views, zonder
-   configuratie.
+   (stdlib-`tomllib`, geen nieuwe dependency) met één lineaire verhaallijn:
+   titel, spreker, en een geordende lijst slides (`title`, `section`,
+   `view`, `text`, `bullets`, `closing`). View-slides verwijzen naar een
+   view in het model op naam of id; het diagram wordt bij het renderen
+   getekend met dezelfde code als de HTML-views (layout, iconen en legenda
+   uit het model). Bewust géén overzichts- of menumechanismen: een deck is
+   een verhaal dat je van voor naar achter vertelt, geen viewer op het
+   model.
 2. **`archi render` rendert per deck één zelfstandig HTML-bestand** in
    `views/html/slides/` (inline CSS en vanilla JS; de gepinde NLDD-CSS van
    de CDN is de enige externe referentie). Deze bestanden worden gecommit —

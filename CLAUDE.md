@@ -27,7 +27,7 @@ just serve            # gerenderde HTML-views op http://localhost:8766
 uv run archi list|show|tree ...            # inspectie
 uv run archi add-element|add-relation|set-property|rename|set-documentation|remove ...
 uv run archi add-view --name ... --layout grid|cluster
-uv run archi slides [--deck decks/<naam>.toml] [--no-auto]
+uv run archi slides [--deck decks/<naam>.toml]
 uv run archi set-model-name ...
 ```
 
@@ -127,13 +127,14 @@ geverifieerd op 2026-07-02.
   Let op: NLDD-primitives zijn zelf al `light-dark()`-paren, dus
   nooit dubbel wikkelen. Diagram-canvas is bewust altijd licht.
   `diagram_canvas()` en `DIAGRAM_CSS` worden gedeeld met de slide-renderer.
-- `render_slides.py`: decks (`decks/*.toml`, stdlib-`tomllib`, plus het
-  automatische deck `alle-views`) naar zelfstandige HTML-presentaties in
-  `views/html/slides/`. Slidetypes: title, section, view, bullets, agenda,
-  closing. Deterministisch: de datum op de titelslide wordt client-side
-  ingevuld (`data-today`), geen timestamps of absolute paden in de output.
-  View-slides tekenen het echte diagram (markerprefix `s<n>-` tegen
-  dubbele SVG-ids, `ref_base="../"` voor view-referenties).
+- `render_slides.py`: decks (`decks/*.toml`, stdlib-`tomllib`) naar
+  zelfstandige HTML-presentaties in `views/html/slides/`: één lineair
+  verhaal per deck, geen overzichts- of menumechanismen. Slidetypes:
+  title, section, view, text, bullets, closing. Deterministisch: de datum
+  op de titelslide wordt client-side ingevuld (`data-today`), geen
+  timestamps of absolute paden in de output. View-slides tekenen het echte
+  diagram (markerprefix `s<n>-` tegen dubbele SVG-ids, `ref_base="../"`
+  voor view-referenties).
 - `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
   validatie.
 

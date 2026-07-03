@@ -26,9 +26,9 @@ dezelfde controles:
   layout uit het model pixelgetrouw volgt (`views/html/`), inclusief de
   ArchiMate-notatie-iconen per elementtype, notes, groups en bendpoints.
   Daarnaast rendert het uit elke deckdefinitie in `decks/` een presentatie
-  (`views/html/slides/`): zelfstandige HTML-slides in Rijkshuisstijl, met de
-  views uit het model als diagrammen. Zonder deckdefinitie is er altijd het
-  automatische deck `alle-views.html`.
+  (`views/html/slides/`): een lineair verhaal als zelfstandige HTML-slides
+  in Rijkshuisstijl, met views uit het model als diagrammen, afgewisseld
+  met tekst- en bulletslides.
 
 Pre-commit hooks dwingen validatie en verse renders af bij elke commit die
 het model raakt. De afweging achter deze opzet, inclusief wat we inleveren
