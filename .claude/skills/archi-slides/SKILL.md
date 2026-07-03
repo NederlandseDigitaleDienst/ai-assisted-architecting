@@ -20,10 +20,11 @@ title = "Titel van de presentatie"   # verplicht
 slug = "korte-naam"                  # optioneel; default de bestandsnaam
 speaker = "Naam"                     # optioneel
 affiliation = "Organisatie"          # optioneel
+date = "3 juli 2026"                 # optioneel; letterlijk op de titelslide
 lead = "Ondertitel."                 # optioneel
 
 [[slides]]
-type = "title"                       # datum wordt client-side ingevuld
+type = "title"
 
 [[slides]]
 type = "section"                     # hoofdstukscheider in Rijksblauw

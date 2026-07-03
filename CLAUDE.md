@@ -130,11 +130,11 @@ geverifieerd op 2026-07-02.
 - `render_slides.py`: decks (`decks/*.toml`, stdlib-`tomllib`) naar
   zelfstandige HTML-presentaties in `views/html/slides/`: één lineair
   verhaal per deck, geen overzichts- of menumechanismen. Slidetypes:
-  title, section, view, text, bullets, closing. Deterministisch: de datum
-  op de titelslide wordt client-side ingevuld (`data-today`), geen
-  timestamps of absolute paden in de output. View-slides tekenen het echte
-  diagram (markerprefix `s<n>-` tegen dubbele SVG-ids, `ref_base="../"`
-  voor view-referenties).
+  title, section, view, text, bullets, closing. Deterministisch: de
+  optionele datum op de titelslide is deckdata (letterlijk weergegeven),
+  geen timestamps of absolute paden in de output. View-slides tekenen het
+  echte diagram (markerprefix `s<n>-` tegen dubbele SVG-ids,
+  `ref_base="../"` voor view-referenties).
 - `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
   validatie.
 

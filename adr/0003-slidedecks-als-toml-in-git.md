@@ -30,10 +30,10 @@ als losse plaatjes uit de pas gaan lopen met het model.
    door dezelfde pre-commit hook en de CI-diff-check. Een deck dat naar een
    verwijderde view verwijst laat de render falen; dat is de bedoelde
    synchronisatiegarantie.
-3. **Rendering is deterministisch**: geen timestamps (de datum op de
-   titelslide wordt client-side ingevuld via `Intl.DateTimeFormat('nl-NL')`),
-   stabiele volgorde, markercommentaar op de eerste regel en veilige
-   opruiming van verdwenen decks.
+3. **Rendering is deterministisch**: geen timestamps (de optionele datum op
+   de titelslide is deckdata en wordt letterlijk weergegeven), stabiele
+   volgorde, markercommentaar op de eerste regel en veilige opruiming van
+   verdwenen decks.
 
 ## Afwegingen
 

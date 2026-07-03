@@ -10,6 +10,7 @@ DECK_TOML = """\
 title = "Testdeck"
 speaker = "Tester"
 affiliation = "Testbureau"
+date = "3 juli 2026"
 
 [[slides]]
 type = "title"
@@ -76,9 +77,9 @@ def test_render_deck_marker_chrome_and_determinism(model, tmp_path):
     assert 'class="slide slide-title dark"' in output
     assert ">01/07<" in output                      # zero-padded counter
     assert 'class="progress"' in output
-    # the date is filled client-side so the file stays deterministic
-    assert "data-today" in output
-    assert "Intl.DateTimeFormat" in output
+    # the date is deck data, rendered verbatim — never "today"
+    assert "3 juli 2026" in output
+    assert "Intl.DateTimeFormat" not in output
     assert output == render_deck_html(model, load_deck(path, model))
 
 

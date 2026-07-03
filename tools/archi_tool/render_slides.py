@@ -8,8 +8,8 @@ narrative. Every deck renders to a single self-contained HTML file:
 inline CSS and vanilla JS, with the pinned NLDD CSS from the CDN as the
 only external reference (the deck uses NLDD design tokens, not web
 components, so the component bundle is not loaded). Output is
-deterministic: no timestamps (the title date is filled client-side),
-stable ordering, marker comment first line.
+deterministic: no timestamps (the optional title date comes verbatim
+from the deck file), stable ordering, marker comment first line.
 """
 from __future__ import annotations
 
@@ -25,7 +25,8 @@ from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, diagram_canvas,
 RIJKSBLAUW = "#154273"
 GOUD = "#ffb612"
 
-DECK_KEYS = {"title", "slug", "speaker", "affiliation", "lead", "slides"}
+DECK_KEYS = {"title", "slug", "speaker", "affiliation", "date", "lead",
+             "slides"}
 SLIDE_KEYS = {
     "title": {"type", "title", "lead", "notes"},
     "section": {"type", "title", "lead", "notes"},
@@ -255,13 +256,6 @@ DECK_JS = """\
   window.addEventListener('resize', fitDiagrams);
   window.addEventListener('beforeprint', fitDiagrams);
 
-  var todayText = new Intl.DateTimeFormat('nl-NL',
-    { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-  Array.prototype.forEach.call(
-    document.querySelectorAll('[data-today]'), function (el) {
-      el.textContent = todayText;
-    });
-
   fitDiagrams();
   show(fromHash());
 })();
@@ -314,7 +308,7 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
     if "title" not in deck:
         raise ModelError(f"Deck '{source}': verplicht veld 'title' ontbreekt")
     title = _check_str(deck["title"], source, "", "title")
-    for key in ("slug", "speaker", "affiliation", "lead"):
+    for key in ("slug", "speaker", "affiliation", "date", "lead"):
         if key in deck:
             _check_str(deck[key], source, "", key)
 
@@ -376,6 +370,7 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
     return {"title": title, "slug": slug,
             "speaker": deck.get("speaker"),
             "affiliation": deck.get("affiliation"),
+            "date": deck.get("date"),
             "lead": deck.get("lead"), "slides": slides}
 
 
@@ -398,9 +393,11 @@ def _slide_title(deck: dict, slide: dict) -> str:
                       f'{html.escape(deck["speaker"])}</span>')
     if deck.get("affiliation"):
         byline.append(f"<span>{html.escape(deck['affiliation'])}</span>")
-    # filled client-side with today's date, so the file stays deterministic
-    byline.append('<span data-today></span>')
-    parts.append('<footer class="byline">' + "".join(byline) + "</footer>")
+    if deck.get("date"):
+        byline.append(f"<span>{html.escape(deck['date'])}</span>")
+    if byline:
+        parts.append('<footer class="byline">' + "".join(byline)
+                     + "</footer>")
     return "".join(parts)
 
 
