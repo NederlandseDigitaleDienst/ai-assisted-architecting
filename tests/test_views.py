@@ -48,3 +48,23 @@ def test_property_filter_selection(model):
 def test_empty_selection_raises(model):
     with pytest.raises(ModelError):
         add_view(model, "Leeg", element_types={"Node"})
+
+
+def test_explicit_elements_without_filters_select_only_those(model):
+    diagram = add_view(model, "Expliciet", layout="grid",
+                       extra_elements=[model.resolve("id-el-alfa")])
+    objects = diagram.findall("child")
+    assert [o.get("archimateElement") for o in objects] == ["id-el-alfa"]
+
+
+def test_explicit_elements_extend_filtered_selection(model):
+    diagram = add_view(model, "Filter plus expliciet", layout="grid",
+                       element_types={"Goal"},
+                       extra_elements=[model.resolve("id-el-alfa"),
+                                       model.resolve("id-el-gamma")])
+    objects = diagram.findall("child")
+    ids = [o.get("archimateElement") for o in objects]
+    assert set(ids) == {"id-el-alfa", "id-el-gamma"}
+    assert len(ids) == 2
+    errors, _ = validate(model)
+    assert errors == []
