@@ -125,6 +125,8 @@ uv run archi set-documentation "Gegevensuitwisseling" "..."
 uv run archi remove "Gegevensuitwisseling" --cascade
 uv run archi add-view --name "..." --layout cluster \
     --type Capability --relation Aggregation
+uv run archi add-view --name "... in detail" --layout cluster \
+    --root "Gegevensuitwisseling" --related
 uv run archi slides --deck decks/ado.toml
 uv run archi set-model-name "..."
 uv run archi --help

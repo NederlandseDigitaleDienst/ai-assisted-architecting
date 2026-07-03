@@ -18,9 +18,12 @@ import tomllib
 from pathlib import Path
 
 from .model import ModelError
-from .render import MARKER, slugify, write_if_changed
-from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, diagram_canvas,
-                          layer_css, legend_html)
+from .render import MARKER, is_descendant, slugify, write_if_changed
+from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, absolute_boxes,
+                          diagram_canvas, layer_css, legend_html)
+
+FOCUS_MARGIN = 24       # canvas px around the focused subtree
+FOCUS_MAX_SCALE = 2.2   # zoom cap when focusing; 1.4 for the full view
 
 RIJKSBLAUW = "#154273"
 GOUD = "#ffb612"
@@ -30,7 +33,7 @@ DECK_KEYS = {"title", "slug", "speaker", "affiliation", "date", "lead",
 SLIDE_KEYS = {
     "title": {"type", "title", "lead", "notes"},
     "section": {"type", "title", "lead", "notes"},
-    "view": {"type", "view", "title", "intro", "notes"},
+    "view": {"type", "view", "focus", "title", "intro", "notes"},
     "text": {"type", "title", "lead", "body", "notes"},
     "bullets": {"type", "title", "lead", "bullets", "gov", "notes"},
     "closing": {"type", "title", "lead", "link", "notes"},
@@ -51,12 +54,9 @@ DECK_CSS = """\
     .slide { position: fixed; inset: 0; box-sizing: border-box;
       display: flex; flex-direction: column; justify-content: center;
       padding: 3rem clamp(2.5rem, 9vw, 11rem); overflow: hidden;
-      opacity: 0; visibility: hidden; transition: opacity 0.35s ease; }
+      opacity: 0; visibility: hidden; transition: opacity 0.35s ease;
+      background: #154273; color: #ffffff; }
     .slide.active { opacity: 1; visibility: visible; }
-    /* chapter slides are Rijksblauw; the diagram canvas stays light,
-       consistent with the standalone view pages */
-    .slide.dark { background: #154273; color: #ffffff; }
-    .slide.light { background: #ffffff; color: #202030; }
     .slide h1, .slide h2 {
       font-family: var(--primitives-font-family-serif, Georgia, serif);
       font-weight: 700; line-height: 1.08; margin: 0; }
@@ -88,22 +88,31 @@ DECK_CSS = """\
       font-size: clamp(1.05rem, 1.8vw, 1.45rem); line-height: 1.5;
       max-width: 65ch; }
     .prose p { margin: 0; }
-    /* extra bottom padding keeps the legend clear of the fixed chrome */
-    .slide-view { padding: 2.2rem clamp(2rem, 5vw, 4.5rem) 3.4rem; }
-    .view-head { flex: none; }
-    .slide-view h2 { font-size: clamp(1.5rem, 2.6vw, 2.4rem);
-      color: #154273; }
-    .slide-view .intro { margin: 0.4rem 0 0; font-size: 0.95rem;
-      line-height: 1.4; color: #55555e; max-width: 110ch; }
+    /* extra bottom padding keeps the footer clear of the fixed chrome */
+    .slide-view { padding: 2.2rem clamp(2rem, 5vw, 4.5rem) 3.2rem; }
+    .view-head { flex: none; display: flex; align-items: baseline;
+      gap: 0.3rem 1.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .slide-view h2 { font-size: clamp(1.5rem, 2.6vw, 2.4rem); }
+    .slide-view .intro { margin: 0; font-size: 0.95rem; line-height: 1.4;
+      color: rgb(255 255 255 / 0.85); max-width: 100ch; flex: 1 1 30ch; }
+    /* the diagram sits on a light card inside the Rijksblauw slide, so a
+       view reads as part of the deck instead of a separate page */
+    .view-card { flex: 1; min-height: 0; display: flex;
+      flex-direction: column; background: #ffffff; border-radius: 14px;
+      padding: 10px 10px 0; box-shadow: 0 12px 40px rgb(0 0 0 / 0.35); }
     /* the fit wrapper positions and scales the fixed-size diagram; the
        transform itself is computed client-side (fitDiagrams) */
     .view-fit { flex: 1; position: relative; overflow: hidden;
-      margin-top: 1rem; min-height: 0; }
-    .view-fit .diagram { position: absolute; left: 0; top: 0; }
-    .view-foot { display: flex; align-items: center; flex: none;
-      justify-content: space-between; gap: 1rem; }
-    .view-foot .legend { border-top: 0; padding: 0; }
-    .view-open { font-size: 0.85rem; color: #154273; white-space: nowrap; }
+      min-height: 0; border-radius: 8px; }
+    .view-fit .diagram { position: absolute; left: 0; top: 0;
+      transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1); }
+    /* focus slides dim everything outside the focused subtree */
+    .box.dim { opacity: 0.22; }
+    .edge.dim { opacity: 0.12; }
+    .view-foot { flex: none; display: flex; justify-content: flex-end;
+      padding-top: 0.5rem; }
+    .view-open { font-size: 0.8rem; color: rgb(255 255 255 / 0.7);
+      white-space: nowrap; }
     .slide-closing { align-items: center; text-align: center; }
     .slide-closing .accent { margin-left: auto; margin-right: auto; }
     .slide-closing h2 { font-size: clamp(2.6rem, 6vw, 5.5rem); }
@@ -148,7 +157,7 @@ DECK_CSS = """\
       .hint, .chrome, .notes-panel, .progress { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .slide, .progress-fill { transition: none; }
+      .slide, .progress-fill, .view-fit .diagram { transition: none; }
     }
 """
 
@@ -167,22 +176,50 @@ DECK_JS = """\
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
+  var reduceMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)').matches;
+
+  function fitTransform(fit, x, y, w, h, cap) {
+    var fw = fit.clientWidth;
+    var fh = fit.clientHeight;
+    if (!fw || !fh || !w || !h) { return null; }
+    var s = Math.min(fw / w, fh / h, cap);
+    return 'translate(' + ((fw - w * s) / 2 - x * s).toFixed(1) + 'px, ' +
+      ((fh - h * s) / 2 - y * s).toFixed(1) + 'px) scale(' +
+      s.toFixed(4) + ')';
+  }
+
+  function applyFit(slide, zoomIn) {
+    var fit = slide.querySelector('.view-fit');
+    if (!fit) { return; }
+    var diagram = fit.querySelector('.diagram');
+    var full = fitTransform(fit, 0, 0,
+      parseFloat(fit.getAttribute('data-w')),
+      parseFloat(fit.getAttribute('data-h')), 1.4);
+    if (!diagram || !full) { return; }
+    var focus = fit.hasAttribute('data-fx') ? fitTransform(fit,
+      parseFloat(fit.getAttribute('data-fx')),
+      parseFloat(fit.getAttribute('data-fy')),
+      parseFloat(fit.getAttribute('data-fw')),
+      parseFloat(fit.getAttribute('data-fh')), 2.2) : null;
+    diagram.style.transformOrigin = '0 0';
+    if (zoomIn && focus && !reduceMotion) {
+      // start at the full view, then glide into the focused area
+      diagram.style.transition = 'none';
+      diagram.style.transform = full;
+      void diagram.offsetWidth;
+      diagram.style.transition = '';
+      diagram.style.transform = focus;
+    } else {
+      diagram.style.transition = 'none';
+      diagram.style.transform = focus || full;
+      void diagram.offsetWidth;
+      diagram.style.transition = '';
+    }
+  }
+
   function fitDiagrams() {
-    slides.forEach(function (slide) {
-      var fit = slide.querySelector('.view-fit');
-      if (!fit) { return; }
-      var diagram = fit.querySelector('.diagram');
-      var w = parseFloat(fit.getAttribute('data-w'));
-      var h = parseFloat(fit.getAttribute('data-h'));
-      var fw = fit.clientWidth;
-      var fh = fit.clientHeight;
-      if (!diagram || !w || !h || !fw || !fh) { return; }
-      var s = Math.min(fw / w, fh / h, 1.4);
-      diagram.style.transformOrigin = '0 0';
-      diagram.style.transform = 'translate(' +
-        ((fw - w * s) / 2).toFixed(1) + 'px, ' +
-        ((fh - h * s) / 2).toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
-    });
+    slides.forEach(function (slide) { applyFit(slide, false); });
   }
 
   function updateNotes() {
@@ -196,6 +233,7 @@ DECK_JS = """\
     slides.forEach(function (slide, j) {
       slide.classList.toggle('active', j === current);
     });
+    applyFit(slides[current], true);
     counter.textContent = pad(current + 1) + '/' + pad(total);
     fill.style.width = ((current + 1) / total * 100) + '%';
     if (('#' + (current + 1)) !== location.hash) {
@@ -341,7 +379,8 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
                 raise ModelError(f"Deck '{source}'{where}: verplicht veld "
                                  f"'{key}' ontbreekt voor type '{kind}'")
         slide = dict(raw)
-        for key in ("title", "lead", "intro", "notes", "gov", "body"):
+        for key in ("title", "lead", "intro", "notes", "gov", "body",
+                    "focus"):
             if key in slide:
                 _check_str(slide[key], source, where, key)
         if kind == "view":
@@ -367,7 +406,7 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
                                  f"optioneel 'label') zijn")
         slides.append(slide)
 
-    return {"title": title, "slug": slug,
+    return {"title": title, "slug": slug, "source": source,
             "speaker": deck.get("speaker"),
             "affiliation": deck.get("affiliation"),
             "date": deck.get("date"),
@@ -409,25 +448,70 @@ def _slide_section(slide: dict) -> str:
     return "".join(parts)
 
 
-def _slide_view(model, slide: dict, n: int) -> str:
+def _resolve_focus(model, diagram, ref: str, source: str, n: int):
+    """The focused element's box subtree in this view: (element, rect,
+    ids of everything outside the subtree)."""
+    boxes = absolute_boxes(diagram, model.id_index())
+    matches = [b for b in boxes if b["kind"] == "element"
+               and (b["element"].get("id") == ref
+                    or (b["element"].get("name") or "") == ref)]
+    if len(matches) > 1:
+        raise ModelError(f"Deck '{source}', slide {n}: focus '{ref}' staat "
+                         f"meer dan één keer in de view; gebruik het id")
+    if not matches:
+        containers = sorted((b["element"].get("name") or "?")
+                            for b in boxes
+                            if b["kind"] == "element" and b["container"])
+        hint = (f" Containers in deze view: {', '.join(containers)}"
+                if containers else "")
+        raise ModelError(f"Deck '{source}', slide {n}: focus '{ref}' niet "
+                         f"gevonden in de view.{hint}")
+    focus = matches[0]
+    subtree = {b["id"] for b in boxes
+               if b is focus or is_descendant(b["node"], focus["node"])}
+    members = [b for b in boxes if b["id"] in subtree]
+    x = max(0, min(b["x"] for b in members) - FOCUS_MARGIN)
+    y = max(0, min(b["y"] for b in members) - FOCUS_MARGIN)
+    w = max(b["x"] + b["w"] for b in members) + FOCUS_MARGIN - x
+    h = max(b["y"] + b["h"] for b in members) + FOCUS_MARGIN - y
+    dim_ids = {b["id"] for b in boxes} - subtree
+    return focus["element"], (x, y, w, h), dim_ids
+
+
+def _slide_view(model, slide: dict, n: int, source: str) -> str:
     diagram = slide["diagram"]
     name = diagram.get("name") or "(naamloze view)"
-    title = slide.get("title") or name
-    intro = slide.get("intro") or model.documentation(diagram)
+    focus_el, rect, dim_ids = None, None, None
+    if slide.get("focus"):
+        focus_el, rect, dim_ids = _resolve_focus(
+            model, diagram, slide["focus"], source, n)
+    if focus_el is not None:
+        title = slide.get("title") or focus_el.get("name") or name
+        intro = (slide.get("intro")
+                 or model.properties(focus_el).get("Omschrijving", "")
+                 or model.documentation(focus_el))
+    else:
+        title = slide.get("title") or name
+        intro = slide.get("intro") or model.documentation(diagram)
     canvas = diagram_canvas(model, diagram, marker_prefix=f"s{n}-",
-                            ref_base="../")
+                            ref_base="../", dim_ids=dim_ids)
     intro_html = (f'<p class="intro">{html.escape(intro)}</p>'
                   if intro else "")
+    focus_attrs = (f' data-fx="{rect[0]}" data-fy="{rect[1]}"'
+                   f' data-fw="{rect[2]}" data-fh="{rect[3]}"'
+                   if rect else "")
     return (
         f'<header class="view-head"><h2>{html.escape(title)}</h2>'
         f"{intro_html}</header>"
+        f'<div class="view-card">'
         f'<div class="view-fit" data-w="{canvas["width"]}" '
-        f'data-h="{canvas["height"]}">'
+        f'data-h="{canvas["height"]}"{focus_attrs}>'
         f'<div class="diagram" style="width:{canvas["width"]}px;'
         f'height:{canvas["height"]}px">{canvas["svg"]}{canvas["divs"]}'
         f"</div></div>"
-        f'<footer class="view-foot">'
         f'{legend_html(canvas["boxes"], canvas["edges"])}'
+        f"</div>"
+        f'<footer class="view-foot">'
         f'<a class="view-open" href="../{slugify(name)}.html">'
         f"open als losse pagina</a></footer>")
 
@@ -479,15 +563,14 @@ def render_slide_html(model, deck: dict, slide: dict, n: int) -> str:
     elif kind == "section":
         inner = _slide_section(slide)
     elif kind == "view":
-        inner = _slide_view(model, slide, n)
+        inner = _slide_view(model, slide, n, deck.get("source", ""))
     elif kind == "text":
         inner = _slide_text(slide)
     elif kind == "bullets":
         inner = _slide_bullets(slide)
     else:
         inner = _slide_closing(slide)
-    surface = "light" if kind == "view" else "dark"
-    return (f'<section class="slide slide-{kind} {surface}" id="s{n}">'
+    return (f'<section class="slide slide-{kind}" id="s{n}">'
             f"{inner}{_notes_html(slide)}</section>")
 
 

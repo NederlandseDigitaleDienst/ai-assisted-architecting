@@ -74,7 +74,7 @@ def test_render_deck_marker_chrome_and_determinism(model, tmp_path):
     assert output.startswith(MARKER)
     assert '<html lang="nl">' in output
     assert "@nldd/design-system@" in output
-    assert 'class="slide slide-title dark"' in output
+    assert 'class="slide slide-title"' in output
     assert ">01/07<" in output                      # zero-padded counter
     assert 'class="progress"' in output
     # the date is deck data, rendered verbatim — never "today"
@@ -86,6 +86,7 @@ def test_render_deck_marker_chrome_and_determinism(model, tmp_path):
 def test_view_slide_reuses_model_layout(model, tmp_path):
     output = render_deck_html(model, load_deck(write_deck(tmp_path), model))
     assert "Gebied Alfa" in output
+    assert 'class="view-card"' in output            # diagram on a light card
     assert 'class="box leaf strategy"' in output
     assert "left:60px;top:60px" in output           # layout from the model
     assert 'class="type-icon"' in output
@@ -97,9 +98,41 @@ def test_view_slide_reuses_model_layout(model, tmp_path):
     assert 'href="../testview.html"' in output
 
 
+def test_focus_slide_zooms_and_dims(model, tmp_path):
+    path = write_deck(tmp_path, """\
+title = "Focusdeck"
+
+[[slides]]
+type = "view"
+view = "Testview"
+focus = "Gebied Alfa"
+""")
+    output = render_deck_html(model, load_deck(path, model))
+    # focus rect: the alfa box (60,60,220,70) plus a 24px margin
+    assert 'data-fx="36" data-fy="36" data-fw="268" data-fh="118"' in output
+    # everything outside the focus subtree is dimmed, edges included
+    assert 'class="box leaf strategy dim"' in output
+    assert 'class="edge dim"' in output
+    # title defaults to the focused element, not the view
+    assert "<h2>Gebied Alfa</h2>" in output
+
+
+def test_focus_unknown_element(model, tmp_path):
+    path = write_deck(tmp_path, """\
+title = "Focusdeck"
+
+[[slides]]
+type = "view"
+view = "Testview"
+focus = "Bestaat Niet"
+""")
+    with pytest.raises(ModelError, match="niet gevonden in de view"):
+        render_deck_html(model, load_deck(path, model))
+
+
 def test_text_and_bullets_slides(model, tmp_path):
     output = render_deck_html(model, load_deck(write_deck(tmp_path), model))
-    assert 'class="slide slide-text dark"' in output
+    assert 'class="slide slide-text"' in output
     assert "<p>Eerste alinea van het verhaal.</p>" in output
     assert "<p>Tweede alinea, na een witregel.</p>" in output
     assert "Welkom." in output                      # notes rendered hidden

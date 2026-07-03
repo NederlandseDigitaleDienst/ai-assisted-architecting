@@ -15,14 +15,22 @@ automatisch bijgewerkt.
 
 ```bash
 uv run archi add-view --name "<naam>" --layout <grid|cluster> \
-    [--type Capability ...] [--relation Aggregation ...] [--property key=value]
+    [--type Capability ...] [--relation Aggregation ...] [--property key=value] \
+    [--root "<element>"] [--related]
 ```
 
-Voorbeeld, de bestaande relatieweergave:
+Voorbeeld, een brede selectieview:
 
 ```bash
-uv run archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken (relatieweergave)" \
+uv run archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken" \
     --layout cluster --type Capability --relation Aggregation
+```
+
+Voorbeeld, een detailview van één gebied met alles eromheen:
+
+```bash
+uv run archi add-view --name "Gegevensuitwisseling in detail" \
+    --layout cluster --root "Gegevensuitwisseling" --related
 ```
 
 ## Layoutkeuze
@@ -38,9 +46,12 @@ uv run archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken (
 ## Selectie
 
 `--type` en `--relation` zijn herhaalbaar; `--property key=value` filtert op
-een property-waarde. Zonder filters gaat het hele model de view in, en dat is
-vrijwel nooit de bedoeling. Een lege selectie geeft een foutmelding in plaats
-van een lege view.
+een property-waarde. `--root "<element>"` selecteert dat element plus alles
+wat het (recursief) aggregeert of composeert; `--related` voegt daar de
+direct gerelateerde elementen aan toe (één stap, beide richtingen), zoals de
+doelen en diensten rond een gebied. Zonder filters gaat het hele model de
+view in, en dat is vrijwel nooit de bedoeling. Een lege selectie geeft een
+foutmelding in plaats van een lege view.
 
 ## Na het genereren
 

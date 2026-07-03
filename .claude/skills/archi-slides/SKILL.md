@@ -39,6 +39,12 @@ intro = "Eigen intro"                # optioneel; default de view-documentatie
 notes = "Sprekersnotitie."           # optioneel op elk slidetype
 
 [[slides]]
+type = "view"                        # zelfde view, ingezoomd: de camera
+view = "Viewnaam of view-id"         # glijdt naar het element, de rest dimt
+focus = "Elementnaam of -id"         # titel en intro defaulten dan naar de
+                                     # naam en Omschrijving van dat element
+
+[[slides]]
 type = "text"                        # lopende tekst tussen de views
 title = "Optionele kop"
 body = """
@@ -65,7 +71,7 @@ Toegestane sleutels per type (alles daarbuiten is een harde fout):
 |---|---|
 | `title` | `title`, `lead`, `notes` |
 | `section` | `title` (verplicht), `lead`, `notes` |
-| `view` | `view` (verplicht), `title`, `intro`, `notes` |
+| `view` | `view` (verplicht), `focus`, `title`, `intro`, `notes` |
 | `text` | `body` (verplicht), `title`, `lead`, `notes` |
 | `bullets` | `title` en `bullets` (verplicht), `lead`, `gov`, `notes` |
 | `closing` | `title` (verplicht), `lead`, `link`, `notes` |
@@ -79,7 +85,13 @@ uv run archi slides --deck decks/ado.toml   # één deck, zonder opruiming
 ```
 
 Een deck dat naar een niet-bestaande view verwijst laat het renderen falen
-met een foutmelding die de beschikbare views opsomt.
+met een foutmelding die de beschikbare views opsomt; een onbekende `focus`
+noemt de containers in de view.
+
+Een sterke verhaallijn is: overzichtsview → `focus`-slide op één gebied →
+detailview van dat gebied. Detailviews genereer je met
+`uv run archi add-view --layout cluster --root "<gebied>" --related`
+(zie de skill archi-view).
 
 ## In de browser
 

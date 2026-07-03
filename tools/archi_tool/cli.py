@@ -210,7 +210,8 @@ def cmd_add_view(model, args):
                        element_types=set(args.type) if args.type else None,
                        relation_types=(set(args.relation)
                                        if args.relation else None),
-                       prop=args.property)
+                       prop=args.property, root=args.root,
+                       related=args.related)
     status = save_validated(model, args)
     if status == 0:
         objects = len(diagram.findall("child"))
@@ -363,6 +364,12 @@ def build_parser():
     p.add_argument("--relation", action="append",
                    help="relatietype in de selectie (herhaalbaar)")
     p.add_argument("--property", help="selectiefilter, key=value")
+    p.add_argument("--root",
+                   help="element (id of naam): selecteer dit element plus "
+                        "alles wat het aggregeert of composeert")
+    p.add_argument("--related", action="store_true",
+                   help="voeg ook direct gerelateerde elementen toe "
+                        "(één stap, alleen samen met --root zinvol)")
 
     return parser
 

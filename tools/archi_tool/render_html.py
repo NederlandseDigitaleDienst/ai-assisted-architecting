@@ -129,6 +129,7 @@ def diagram_edges(model, diagram, box_by_object_id) -> list:
         label = (rel.get("name") if rel is not None else None) or rel_type
         edges.append({
             "points": [(x1, y1), *waypoints, (x2, y2)], "label": label,
+            "source_id": conn.get("source"), "target_id": conn.get("target"),
             "dotted": rel_type in DOTTED_TYPES,
             "containment": rel_type in CONTAINMENT_TYPES,
             # a connection without relationship attaches a note: dotted, no
@@ -465,17 +466,20 @@ def page_shell(title: str, body: str) -> str:
 
 
 def diagram_canvas(model, diagram, marker_prefix: str = "",
-                   ref_base: str = "") -> dict:
+                   ref_base: str = "", dim_ids: set | None = None) -> dict:
     """Edge SVG and positioned box divs for one diagram, plus metadata.
 
     marker_prefix keeps the SVG marker ids unique when several diagrams
     share one document (the slide decks embed many); ref_base prefixes the
-    links of view-reference boxes so they resolve from other directories.
+    links of view-reference boxes so they resolve from other directories;
+    dim_ids marks diagram objects (and edges touching them) with a "dim"
+    class so a slide can spotlight the rest.
     """
     index = model.id_index()
     boxes = absolute_boxes(diagram, index)
     box_by_object_id = {b["id"]: b for b in boxes}
     edges = diagram_edges(model, diagram, box_by_object_id)
+    dim_ids = dim_ids or set()
 
     width = max((b["x"] + b["w"] for b in boxes), default=0) + CANVAS_MARGIN
     height = max((b["y"] + b["h"] for b in boxes), default=0) + CANVAS_MARGIN
@@ -496,6 +500,8 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
     for edge in edges:
         dotted = edge["dotted"] or edge["note_link"]
         classes = "edge dotted" if dotted else "edge"
+        if edge["source_id"] in dim_ids or edge["target_id"] in dim_ids:
+            classes += " dim"
         if edge["note_link"]:
             markers = ""
         elif edge["containment"]:
@@ -513,6 +519,7 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
     for box in boxes:
         style = (f'left:{box["x"]}px;top:{box["y"]}px;'
                  f'width:{box["w"]}px;height:{box["h"]}px')
+        dim = " dim" if box["id"] in dim_ids else ""
         if box["kind"] == "element":
             kind = "container" if box["container"] else "leaf"
             name = html.escape(box["element"].get("name") or "")
@@ -520,24 +527,25 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
                 model.properties(box["element"]).get("Omschrijving", ""))
             title_attr = f' title="{description}"' if description else ""
             divs.append(
-                f'<div class="box {kind} {layer_of(box["element"])}" '
+                f'<div class="box {kind} {layer_of(box["element"])}{dim}" '
                 f'style="{style}"{title_attr}>'
                 f'{element_icon(box["element"])}{name}</div>')
         elif box["kind"] == "note":
             content = box["node"].find("content")
             text = html.escape(
                 (content.text if content is not None else "") or "")
-            divs.append(f'<div class="box note" style="{style}">{text}</div>')
+            divs.append(
+                f'<div class="box note{dim}" style="{style}">{text}</div>')
         elif box["kind"] == "group":
             name = html.escape(box["node"].get("name") or "")
             divs.append(
-                f'<div class="box group" style="{style}">{name}</div>')
+                f'<div class="box group{dim}" style="{style}">{name}</div>')
         else:  # reference to another view
             ref = index.get(box["node"].get("model") or "")
             ref_name = (ref.get("name") or "") if ref is not None else ""
             href = ref_base + slugify(ref_name or "view") + ".html"
             divs.append(
-                f'<div class="box ref" style="{style}">'
+                f'<div class="box ref{dim}" style="{style}">'
                 f'{VIEW_REF_ICON}<a href="{href}">'
                 f'{html.escape(ref_name or "(view)")}</a></div>')
 

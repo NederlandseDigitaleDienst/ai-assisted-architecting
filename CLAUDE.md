@@ -116,7 +116,10 @@ geverifieerd op 2026-07-02.
   env var `ARCHI_APP`, anders het eerste bestaande pad uit `ARCHI_CANDIDATES`
   (macOS, Windows machine- en user-scope, Linux).
 - `views.py`: view-generatie met grid- of cluster-layout (geport uit het
-  ADO-exportscript).
+  ADO-exportscript). `--root` selecteert een element plus zijn
+  aggregatie/compositie-closure, `--related` voegt direct gerelateerde
+  elementen toe (detailviews per gebied); het kolomaantal van de
+  cluster-layout groeit mee met het aantal clusters.
 - `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
   toegankelijkheid en het ArchiMate-laagkleurenpalet (`LAYER_PALETTE`).
 - `render_html.py`: views naar NLDD-gestileerde HTML met de layout uit het
@@ -133,8 +136,10 @@ geverifieerd op 2026-07-02.
   title, section, view, text, bullets, closing. Deterministisch: de
   optionele datum op de titelslide is deckdata (letterlijk weergegeven),
   geen timestamps of absolute paden in de output. View-slides tekenen het
-  echte diagram (markerprefix `s<n>-` tegen dubbele SVG-ids,
-  `ref_base="../"` voor view-referenties).
+  echte diagram op een witte kaart binnen de Rijksblauwe slide
+  (markerprefix `s<n>-` tegen dubbele SVG-ids, `ref_base="../"` voor
+  view-referenties); een `focus`-veld zoomt de camera op één element en
+  dimt de rest (rect server-side berekend, animatie client-side).
 - `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
   validatie.
 
