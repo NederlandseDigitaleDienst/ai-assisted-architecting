@@ -52,6 +52,22 @@ def test_add_relation_unknown_type(model):
         model.add_relation("Vage-lijn", "id-el-alfa", "id-el-beta")
 
 
+def test_add_relation_refuses_view_endpoint(model):
+    with pytest.raises(ModelError, match="is een view"):
+        model.add_relation("Association", "Testview", "id-el-gamma")
+
+
+def test_add_relation_refuses_relation_endpoint(model):
+    with pytest.raises(ModelError, match="is zelf een relatie"):
+        model.add_relation("Influence", "id-rel-agg", "id-el-gamma")
+
+
+def test_add_relation_allows_association_to_relation(model):
+    rel = model.add_relation("Association", "id-rel-agg", "id-el-gamma")
+    assert xsi_type(rel) == "AssociationRelationship"
+    assert_valid(model)
+
+
 def test_set_property_updates_and_creates(model):
     model.set_property("id-el-alfa", "Capability-niveau", "bouwblok")
     model.set_property("id-el-alfa", "Bron", "test")

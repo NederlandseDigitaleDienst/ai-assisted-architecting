@@ -17,6 +17,9 @@ from .model import ModelError
 ARCHI_CANDIDATES = [
     "/Applications/Archi.app/Contents/MacOS/Archi",   # macOS
     r"C:\Program Files\Archi\Archi.exe",              # Windows (winget/inno, machine scope)
+    # Windows Inno installer without admin rights falls back to user scope;
+    # %LOCALAPPDATA% stays unexpanded (and never matches) on other platforms
+    os.path.expandvars(r"%LOCALAPPDATA%\Programs\Archi\Archi.exe"),
     "/opt/Archi/Archi",                               # Linux tgz
 ]
 

@@ -11,21 +11,23 @@ from pathlib import Path
 from .model import (FOLDER_BY_ELEMENT_TYPE, is_diagram, is_element,
                     is_relationship, xsi_type)
 
-PROPERTY_KEYS_HEADING = "## Property-keys"
+# tolerate an optional section number ("## Property-keys", "## 3. Property-keys")
+PROPERTY_KEYS_HEADING = re.compile(
+    r"^##\s*(?:\d+\.\s*)?Property-keys\s*$", re.MULTILINE)
 
 
 def allowed_property_keys(conventions_path) -> set:
-    """Parse backticked property keys from the conventions doc, from the
-    section under PROPERTY_KEYS_HEADING up to the next heading."""
+    """Parse property keys from the conventions doc: in the section under
+    the Property-keys heading, every bullet starting with a backticked key."""
     path = Path(conventions_path)
     if not path.exists():
         return set()
     text = path.read_text(encoding="utf-8")
-    if PROPERTY_KEYS_HEADING not in text:
+    match = PROPERTY_KEYS_HEADING.search(text)
+    if not match:
         return set()
-    section = text.split(PROPERTY_KEYS_HEADING, 1)[1]
-    section = re.split(r"\n## ", section, maxsplit=1)[0]
-    return set(re.findall(r"`([^`\n]+)`", section))
+    section = re.split(r"\n## ", text[match.end():], maxsplit=1)[0]
+    return set(re.findall(r"^- `([^`\n]+)`", section, flags=re.MULTILINE))
 
 
 def top_folder_of(model, node):
@@ -51,14 +53,27 @@ def validate(model, conventions_path=None) -> tuple[list, list]:
             errors.append(f"Dubbel id: {node_id}")
         index[node_id] = node
 
-    # 2. relationship endpoints exist
+    # 2. relationship endpoints exist and are valid concepts
     for rel in model.relationships():
         for attr in ("source", "target"):
             ref = rel.get(attr)
-            if ref not in index:
+            node = index.get(ref)
+            if node is None:
                 errors.append(
                     f"Relatie {rel.get('id')} ({xsi_type(rel)}): {attr} "
                     f"verwijst naar onbekend id {ref}")
+            elif is_diagram(node):
+                errors.append(
+                    f"Relatie {rel.get('id')} ({xsi_type(rel)}): {attr} "
+                    f"verwijst naar view {ref}; relaties kunnen geen views "
+                    "verbinden")
+            elif (is_relationship(node)
+                    and xsi_type(rel) != "AssociationRelationship"):
+                errors.append(
+                    f"Relatie {rel.get('id')} ({xsi_type(rel)}): {attr} "
+                    f"verwijst naar relatie {ref}; alleen een "
+                    "AssociationRelationship mag een relatie als eindpunt "
+                    "hebben")
 
     # 3. folder placement
     for node in model.root.iter("element"):
@@ -119,5 +134,11 @@ def validate(model, conventions_path=None) -> tuple[list, list]:
                     warnings.append(
                         f"Property-key '{key}' staat niet in de "
                         "conventielijst (docs/conventies.md)")
+        else:
+            # an empty list silently disables this check; say so loudly
+            warnings.append(
+                f"Geen property-keys gevonden in {conventions_path}: "
+                "de conventiecheck op property-keys staat hierdoor uit "
+                "(ontbreekt de sectie 'Property-keys'?)")
 
     return errors, warnings

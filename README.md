@@ -1,5 +1,8 @@
 # AI-assisted architecting
 
+[![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
+[![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](LICENSE)
+
 Experiment van Bureau Architectuur Digitale Overheid: een ArchiMate-model in
 het native Archi-formaat als bron van waarheid, bijgehouden met AI-assistentie
 en deterministische tooling. Het modelbestand opent direct in Archi, zonder
@@ -20,7 +23,8 @@ dezelfde controles:
   reviewbaar, wie of wat er ook geschreven heeft.
 - `just render` genereert uit elke view in het model een Mermaid-diagram
   (rendert op GitHub, in `views/`) en een NLDD-gestileerde HTML-pagina die de
-  layout uit het model pixelgetrouw volgt (`views/html/`).
+  layout uit het model pixelgetrouw volgt (`views/html/`), inclusief de
+  ArchiMate-notatie-iconen per elementtype, notes, groups en bendpoints.
 
 Pre-commit hooks dwingen validatie en verse renders af bij elke commit die
 het model raakt. De afweging achter deze opzet, inclusief wat we inleveren
@@ -103,12 +107,18 @@ of op naam, zolang die uniek is:
 ```bash
 uv run archi list --type Capability --property "Capability-niveau=gebied"
 uv run archi show "Gegevensuitwisseling"
+uv run archi tree
 uv run archi add-element --type Capability --name "..." \
     --property "Capability-niveau=bouwblok" --property "Omschrijving=..."
 uv run archi add-relation --type Aggregation \
     --source "Gegevensuitwisseling" --target "..." --name "bevat"
+uv run archi set-property "Gegevensuitwisseling" "Omschrijving=..."
+uv run archi rename "Oude naam" "Nieuwe naam"
+uv run archi set-documentation "Gegevensuitwisseling" "..."
+uv run archi remove "Gegevensuitwisseling" --cascade
 uv run archi add-view --name "..." --layout cluster \
     --type Capability --relation Aggregation
+uv run archi set-model-name "..."
 uv run archi --help
 ```
 
@@ -117,7 +127,9 @@ uv run archi --help
 Branch afsplitsen, wijzigen, `just validate`, `just normalize`, committen en
 een PR openen. De pre-commit hook rendert de views mee; verandert er iets in
 `views/`, dan faalt de commit een keer en stage je de verse renders erbij.
-De architect-eigenaar reviewt en merget.
+CI draait dezelfde checks (validatie, actuele renders, tests) op Ubuntu en
+Windows, dus een omzeilde hook strandt alsnog op de PR. De
+architect-eigenaar reviewt en merget.
 
 De belangrijkste afspraak: een schrijver tegelijk op het modelbestand. Een
 enkel XML-bestand merget slecht, dus parallelle branches met modelwijzigingen
@@ -136,3 +148,7 @@ Het seedmodel is de export van het ADO-niveau-1-model uit
 waar JSON de bron is en ArchiMate een exportformaat. Dit repo draait die
 verhouding om: het Archi-bestand is de bron, en al het andere wordt eruit
 gegenereerd.
+
+## Licentie
+
+[EUPL-1.2](LICENSE).

@@ -45,6 +45,16 @@ def slugify(name: str) -> str:
     return slug or "view"
 
 
+def is_descendant(node, ancestor) -> bool:
+    """True when ancestor contains node (via the lxml parent chain)."""
+    parent = node.getparent()
+    while parent is not None:
+        if parent is ancestor:
+            return True
+        parent = parent.getparent()
+    return False
+
+
 def escape_label(name: str) -> str:
     return (name or "(naamloos)").replace('"', "#quot;")
 
@@ -103,14 +113,6 @@ def render_view(model, diagram) -> str:
                 lines.append(f'{indent}{mermaid_id}["{label}"]')
 
     walk(diagram.findall("child"), 1)
-
-    def is_descendant(node, ancestor):
-        parent = node.getparent()
-        while parent is not None:
-            if parent is ancestor:
-                return True
-            parent = parent.getparent()
-        return False
 
     for conn in diagram.iter("sourceConnection"):
         source_id = mermaid_id_by_object.get(conn.get("source"))
