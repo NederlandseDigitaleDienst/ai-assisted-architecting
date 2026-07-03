@@ -78,3 +78,24 @@ def test_unknown_property_key_warns(model_path, capsys, tmp_path):
                          "id-el-alfa", "Vrije-key=x")
     assert status == 0
     assert "WAARSCHUWING: Property-key 'Vrije-key'" in output
+
+
+def test_tree_shows_nested_folders(model_path, capsys):
+    """Models organised in subfolders (Archi allows arbitrary nesting) must
+    show every folder and its elements, not just the top level."""
+    from lxml import etree
+
+    tree = etree.parse(str(model_path))
+    strategy = tree.getroot().find("folder[@name='Strategy']")
+    sub = etree.SubElement(strategy, "folder", {
+        "name": "Thema X", "id": "id-folder-thema-x"})
+    beta = strategy.find("element[@name='Bouwblok Beta']")
+    strategy.remove(beta)
+    sub.append(beta)
+    tree.write(str(model_path), encoding="utf-8", xml_declaration=True)
+
+    status, output = run(capsys, "--model", str(model_path), "tree")
+    assert status == 0
+    assert "Strategy (strategy): 1 item(s)" in output
+    assert "  Thema X: 1 item(s)" in output
+    assert "Bouwblok Beta" in output
