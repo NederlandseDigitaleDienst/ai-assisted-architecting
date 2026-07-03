@@ -116,13 +116,21 @@ def cmd_show(model, args):
 
 
 def cmd_tree(model, args):
-    for folder in model.root.findall("folder"):
+    def walk(folder, depth):
         children = folder.findall("element")
-        print(f"{folder.get('name')} ({folder.get('type')}): "
-              f"{len(children)} item(s)")
+        indent = "  " * depth
+        folder_type = folder.get("type")
+        label = (f"{folder.get('name')} ({folder_type})" if folder_type
+                 else folder.get("name"))
+        print(f"{indent}{label}: {len(children)} item(s)")
         for el in children:
             if is_element(el) or el.get("name"):
-                print(f"  {describe(model, el)}")
+                print(f"{indent}  {describe(model, el)}")
+        for sub in folder.findall("folder"):
+            walk(sub, depth + 1)
+
+    for folder in model.root.findall("folder"):
+        walk(folder, 0)
     return 0
 
 
