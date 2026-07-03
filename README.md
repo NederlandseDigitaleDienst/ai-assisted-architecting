@@ -23,7 +23,8 @@ dezelfde controles:
   reviewbaar, wie of wat er ook geschreven heeft.
 - `just render` genereert uit elke view in het model een Mermaid-diagram
   (rendert op GitHub, in `views/`) en een NLDD-gestileerde HTML-pagina die de
-  layout uit het model pixelgetrouw volgt (`views/html/`).
+  layout uit het model pixelgetrouw volgt (`views/html/`), inclusief de
+  ArchiMate-notatie-iconen per elementtype, notes, groups en bendpoints.
 
 Pre-commit hooks dwingen validatie en verse renders af bij elke commit die
 het model raakt. De afweging achter deze opzet, inclusief wat we inleveren

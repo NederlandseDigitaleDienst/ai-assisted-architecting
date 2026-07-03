@@ -117,7 +117,11 @@ geverifieerd op 2026-07-02.
 - `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
   toegankelijkheid en het ArchiMate-laagkleurenpalet (`LAYER_PALETTE`).
 - `render_html.py`: views naar NLDD-gestileerde HTML met de layout uit het
-  model. Let op: NLDD-primitives zijn zelf al `light-dark()`-paren, dus
+  model, inclusief de ArchiMate-notatie-iconen per elementtype
+  (`ICON_GLYPHS`, geometrie geport uit de Archi-broncode), notes, groups,
+  view-referenties en bendpoints. Niet gerenderd: SketchModel- en
+  CanvasModel-views, DiagramModelImage en custom kleuren/fonts uit Archi.
+  Let op: NLDD-primitives zijn zelf al `light-dark()`-paren, dus
   nooit dubbel wikkelen. Diagram-canvas is bewust altijd licht.
 - `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
   validatie.
