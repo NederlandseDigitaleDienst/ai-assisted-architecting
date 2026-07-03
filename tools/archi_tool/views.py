@@ -13,9 +13,11 @@ All selected relations between selected elements are drawn as connections.
 """
 from __future__ import annotations
 
+import math
+
 from lxml import etree
 
-from .model import XSI_TYPE, ModelError, new_id, xsi_type
+from .model import XSI_TYPE, ModelError, is_element, new_id, xsi_type
 
 NODE_W = 220
 NODE_H = 70
@@ -29,8 +31,50 @@ GRID_COLS = 5           # columns for the plain grid layout
 CLUSTER_RELATION_TYPES = {"Aggregation", "Composition"}
 
 
-def select(model, element_types=None, relation_types=None, prop=None):
-    elements = model.elements()
+def containment_closure(model, root_ref) -> set:
+    """Ids of the root element plus everything it aggregates or composes,
+    recursively."""
+    root = model.resolve(root_ref)
+    if not is_element(root):
+        raise ModelError(f"'{root_ref}' is geen element")
+    selected = {root.get("id")}
+    frontier = [root.get("id")]
+    while frontier:
+        current = frontier.pop(0)
+        for rel in model.relationships():
+            if (xsi_type(rel).removesuffix("Relationship")
+                    in CLUSTER_RELATION_TYPES
+                    and rel.get("source") == current
+                    and rel.get("target") not in selected):
+                selected.add(rel.get("target"))
+                frontier.append(rel.get("target"))
+    return selected
+
+
+def related_ids(model, ids) -> set:
+    """Ids of elements directly related (one hop, either direction) to the
+    given selection, excluding the selection itself."""
+    element_ids = {e.get("id") for e in model.elements()}
+    extra = set()
+    for rel in model.relationships():
+        src, tgt = rel.get("source"), rel.get("target")
+        if src in ids and tgt in element_ids and tgt not in ids:
+            extra.add(tgt)
+        elif tgt in ids and src in element_ids and src not in ids:
+            extra.add(src)
+    return extra
+
+
+def select(model, element_types=None, relation_types=None, prop=None,
+           root=None, related=False):
+    if root:
+        ids = containment_closure(model, root)
+        if related:
+            ids = ids | related_ids(model, ids)
+        # document order keeps the selection (and thus layout) deterministic
+        elements = [e for e in model.elements() if e.get("id") in ids]
+    else:
+        elements = model.elements()
     if element_types:
         elements = [e for e in elements if xsi_type(e) in element_types]
     if prop:
@@ -76,6 +120,10 @@ def cluster_positions(elements, relations):
     clusters = ([(h.get("id"), children[h.get("id")]) for h in heads]
                 + [(e.get("id"), []) for e in loose])
 
+    # wide canvases beat tall ones on screens and slides: grow the column
+    # count with the number of clusters instead of stacking them deep
+    n_cols = max(CLUSTER_COLS, math.ceil(math.sqrt(len(clusters) * 1.8)))
+
     sizes = []
     for _, kids in clusters:
         n = len(kids)
@@ -87,14 +135,14 @@ def cluster_positions(elements, relations):
                            (rows - 1) * NODE_GAP if n else 0)
         sizes.append((width, height, cols, grid_w))
 
-    n_rows = (len(clusters) + CLUSTER_COLS - 1) // CLUSTER_COLS
-    col_w = [0] * CLUSTER_COLS
+    n_rows = (len(clusters) + n_cols - 1) // n_cols
+    col_w = [0] * n_cols
     row_h = [0] * max(1, n_rows)
     for i, (width, height, _, _) in enumerate(sizes):
-        col_w[i % CLUSTER_COLS] = max(col_w[i % CLUSTER_COLS], width)
-        row_h[i // CLUSTER_COLS] = max(row_h[i // CLUSTER_COLS], height)
+        col_w[i % n_cols] = max(col_w[i % n_cols], width)
+        row_h[i // n_cols] = max(row_h[i // n_cols], height)
     col_x = [MARGIN]
-    for c in range(CLUSTER_COLS - 1):
+    for c in range(n_cols - 1):
         col_x.append(col_x[-1] + col_w[c] + MARGIN)
     row_y = [MARGIN]
     for r in range(n_rows - 1):
@@ -103,8 +151,8 @@ def cluster_positions(elements, relations):
     positions = {}
     for i, (head_id, kids) in enumerate(clusters):
         width, height, cols, grid_w = sizes[i]
-        x0 = col_x[i % CLUSTER_COLS]
-        y0 = row_y[i // CLUSTER_COLS]
+        x0 = col_x[i % n_cols]
+        y0 = row_y[i // n_cols]
         positions[head_id] = (x0 + (width - NODE_W) // 2, y0)
         kid_x0 = x0 + (width - grid_w) // 2
         for j, kid_id in enumerate(kids):
@@ -115,8 +163,9 @@ def cluster_positions(elements, relations):
 
 
 def add_view(model, name, layout="grid", element_types=None,
-             relation_types=None, prop=None):
-    elements, relations = select(model, element_types, relation_types, prop)
+             relation_types=None, prop=None, root=None, related=False):
+    elements, relations = select(model, element_types, relation_types, prop,
+                                 root=root, related=related)
     if not elements:
         raise ModelError("Selectie is leeg; geen view aangemaakt")
 

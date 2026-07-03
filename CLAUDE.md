@@ -16,7 +16,7 @@ committen in `adr/0002-views-als-mermaid-in-git.md`.
 ```bash
 just setup            # eenmalig: uv sync + pre-commit install
 just validate         # integriteitschecks (ook pre-commit hook)
-just render           # views naar Mermaid (views/) en NLDD-HTML (views/html/), ook pre-commit hook
+just render           # views naar Mermaid (views/) en NLDD-HTML (views/html/), decks naar slides (views/html/slides/), ook pre-commit hook
 just normalize        # canonieke serialisatie via headless Archi (~15 s)
 just stats            # aantallen per type, relaties en views
 just test             # pytest
@@ -27,6 +27,7 @@ just serve            # gerenderde HTML-views op http://localhost:8766
 uv run archi list|show|tree ...            # inspectie
 uv run archi add-element|add-relation|set-property|rename|set-documentation|remove ...
 uv run archi add-view --name ... --layout grid|cluster
+uv run archi slides [--deck decks/<naam>.toml]
 uv run archi set-model-name ...
 ```
 
@@ -76,11 +77,13 @@ geverifieerd op 2026-07-02.
 
 - **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen en
   `.bak`-bestanden zijn afgeleid en gitignored. Uitzondering: `views/` bevat
-  gegenereerde weergaven die wel gecommit worden (ADR 0002); nooit handmatig
-  bewerken, `just render` houdt ze synchroon.
+  gegenereerde weergaven die wel gecommit worden (ADR 0002, voor slides
+  ADR 0003); nooit handmatig bewerken, `just render` houdt ze synchroon.
+  Deckdefinities in `decks/*.toml` zijn bron (met de hand te bewerken); de
+  gerenderde slides in `views/html/slides/` zijn afgeleid en gecommit.
 - **Nooit handmatig XML bewerken** in het modelbestand. Alle mutaties via de
   `archi`-CLI, die valideert automatisch en weigert opslaan bij fouten. Voor
-  procedures: skills `archi-model` en `archi-view`.
+  procedures: skills `archi-model`, `archi-view` en `archi-slides`.
 - Ids (`id-<uuid4>`) zijn onveranderlijk; de tooling genereert nieuwe.
 - Vóór elke commit die het model raakt: `just validate`, `just normalize` en
   `just render`. De pre-commit hooks dwingen validate, render en pytest af
@@ -113,7 +116,10 @@ geverifieerd op 2026-07-02.
   env var `ARCHI_APP`, anders het eerste bestaande pad uit `ARCHI_CANDIDATES`
   (macOS, Windows machine- en user-scope, Linux).
 - `views.py`: view-generatie met grid- of cluster-layout (geport uit het
-  ADO-exportscript).
+  ADO-exportscript). `--root` selecteert een element plus zijn
+  aggregatie/compositie-closure, `--related` voegt direct gerelateerde
+  elementen toe (detailviews per gebied); het kolomaantal van de
+  cluster-layout groeit mee met het aantal clusters.
 - `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
   toegankelijkheid en het ArchiMate-laagkleurenpalet (`LAYER_PALETTE`).
 - `render_html.py`: views naar NLDD-gestileerde HTML met de layout uit het
@@ -123,6 +129,17 @@ geverifieerd op 2026-07-02.
   CanvasModel-views, DiagramModelImage en custom kleuren/fonts uit Archi.
   Let op: NLDD-primitives zijn zelf al `light-dark()`-paren, dus
   nooit dubbel wikkelen. Diagram-canvas is bewust altijd licht.
+  `diagram_canvas()` en `DIAGRAM_CSS` worden gedeeld met de slide-renderer.
+- `render_slides.py`: decks (`decks/*.toml`, stdlib-`tomllib`) naar
+  zelfstandige HTML-presentaties in `views/html/slides/`: één lineair
+  verhaal per deck, geen overzichts- of menumechanismen. Slidetypes:
+  title, section, view, text, bullets, closing. Deterministisch: de
+  optionele datum op de titelslide is deckdata (letterlijk weergegeven),
+  geen timestamps of absolute paden in de output. View-slides tekenen het
+  echte diagram op een witte kaart binnen de Rijksblauwe slide
+  (markerprefix `s<n>-` tegen dubbele SVG-ids, `ref_base="../"` voor
+  view-referenties); een `focus`-veld zoomt de camera op één element en
+  dimt de rest (rect server-side berekend, animatie client-side).
 - `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
   validatie.
 
