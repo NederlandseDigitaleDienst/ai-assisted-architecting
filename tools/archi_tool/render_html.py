@@ -374,10 +374,8 @@ def layer_css() -> str:
     return "\n".join(rules)
 
 
-PAGE_CSS = """
-    /* NLDD primitives are light-dark() pairs themselves: use a single token
-       and it follows the color scheme — never wrap them in light-dark(). */
-    .doc { max-width: 72ch; color: var(--primitives-color-neutral-700); }
+# shared between the view pages and the slide decks (render_slides.py)
+DIAGRAM_CSS = """\
     /* the diagram canvas is always light, like an image: the ArchiMate
        palette is designed for a light surface */
     .diagram-wrap { overflow-x: auto; border-radius: 12px;
@@ -419,6 +417,13 @@ PAGE_CSS = """
     .legend-item svg { flex: none; }
     .swatch { width: 12px; height: 12px; border-radius: 3px;
       border: 1px solid; display: inline-block; flex: none; }
+"""
+
+PAGE_CSS = """
+    /* NLDD primitives are light-dark() pairs themselves: use a single token
+       and it follows the color scheme — never wrap them in light-dark(). */
+    .doc { max-width: 72ch; color: var(--primitives-color-neutral-700); }
+""" + DIAGRAM_CSS + """\
     .card-link { text-decoration: none; color: inherit; display: block;
       height: 100%; }
     /* thumbnails mirror the diagram canvas: always light */
@@ -459,7 +464,14 @@ def page_shell(title: str, body: str) -> str:
 """
 
 
-def render_view_html(model, diagram) -> str:
+def diagram_canvas(model, diagram, marker_prefix: str = "",
+                   ref_base: str = "") -> dict:
+    """Edge SVG and positioned box divs for one diagram, plus metadata.
+
+    marker_prefix keeps the SVG marker ids unique when several diagrams
+    share one document (the slide decks embed many); ref_base prefixes the
+    links of view-reference boxes so they resolve from other directories.
+    """
     index = model.id_index()
     boxes = absolute_boxes(diagram, index)
     box_by_object_id = {b["id"]: b for b in boxes}
@@ -471,10 +483,12 @@ def render_view_html(model, diagram) -> str:
     svg = [f'<svg width="{width}" height="{height}" '
            f'viewBox="0 0 {width} {height}">',
            '<defs>',
-           '<marker id="arrow" markerWidth="10" markerHeight="8" refX="9" '
+           f'<marker id="{marker_prefix}arrow" markerWidth="10" '
+           'markerHeight="8" refX="9" '
            'refY="4" orient="auto" markerUnits="userSpaceOnUse">'
            '<path d="M0,0 L10,4 L0,8 z" fill="#5b5b66"/></marker>',
-           '<marker id="diamond" markerWidth="14" markerHeight="8" refX="1" '
+           f'<marker id="{marker_prefix}diamond" markerWidth="14" '
+           'markerHeight="8" refX="1" '
            'refY="4" orient="auto" markerUnits="userSpaceOnUse">'
            '<path d="M1,4 L7,0.5 L13,4 L7,7.5 z" fill="#ffffff" '
            'stroke="#5b5b66"/></marker>',
@@ -485,9 +499,9 @@ def render_view_html(model, diagram) -> str:
         if edge["note_link"]:
             markers = ""
         elif edge["containment"]:
-            markers = ' marker-start="url(#diamond)"'
+            markers = f' marker-start="url(#{marker_prefix}diamond)"'
         else:
-            markers = ' marker-end="url(#arrow)"'
+            markers = f' marker-end="url(#{marker_prefix}arrow)"'
         points = " ".join(f"{x:.1f},{y:.1f}" for x, y in edge["points"])
         svg.append(
             f'<polyline class="{classes}" points="{points}" '
@@ -521,12 +535,19 @@ def render_view_html(model, diagram) -> str:
         else:  # reference to another view
             ref = index.get(box["node"].get("model") or "")
             ref_name = (ref.get("name") or "") if ref is not None else ""
-            href = slugify(ref_name or "view") + ".html"
+            href = ref_base + slugify(ref_name or "view") + ".html"
             divs.append(
                 f'<div class="box ref" style="{style}">'
                 f'{VIEW_REF_ICON}<a href="{href}">'
                 f'{html.escape(ref_name or "(view)")}</a></div>')
 
+    return {"svg": "".join(svg), "divs": "".join(divs),
+            "width": width, "height": height,
+            "boxes": boxes, "edges": edges}
+
+
+def render_view_html(model, diagram) -> str:
+    canvas = diagram_canvas(model, diagram)
     name = diagram.get("name") or "(naamloze view)"
     documentation = model.documentation(diagram)
     doc_html = (f"      <p class=\"doc\">{html.escape(documentation)}</p>\n"
@@ -540,14 +561,15 @@ def render_view_html(model, diagram) -> str:
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <div class="diagram-wrap">\n'
         f'        <div class="diagram" '
-        f'style="width:{width}px;height:{height}px">\n'
-        f'          {"".join(svg)}\n'
-        f'          {"".join(divs)}\n'
+        f'style="width:{canvas["width"]}px;height:{canvas["height"]}px">\n'
+        f'          {canvas["svg"]}\n'
+        f'          {canvas["divs"]}\n'
         f'        </div>\n'
-        f'        {legend_html(boxes, edges)}\n'
+        f'        {legend_html(canvas["boxes"], canvas["edges"])}\n'
         f'      </div>\n'
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
-        f'      <p class="meta">{len(boxes)} elementen, {len(edges)} '
+        f'      <p class="meta">{len(canvas["boxes"])} elementen, '
+        f'{len(canvas["edges"])} '
         f'getekende verbindingen · gegenereerd uit '
         f'<code>{html.escape(Path(model.path).as_posix())}</code></p>')
     return page_shell(name, body)
