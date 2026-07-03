@@ -25,25 +25,32 @@ dezelfde controles:
   (rendert op GitHub, in `views/`) en een NLDD-gestileerde HTML-pagina die de
   layout uit het model pixelgetrouw volgt (`views/html/`), inclusief de
   ArchiMate-notatie-iconen per elementtype, notes, groups en bendpoints.
+  Daarnaast rendert het uit elke deckdefinitie in `decks/` een presentatie
+  (`views/html/slides/`): zelfstandige HTML-slides in Rijkshuisstijl, met de
+  views uit het model als diagrammen. Zonder deckdefinitie is er altijd het
+  automatische deck `alle-views.html`.
 
 Pre-commit hooks dwingen validatie en verse renders af bij elke commit die
 het model raakt. De afweging achter deze opzet, inclusief wat we inleveren
 ten opzichte van de JSON-aanpak in het zusterexperiment, staat in
 `adr/0001-archimate-als-bron.md`; het besluit om gegenereerde renders wel te
-committen staat in `adr/0002-views-als-mermaid-in-git.md`.
+committen staat in `adr/0002-views-als-mermaid-in-git.md`, dat voor de
+slidedecks in `adr/0003-slidedecks-als-toml-in-git.md`.
 
 ## Structuur
 
 ```
 models/ado.archimate         Het model, de bron van waarheid
+decks/                       Deckdefinities voor presentaties (TOML)
 views/                       Gerenderde views als Mermaid (.md, rendert op GitHub)
 views/html/                  Dezelfde views als NLDD-HTML, lokaal te bekijken
+views/html/slides/           Gerenderde slidedecks (één HTML per deck)
 docs/conventies.md           Types, property-keys en naamgeving
 docs/spelregels.md           Rollen, workflow en de een-schrijver-afspraak
 adr/                         Architectuurbeslissingen
 tools/archi_tool/            De archi-CLI (Python, lxml; beheerd met uv)
 tests/                       pytest-suite met een klein fixture-model
-.claude/skills/              Procedures voor AI-sessies (archi-model, archi-view)
+.claude/skills/              Procedures voor AI-sessies (archi-model, archi-view, archi-slides)
 justfile                     Vaste taken
 ```
 
@@ -93,7 +100,7 @@ Alle vaste taken:
 |---|---|
 | `just setup` | venv, dependencies en pre-commit hooks installeren |
 | `just validate` | integriteitschecks (draait ook als pre-commit hook) |
-| `just render` | views renderen naar `views/` en `views/html/` (ook hook) |
+| `just render` | views en decks renderen naar `views/` en `views/html/` (ook hook) |
 | `just normalize` | canonieke serialisatie via headless Archi, duurt zo'n 15 s |
 | `just stats` | telling per elementtype, relaties en views |
 | `just test` | pytest-suite |
@@ -118,6 +125,7 @@ uv run archi set-documentation "Gegevensuitwisseling" "..."
 uv run archi remove "Gegevensuitwisseling" --cascade
 uv run archi add-view --name "..." --layout cluster \
     --type Capability --relation Aggregation
+uv run archi slides --deck decks/ado.toml
 uv run archi set-model-name "..."
 uv run archi --help
 ```
@@ -138,8 +146,9 @@ Details en rollen staan in `docs/spelregels.md`; de modelconventies (welke
 types, welke property-keys, Nederlandse naamgeving) in `docs/conventies.md`.
 
 Werk je met Claude Code, dan wordt `CLAUDE.md` automatisch geladen en
-triggeren de skills `archi-model` (modelwijzigingen doorvoeren) en
-`archi-view` (views genereren) zodra je erom vraagt.
+triggeren de skills `archi-model` (modelwijzigingen doorvoeren), `archi-view`
+(views genereren) en `archi-slides` (presentaties maken) zodra je erom
+vraagt.
 
 ## Herkomst
 

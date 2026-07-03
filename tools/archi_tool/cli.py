@@ -16,8 +16,9 @@ from lxml import etree
 
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
-from .render import render_all
+from .render import render_all, write_if_changed
 from .render_html import render_all_html
+from .render_slides import load_deck, render_all_slides, render_deck_html
 from .validate import validate
 from .views import add_view
 
@@ -228,12 +229,39 @@ def cmd_normalize(model, args):
 def cmd_render(model, args):
     written, removed = render_all(model, args.out)
     html_written, html_removed = render_all_html(model, Path(args.out) / "html")
-    for path in written + html_written:
+    deck_written, deck_removed = render_all_slides(
+        model, Path(args.decks), Path(args.out) / "html" / "slides")
+    for path in written + html_written + deck_written:
         print(f"Geschreven: {path}")
     for path in removed + html_removed:
         print(f"Verwijderd (view bestaat niet meer): {path}")
-    if not (written or removed or html_written or html_removed):
+    for path in deck_removed:
+        print(f"Verwijderd (deck bestaat niet meer): {path}")
+    if not (written or removed or html_written or html_removed
+            or deck_written or deck_removed):
         print("Views zijn al actueel.")
+    return 0
+
+
+def cmd_slides(model, args):
+    if args.deck:
+        written = []
+        for deck_path in args.deck:
+            deck = load_deck(Path(deck_path), model)
+            path = Path(args.out) / f"{deck['slug']}.html"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if write_if_changed(path, render_deck_html(model, deck)):
+                written.append(path)
+        removed = []
+    else:
+        written, removed = render_all_slides(
+            model, Path(args.decks), Path(args.out), auto=not args.no_auto)
+    for path in written:
+        print(f"Geschreven: {path}")
+    for path in removed:
+        print(f"Verwijderd (deck bestaat niet meer): {path}")
+    if not (written or removed):
+        print("Slides zijn al actueel.")
     return 0
 
 
@@ -307,9 +335,28 @@ def build_parser():
     p.add_argument("name", help="nieuwe modelnaam")
 
     p = sub.add_parser("render",
-                       help="views renderen naar Mermaid-markdown (views/)")
+                       help="views renderen naar Mermaid-markdown (views/), "
+                            "NLDD-HTML (views/html/) en slidedecks "
+                            "(views/html/slides/)")
     p.add_argument("--out", default="views",
                    help="doelmap voor de markdown-bestanden (default: views)")
+    p.add_argument("--decks", default="decks",
+                   help="map met deckdefinities in TOML (default: decks)")
+
+    p = sub.add_parser("slides",
+                       help="slidedecks renderen naar zelfstandige HTML "
+                            "(views/html/slides/)")
+    p.add_argument("--deck", action="append",
+                   help="specifiek deckbestand (.toml); herhaalbaar; "
+                        "default: alle decks in de decks-map plus het "
+                        "automatische deck")
+    p.add_argument("--decks", default="decks",
+                   help="map met deckdefinities in TOML (default: decks)")
+    p.add_argument("--out", default="views/html/slides",
+                   help="doelmap voor de HTML-bestanden "
+                        "(default: views/html/slides)")
+    p.add_argument("--no-auto", action="store_true",
+                   help="het automatische deck 'alle-views' overslaan")
 
     p = sub.add_parser("add-view", help="view genereren met berekende layout")
     p.add_argument("--name", required=True, help="naam van de nieuwe view")
@@ -339,6 +386,7 @@ COMMANDS = {
     "set-model-name": cmd_set_model_name,
     "add-view": cmd_add_view,
     "render": cmd_render,
+    "slides": cmd_slides,
 }
 
 

@@ -15,7 +15,8 @@ setup:
 validate:
     uv run archi validate
 
-# Views renderen naar Mermaid (views/) en NLDD-HTML (views/html/)
+# Views renderen naar Mermaid (views/) en NLDD-HTML (views/html/),
+# decks naar slides (views/html/slides/)
 render:
     uv run archi render
 
@@ -35,6 +36,6 @@ test:
 open:
     {{ if os() == "macos" { "open" } else if os() == "windows" { "Start-Process" } else { "xdg-open" } }} models/ado.archimate
 
-# Gerenderde HTML-views lokaal serveren op http://localhost:8766
+# Gerenderde HTML-views en slides lokaal serveren op http://localhost:8766
 serve:
     uv run python -m http.server 8766 --directory views/html

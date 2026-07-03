@@ -10,12 +10,12 @@ repos:
         files: ^(models/.*\.archimate$|docs/conventies\.md$|tools/archi_tool/)
         pass_filenames: false
       - id: archi-render
-        name: archi render (views naar Mermaid en HTML)
+        name: archi render (views naar Mermaid en HTML, decks naar slides)
         entry: uv run archi render
         language: system
-        # ook bij tooling-wijzigingen: een aangepaste renderer moet de
-        # gecommitte views meteen bijwerken, anders raken ze verouderd
-        files: ^(models/.*\.archimate$|tools/archi_tool/)
+        # ook bij tooling- en deckwijzigingen: een aangepaste renderer of
+        # deckdefinitie moet de gecommitte output meteen bijwerken
+        files: ^(models/.*\.archimate$|tools/archi_tool/|decks/)
         pass_filenames: false
       - id: pytest
         name: pytest (archi_tool)
