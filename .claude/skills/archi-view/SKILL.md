@@ -5,6 +5,11 @@ description: Genereer of verwijder een view (diagram) in het .archimate-model me
 
 # Views genereren in het .archimate-model
 
+Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
+Werk je binnen deze repo, dan kan dat ook via `uv run archi ...` en lopen de
+vaste stappen via `just` (`just validate`, `just normalize`, `just render`,
+`just serve`).
+
 Views worden onderdeel van het modelbestand zelf. Ze zijn daarna op drie
 plekken zichtbaar: in Archi (Models-boom, map Views), als Mermaid op GitHub
 (`views/<slug>.md`) en als NLDD-HTML (`views/html/<slug>.html`, bekijken met
@@ -14,7 +19,7 @@ automatisch bijgewerkt.
 ## Genereren
 
 ```bash
-uv run archi add-view --name "<naam>" --layout <grid|cluster> \
+archi add-view --name "<naam>" --layout <grid|cluster> \
     [--type Capability ...] [--relation Aggregation ...] [--property key=value] \
     [--root "<element>"] [--related] [--element "<element>" ...]
 ```
@@ -22,14 +27,14 @@ uv run archi add-view --name "<naam>" --layout <grid|cluster> \
 Voorbeeld, een brede selectieview:
 
 ```bash
-uv run archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken" \
+archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken" \
     --layout cluster --type Capability --relation Aggregation
 ```
 
 Voorbeeld, een detailview van één gebied met alles eromheen:
 
 ```bash
-uv run archi add-view --name "Gegevensuitwisseling in detail" \
+archi add-view --name "Gegevensuitwisseling in detail" \
     --layout cluster --root "Gegevensuitwisseling" --related
 ```
 
@@ -58,9 +63,9 @@ selectie geeft een foutmelding in plaats van een lege view.
 
 ## Na het genereren
 
-1. `just validate` (draait ook automatisch bij het opslaan door de CLI).
-2. `just normalize` vóór commit.
-3. `just render`, zodat de nieuwe view ook in `views/` en `views/html/`
+1. `archi validate` (draait ook automatisch bij het opslaan door de CLI).
+2. `archi normalize` vóór commit.
+3. `archi render`, zodat de nieuwe view ook in `views/` en `views/html/`
    staat; de pre-commit hook dwingt dit af en de renders committen mee.
 4. Layout fijnslijpen kan daarna in de Archi-GUI. Het bestand is de bron,
    dus zo'n aanpassing is een gewone modelwijziging: opnieuw normaliseren,
@@ -69,10 +74,10 @@ selectie geeft een foutmelding in plaats van een lege view.
 ## Verwijderen
 
 ```bash
-uv run archi remove "<viewnaam of id>"
+archi remove "<viewnaam of id>"
 ```
 
 Een view heeft zelden inkomende verwijzingen, dus dit kan meestal zonder
-`--cascade`. Daarna `just render`: de bijbehorende bestanden in `views/`
+`--cascade`. Daarna `archi render`: de bijbehorende bestanden in `views/`
 worden opgeruimd (alleen bestanden met het generatie-markercommentaar; iets
 wat een mens daar zelf heeft neergezet blijft staan).

@@ -67,7 +67,8 @@ docs/spelregels.md           Rollen, workflow en de een-schrijver-afspraak
 adr/                         Architectuurbeslissingen
 tools/archi_tool/            De archi-CLI (Python, lxml; beheerd met uv)
 tests/                       pytest-suite met een klein fixture-model
-.claude/skills/              Procedures voor AI-sessies (archi-model, archi-view, archi-slides)
+.claude/skills/              Claude Code skills (archi-model, archi-view, archi-slides)
+.claude-plugin/              Plugin- en marketplace-manifest
 justfile                     Vaste taken
 ```
 
@@ -179,6 +180,21 @@ Werk je met Claude Code, dan wordt `CLAUDE.md` automatisch geladen en
 triggeren de skills `archi-model` (modelwijzigingen doorvoeren), `archi-view`
 (views genereren) en `archi-slides` (presentaties maken) zodra je erom
 vraagt.
+
+## Als Claude Code plugin
+
+De skills zijn ook los te installeren, zodat je ze in een ander project met
+je eigen `.archimate`-model kunt gebruiken. De repo is tegelijk een plugin
+(`archi-tools`) en de marketplace die hem aanbiedt (`ado-plugins`):
+
+```
+/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
+/plugin install archi-tools@ado-plugins
+```
+
+De plugin brengt de drie skills mee; het `archi`-commando zelf installeer je
+met `uv tool install archi-cli`. De achtergrond staat in
+`adr/0007-claude-code-plugin.md`.
 
 ## Herkomst
 

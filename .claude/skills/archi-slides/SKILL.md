@@ -5,6 +5,10 @@ description: Genereer NLDD-gestileerde HTML-slidedecks uit het .archimate-model 
 
 # Slidedecks genereren uit het .archimate-model
 
+Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
+Werk je binnen deze repo, dan kan dat ook via `uv run archi ...` en lopen de
+vaste stappen via `just` (`just render`, `just serve`).
+
 Een deck is een TOML-bestand in `decks/` met één lineaire verhaallijn:
 titel, secties, views uit het model, afgewisseld met tekst en bullets. De
 architectuurbeelden komen bij het renderen rechtstreeks uit het model.
@@ -80,8 +84,8 @@ Toegestane sleutels per type (alles daarbuiten is een harde fout):
 
 ```bash
 just render                          # alles: views, HTML én decks
-uv run archi slides                  # alleen de decks
-uv run archi slides --deck decks/ado.toml   # één deck, zonder opruiming
+archi slides                  # alleen de decks
+archi slides --deck decks/ado.toml   # één deck, zonder opruiming
 ```
 
 Een deck dat naar een niet-bestaande view verwijst laat het renderen falen
@@ -90,7 +94,7 @@ noemt de containers in de view.
 
 Een sterke verhaallijn is: overzichtsview → `focus`-slide op één gebied →
 detailview van dat gebied. Detailviews genereer je met
-`uv run archi add-view --layout cluster --root "<gebied>" --related`
+`archi add-view --layout cluster --root "<gebied>" --related`
 (zie de skill archi-view).
 
 ## In de browser

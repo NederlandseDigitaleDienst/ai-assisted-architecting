@@ -1,0 +1,14 @@
+{
+  "name": "ado-plugins",
+  "owner": {
+    "name": "Bureau Architectuur Digitale Overheid"
+  },
+  "description": "Plugins voor het werken met native .archimate-modellen",
+  "plugins": [
+    {
+      "name": "archi-tools",
+      "source": "./",
+      "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI"
+    }
+  ]
+}

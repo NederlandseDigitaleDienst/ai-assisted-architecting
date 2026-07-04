@@ -5,6 +5,11 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
 
 # Werken aan het .archimate-model
 
+Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
+De commando's hieronder gebruiken `archi`. Werk je binnen deze repo, dan kan
+dat ook via `uv run archi ...`, en lopen de vaste stappen via `just` (`just
+validate`, `just normalize`, `just render`).
+
 ## Leesvolgorde
 
 1. `docs/conventies.md`: types in gebruik, property-keys, naamgeving
@@ -12,9 +17,9 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
 
 ## Harde regels
 
-- **Nooit handmatig XML bewerken** in `models/ado.archimate`; alle mutaties
-  via `uv run archi ...`. De CLI valideert automatisch en weigert op te slaan
-  bij integriteitsfouten.
+- **Nooit handmatig XML bewerken** in het modelbestand; alle mutaties via
+  `archi ...`. De CLI valideert automatisch en weigert op te slaan bij
+  integriteitsfouten.
 - Bestaande ids nooit wijzigen; nieuwe ids genereert de tooling.
 - Nieuwe property-keys eerst toevoegen aan `docs/conventies.md` §3, anders
   waarschuwt de validator. Nieuwe elementtypes of structurele keuzes krijgen
@@ -29,31 +34,31 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
    model-PR openstaat: een schrijver tegelijk.
 2. Kijk eerst wat er staat:
    ```bash
-   just stats
-   uv run archi list --type Capability --property "Capability-niveau=gebied"
-   uv run archi show "Gegevensuitwisseling"    # id of unieke naam
-   uv run archi tree
+   archi stats
+   archi list --type Capability --property "Capability-niveau=gebied"
+   archi show "Gegevensuitwisseling"    # id of unieke naam
+   archi tree
    ```
 3. Wijzig via de CLI. Elementen en relaties zijn aanspreekbaar op id of op
    naam zolang die uniek is; bij een dubbele naam somt de CLI de kandidaten
    op en gebruik je het id.
    ```bash
-   uv run archi add-element --type Capability --name "..." \
+   archi add-element --type Capability --name "..." \
        --property "Capability-niveau=bouwblok" --property "Omschrijving=..."
-   uv run archi add-relation --type Aggregation \
+   archi add-relation --type Aggregation \
        --source "<gebied>" --target "<bouwblok>" --name "bevat"
-   uv run archi set-property <ref> "Omschrijving=..."
-   uv run archi rename <ref> "Nieuwe naam"
-   uv run archi set-documentation <ref> "..."
-   uv run archi remove <ref>              # --cascade indien nodig, zie onder
+   archi set-property <ref> "Omschrijving=..."
+   archi rename <ref> "Nieuwe naam"
+   archi set-documentation <ref> "..."
+   archi remove <ref>              # --cascade indien nodig, zie onder
    ```
    `add-element` plaatst het element in de folder die uit het type volgt;
    `--folder <type>` overschrijft dat alleen als je een bewuste reden hebt.
-4. `just validate`. Moet schoon zijn; waarschuwingen over property-keys los
+4. `archi validate`. Moet schoon zijn; waarschuwingen over property-keys los
    je op in de conventielijst of door de key aan te passen.
-5. `just normalize`. Verplicht vóór commit: Archi serialiseert canoniek en
+5. `archi normalize`. Verplicht vóór commit: Archi serialiseert canoniek en
    houdt de diff klein. Duurt ongeveer 15 seconden (headless Archi).
-6. `just render`. Ververst `views/` en `views/html/`; de gerenderde
+6. `archi render`. Ververst `views/` en `views/html/`; de gerenderde
    bestanden committen mee.
 7. Commit (semantisch, Nederlands), push, PR openen. De architect-eigenaar
    reviewt en merget.
@@ -73,6 +78,6 @@ de view-objecten en hun connections, inclusief het opschonen van
 ## Als iemand in de Archi-GUI heeft gewerkt
 
 Dat is toegestaan; het bestand is de bron. Draai daarna wel de volledige rij:
-`just validate`, `just normalize`, `just render`, en commit het geheel.
+`archi validate`, `archi normalize`, `archi render`, en commit het geheel.
 Validate wijst eventuele hangende verwijzingen aan die de GUI-bewerking
 heeft achtergelaten.
