@@ -1,6 +1,6 @@
 [project]
 name = "archi-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "ar·cli·mate — de CLI in je ArchiMate: deterministisch native .archimate-modellen inspecteren, muteren, valideren en renderen"
 readme = "README.md"
 license = "EUPL-1.2"
