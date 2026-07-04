@@ -51,7 +51,8 @@ bestand; architecten openen hetzelfde bestand in Archi zonder import.
 ## Gevolgen
 
 - Het seedmodel is de ADO-export van 2026-07-02 (123 elementen, 222 relaties,
-  2 views), hernoemd naar "ADO Architectuurmodel".
+  2 views bij het seedmoment), hernoemd naar "ADO Architectuurmodel". Het
+  model groeit daarna door; de actuele telling toont `just stats`.
 - Validatie draait automatisch bij elke CLI-mutatie en als pre-commit hook.
 - Schemabeslissingen (nieuwe elementtypes, nieuwe property-keys) worden
   vastgelegd in `docs/conventies.md`; structurele beslissingen in nieuwe ADR's.

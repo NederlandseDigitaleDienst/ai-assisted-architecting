@@ -15,8 +15,7 @@ setup:
 validate:
     uv run archi validate
 
-# Views renderen naar Mermaid (views/) en NLDD-HTML (views/html/),
-# decks naar slides (views/html/slides/)
+# Views naar Mermaid en NLDD-HTML, decks naar slides
 render:
     uv run archi render
 
@@ -27,6 +26,18 @@ normalize:
 # Aantallen per type, relaties en views
 stats:
     uv run archi stats
+
+# Folderstructuur van het model met inhoud
+tree:
+    uv run archi tree
+
+# Elementen tonen, optioneel gefilterd: `just list --type Capability`
+list *args:
+    uv run archi list {{ args }}
+
+# Eén element met properties en relaties: `just show "Gegevensuitwisseling"`
+show *args:
+    uv run archi show {{ args }}
 
 # Testsuite
 test:

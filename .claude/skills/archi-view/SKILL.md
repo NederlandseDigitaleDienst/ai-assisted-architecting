@@ -16,7 +16,7 @@ automatisch bijgewerkt.
 ```bash
 uv run archi add-view --name "<naam>" --layout <grid|cluster> \
     [--type Capability ...] [--relation Aggregation ...] [--property key=value] \
-    [--root "<element>"] [--related]
+    [--root "<element>"] [--related] [--element "<element>" ...]
 ```
 
 Voorbeeld, een brede selectieview:
@@ -49,9 +49,12 @@ uv run archi add-view --name "Gegevensuitwisseling in detail" \
 een property-waarde. `--root "<element>"` selecteert dat element plus alles
 wat het (recursief) aggregeert of composeert; `--related` voegt daar de
 direct gerelateerde elementen aan toe (één stap, beide richtingen), zoals de
-doelen en diensten rond een gebied. Zonder filters gaat het hele model de
-view in, en dat is vrijwel nooit de bedoeling. Een lege selectie geeft een
-foutmelding in plaats van een lege view.
+doelen en diensten rond een gebied. `--element "<id of unieke naam>"`
+(herhaalbaar) voegt een specifiek element aan de selectie toe, naast of in
+plaats van de filters; handig als je een handjevol elementen bij naam wilt
+tonen zonder een type- of property-filter te bedenken. Zonder filters gaat
+het hele model de view in, en dat is vrijwel nooit de bedoeling. Een lege
+selectie geeft een foutmelding in plaats van een lege view.
 
 ## Na het genereren
 

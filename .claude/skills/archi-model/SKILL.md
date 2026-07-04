@@ -46,6 +46,8 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
    uv run archi set-documentation <ref> "..."
    uv run archi remove <ref>              # --cascade indien nodig, zie onder
    ```
+   `add-element` plaatst het element in de folder die uit het type volgt;
+   `--folder <type>` overschrijft dat alleen als je een bewuste reden hebt.
 4. `just validate`. Moet schoon zijn; waarschuwingen over property-keys los
    je op in de conventielijst of door de key aan te passen.
 5. `just normalize`. Verplicht vóór commit: Archi serialiseert canoniek en

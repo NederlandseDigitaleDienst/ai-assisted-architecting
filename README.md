@@ -103,6 +103,9 @@ Alle vaste taken:
 | `just render` | views en decks renderen naar `views/` en `views/html/` (ook hook) |
 | `just normalize` | canonieke serialisatie via headless Archi, duurt zo'n 15 s |
 | `just stats` | telling per elementtype, relaties en views |
+| `just tree` | folderstructuur van het model met inhoud |
+| `just list *args` | elementen tonen, bv. `just list --type Capability` |
+| `just show *args` | één element met properties en relaties, bv. `just show "Gegevensuitwisseling"` |
 | `just test` | pytest-suite |
 | `just open` | model openen in Archi |
 | `just serve` | HTML-views serveren op http://localhost:8766 |
@@ -127,10 +130,18 @@ uv run archi add-view --name "..." --layout cluster \
     --type Capability --relation Aggregation
 uv run archi add-view --name "... in detail" --layout cluster \
     --root "Gegevensuitwisseling" --related
+uv run archi add-view --name "Losse selectie" --layout grid \
+    --element "Gegevensuitwisseling" --element "Kunstmatige Intelligentie"
 uv run archi slides --deck decks/ado.toml
 uv run archi set-model-name "..."
 uv run archi --help
 ```
+
+Elk commando heeft nog wat minder gebruikte vlaggen: `add-element --folder`
+overschrijft de folder-plaatsing (default volgt uit het type), `add-view
+--element` voegt losse elementen aan een selectie toe (zie hierboven), en
+`slides` accepteert `--deck`, `--decks` en `--out` om gericht te renderen. De
+volledige set toont `uv run archi <commando> --help`.
 
 ## Werkwijze
 
