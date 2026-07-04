@@ -1,0 +1,56 @@
+# Echte end-to-end test van de engine-download: haalt de Archi-distributie op
+# (of gebruikt de cache) en draait een echte `normalize` op alle drie de
+# platforms. Bewust géén onderdeel van de PR-CI: het downloadt ~177 MB en is
+# alleen nodig als een nieuwe Archi-release de download-URL of de layout kan
+# breken. Draait wekelijks en handmatig.
+name: engine-e2e
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # maandag 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  engine-e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.2.0
+      - run: uv sync
+
+      # De engine landt in deze map; cache hem op de gepinde Archi-versie zodat
+      # een version bump verse download forceert en tussenruns de cache delen.
+      - name: Archi-versie bepalen
+        id: archi
+        shell: bash
+        run: |
+          version=$(uv run python -c "from archi_tool.engine import ARCHI_VERSION; print(ARCHI_VERSION)")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Engine-cache
+        uses: actions/cache@v4
+        with:
+          path: engine-cache
+          key: archi-engine-${{ matrix.os }}-${{ steps.archi.outputs.version }}
+
+      - name: Engine ophalen (of uit cache) en normalize draaien
+        shell: bash
+        env:
+          ARCHI_CACHE: engine-cache
+        run: |
+          uv run archi setup
+          cp tests/fixtures/klein-model.archimate e2e-model.archimate
+          # Archi's CLI vereist op headless Linux een virtueel scherm (xvfb);
+          # macOS en Windows hebben dat niet nodig. --model is globaal en staat
+          # vóór het subcommando.
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libswt-gtk-4-java >/dev/null 2>&1 || sudo apt-get install -y -qq xvfb
+            xvfb-run -a uv run archi --model e2e-model.archimate normalize
+          else
+            uv run archi --model e2e-model.archimate normalize
+          fi
+          echo "normalize geslaagd op ${{ matrix.os }}"

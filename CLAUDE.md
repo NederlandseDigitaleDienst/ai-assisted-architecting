@@ -29,6 +29,7 @@ uv run archi add-element|add-relation|set-property|rename|set-documentation|remo
 uv run archi add-view --name ... --layout grid|cluster
 uv run archi slides [--deck decks/<naam>.toml]
 uv run archi set-model-name ...
+uv run archi setup                         # Archi-engine ophalen naar de cache
 ```
 
 Vuistregel: vaste taken via `just`, geparametriseerde commando's via
@@ -114,7 +115,14 @@ geverifieerd op 2026-07-02.
   alleen bullets die met een backticked key beginnen).
 - `normalize.py`: load+save-roundtrip door de headless Archi CLI. Binary via
   env var `ARCHI_APP`, anders het eerste bestaande pad uit `ARCHI_CANDIDATES`
-  (macOS, Windows machine- en user-scope, Linux).
+  (macOS, Windows machine- en user-scope, Linux), anders de gecachte engine.
+  Ontbreekt alles, dan haalt `normalize` de engine automatisch op (tenzij
+  `--no-download`).
+- `engine.py`: haalt de Archi-distributie (MIT, gebundelde JRE, ~165 MB) op
+  naar `~/.cache/archi-cli/<versie>/` en pakt hem uit; `ARCHI_VERSION` is
+  gepind en het archief wordt tegen de SHA-1 uit het `SUMSSHA1`-bestand
+  gecontroleerd. Aangeroepen door `archi setup` en door de auto-fetch in
+  `normalize`. Zie ADR 0005.
 - `views.py`: view-generatie met grid- of cluster-layout (geport uit het
   ADO-exportscript). `--root` selecteert een element plus zijn
   aggregatie/compositie-closure, `--related` voegt direct gerelateerde

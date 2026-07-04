@@ -227,8 +227,19 @@ def cmd_add_view(model, args):
 
 
 def cmd_normalize(model, args):
-    normalize(args.model)
+    normalize(args.model, download=not args.no_download)
     print(f"Genormaliseerd via Archi: {args.model}")
+    return 0
+
+
+def cmd_setup(model, args):
+    from .engine import download_engine, find_or_none
+    existing = find_or_none()
+    if existing:
+        print(f"Archi al beschikbaar: {existing}")
+        return 0
+    binary = download_engine()
+    print(f"Archi-engine klaar: {binary}")
     return 0
 
 
@@ -303,17 +314,19 @@ def _main(model: Optional[str] = ModelOption):
     _state.model = model
 
 
-def _run(command_fn, *, load_model=True, **fields) -> None:
+def _run(command_fn, *, load_model=True, need_model=True, **fields) -> None:
     """Discover the model, run a cmd_* function, translate errors, set exit.
 
     ``load_model=False`` is for normalize, which must not let lxml parse the
     file first (Archi is the canonical serializer and may load what lxml
-    refuses). Raises typer.Exit with the command's status code.
+    refuses). ``need_model=False`` is for commands that touch no model at all,
+    such as setup. Raises typer.Exit with the command's status code.
     """
     args = SimpleNamespace(model=None, **fields)
     try:
-        args.model = discover_model(_state.model)
-        model = None if not load_model else ArchiModel(args.model)
+        if need_model:
+            args.model = discover_model(_state.model)
+        model = ArchiModel(args.model) if (need_model and load_model) else None
         status = command_fn(model, args)
     except ModelError as exc:
         typer.echo(f"FOUT: {exc}", err=True)
@@ -359,8 +372,18 @@ def validate_command():
 
 
 @app.command("normalize", help="serialisatie canoniek maken via de Archi CLI")
-def normalize_command():
-    _run(cmd_normalize, load_model=False)
+def normalize_command(
+    no_download: bool = typer.Option(
+        False, "--no-download",
+        help="haal de Archi-engine niet automatisch op; faal als hij "
+             "ontbreekt (voor CI en luchtdichte omgevingen)"),
+):
+    _run(cmd_normalize, load_model=False, no_download=no_download)
+
+
+@app.command("setup", help="de Archi-engine ophalen naar de lokale cache")
+def setup_command():
+    _run(cmd_setup, need_model=False)
 
 
 @app.command("add-element", help="element toevoegen")

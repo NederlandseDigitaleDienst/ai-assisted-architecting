@@ -31,11 +31,14 @@ def test_unparseable_file_gives_dutch_error(tmp_path, capsys):
 
 def test_normalize_skips_lxml_parse(tmp_path, capsys, monkeypatch):
     """normalize must reach Archi-binary detection even when lxml cannot
-    parse the file; only the missing binary may stop it here."""
+    parse the file; only the missing binary may stop it here. --no-download
+    keeps this offline (no engine fetch) so it stays a fast unit test."""
     monkeypatch.setenv("ARCHI_APP", str(tmp_path / "geen-archi"))
+    monkeypatch.setenv("ARCHI_CACHE", str(tmp_path / "leeg-cache"))
     corrupt = tmp_path / "kapot.archimate"
     corrupt.write_text('<?xml version="1.0"?><kapot', encoding="utf-8")
-    status, output = run(capsys, "--model", str(corrupt), "normalize")
+    status, output = run(capsys, "--model", str(corrupt), "normalize",
+                         "--no-download")
     assert status == 1
     assert "Archi niet gevonden" in output
 

@@ -1,0 +1,15 @@
+archi-cli
+Copyright (c) 2026 Bureau Architectuur Digitale Overheid
+Licensed under the EUPL-1.2 (see LICENSE).
+
+This tool downloads and drives the Archi engine for its `normalize` command.
+Archi is a separate work and is not distributed as part of this package; it is
+fetched at runtime from the official release on first use.
+
+  Archi — ArchiMate modelling tool
+  Copyright (c) Phillip Beauvoir, Jean-Baptiste Sarrodie and contributors
+  Licensed under the MIT License
+  https://github.com/archimatetool/archi
+
+The Archi distribution bundles an OpenJDK runtime; its own licensing applies to
+that runtime.
