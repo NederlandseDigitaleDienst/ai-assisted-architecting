@@ -74,6 +74,44 @@ geverifieerd op 2026-07-02.
   `validate.py` horen een test te krijgen die het fixture-model gericht
   corrumpeert en de foutmelding asserteert.
 
+## Publiceren naar PyPI
+
+De CLI is ook een zelfstandig pakket, `archi-cli` (importnaam `archi_tool`,
+commando `archi`), gepubliceerd op https://pypi.org/project/archi-cli/. De
+achtergrond staat in `adr/0006-publiceren-op-pypi.md`.
+
+**Wanneer publiceren.** Alleen bij een bewuste release, niet per merge. Een
+merge naar `main` triggert niets: de release-workflow luistert uitsluitend
+naar een versie-tag `v*`. Een PyPI-versie is onomkeerbaar, dus publiceer pas
+als `main` groen is en de wijziging klaar is voor gebruikers.
+
+**Hoe publiceren.**
+
+1. Bump de versie in `pyproject.toml` (semantisch: patch voor fixes, minor
+   voor features).
+2. Commit dat op `main` (via de normale branch → PR → merge).
+3. Tag en push: de tag moet exact de pyproject-versie zijn, met een `v`-prefix.
+   ```bash
+   git checkout main && git pull
+   git tag v0.1.1
+   git push origin v0.1.1
+   ```
+4. `.github/workflows/release.yml` doet de rest: het controleert dat de tag met
+   de pyproject-versie matcht (anders faalt het luid), bouwt met `uv build` en
+   publiceert via **PyPI Trusted Publishing** (OIDC). Er is geen API-token of
+   secret in de repo.
+
+**Vóór een release verifiëren** (goedkoop, en een PyPI-versie is onomkeerbaar):
+```bash
+uv build
+uv run --with twine python -m twine check dist/*   # moet PASSED geven
+rm -rf dist
+```
+
+**Eenmalig al geregeld:** de Trusted Publisher is op PyPI gekoppeld
+(owner `BureauArchitectuurDigitaleOverheid`, repo `ai-assisted-architecting`,
+workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
+
 ## Harde regels
 
 - **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen en

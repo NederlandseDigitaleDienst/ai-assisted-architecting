@@ -1,7 +1,8 @@
 # AI-assisted architecting
 
 [![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
-[![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](LICENSE)
+[![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 
 Experiment van Bureau Architectuur Digitale Overheid: een ArchiMate-model in
 het native Archi-formaat als bron van waarheid, bijgehouden met AI-assistentie
@@ -189,4 +190,4 @@ gegenereerd.
 
 ## Licentie
 
-[EUPL-1.2](LICENSE).
+[EUPL-1.2](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE).

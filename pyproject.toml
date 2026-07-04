@@ -38,11 +38,14 @@ build-backend = "hatchling.build"
 packages = ["tools/archi_tool"]
 
 [tool.hatch.build.targets.sdist]
+# only these paths; the leading ./ anchors README.md so views/README.md and
+# other nested READMEs don't get pulled in by a bare glob
 include = [
-    "tools/archi_tool",
-    "README.md",
-    "LICENSE",
-    "NOTICE",
+    "/tools/archi_tool",
+    "/README.md",
+    "/LICENSE",
+    "/NOTICE",
+    "/pyproject.toml",
 ]
 
 [dependency-groups]
