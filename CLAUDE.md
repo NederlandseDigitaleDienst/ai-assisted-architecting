@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Wat dit repo is
+## Wat deze repo is
 
 Experiment "AI-assisted architecting": een ArchiMate-model in native
 Archi-formaat (`models/ado.archimate`) als bron van waarheid, direct te
@@ -158,5 +158,5 @@ geverifieerd op 2026-07-02.
 Gegenereerde bestanden in `views/` dragen een markercommentaar (eerste
 regel); alleen bestanden met die marker worden overschreven of opgeruimd.
 
-Alles in dit repo is Nederlandstalig (modelinhoud, docs, commits); code en
+Alles in deze repo is Nederlandstalig (modelinhoud, docs, commits); code en
 comments zijn Engels.

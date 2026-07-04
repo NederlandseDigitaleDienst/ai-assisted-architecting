@@ -12,7 +12,7 @@ wheels = [
 ]
 
 [[package]]
-name = "archi-tool"
+name = "archi-cli"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

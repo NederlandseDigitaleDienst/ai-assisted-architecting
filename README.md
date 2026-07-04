@@ -8,6 +8,22 @@ het native Archi-formaat als bron van waarheid, bijgehouden met AI-assistentie
 en deterministische tooling. Het modelbestand opent direct in Archi, zonder
 import-stap, en de views zijn op GitHub zelf te bekijken.
 
+## De `archi`-CLI los gebruiken
+
+De tooling is ook een zelfstandig pakket, `archi-cli` (*ar·cli·mate*: de CLI in
+je ArchiMate). Je installeert het commando `archi` los van deze repo:
+
+```bash
+uv tool install archi-cli
+archi --help
+```
+
+`archi` werkt op elk `.archimate`-model: geef `--model <pad>` op, of leg het
+model vast in een `archi.toml` (`[tool.archi] model = "..."`), of draai in een
+map met precies één `.archimate`-bestand. Voor `normalize` heb je de Archi-
+engine nodig; die haalt `archi` bij het eerste gebruik zelf op (of expliciet
+met `archi setup`). De rest van dit document beschrijft het werken in deze repo.
+
 ## Het idee
 
 `models/ado.archimate` is de bron. Er zijn twee gelijkwaardige manieren om

@@ -1,0 +1,47 @@
+# Publiceer archi-cli naar PyPI bij een versie-tag (v1.2.3). Gebruikt PyPI
+# Trusted Publishing (OIDC): geen API-token of secret nodig — PyPI vertrouwt
+# deze workflow op basis van de repo + workflow-naam, eenmalig te koppelen in
+# de PyPI-projectinstellingen. De job draait alleen op tags, niet op elke push.
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Tag matcht de versie in pyproject
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(uv version --short)
+          if [ "$tag" != "$pkg" ]; then
+            echo "Tag $GITHUB_REF_NAME (=$tag) ≠ pyproject-versie $pkg" >&2
+            exit 1
+          fi
+          echo "Versie $pkg klopt met de tag."
+
+      - run: uv build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # vereist voor Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
