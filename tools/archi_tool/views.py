@@ -1,7 +1,6 @@
 """Deterministic view generation for native .archimate models.
 
-Two layout strategies, ported from the ADO exportscript
-(build_archimate_export.py):
+Two layout strategies:
 
 - "grid": all selected elements in a simple grid.
 - "cluster": group by a structural relation (default Aggregation/Composition):

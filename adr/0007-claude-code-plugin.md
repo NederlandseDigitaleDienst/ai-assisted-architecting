@@ -23,7 +23,7 @@ installeerbare Claude Code plugin, met een marketplace die ernaar verwijst.
    laden. Eén bron, twee doelen, geen duplicatie en geen symlinks (die op
    Windows onbetrouwbaar zijn).
 3. **Marketplace-manifest** `.claude-plugin/marketplace.json`: marketplace
-   `ado-plugins` met één plugin-entry die met `source: "./"` naar de repo-root
+   `archi-marketplace` met één plugin-entry die met `source: "./"` naar de repo-root
    wijst. Eén repo is dus tegelijk de plugin én de marketplace die hem aanbiedt.
 4. **Skills werken met het geïnstalleerde `archi`.** De commando's in de skills
    gebruiken `archi` (na `uv tool install archi-cli` overal beschikbaar), met
@@ -36,7 +36,7 @@ installeerbare Claude Code plugin, met een marketplace die ernaar verwijst.
 
 ```
 /plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
-/plugin install archi-tools@ado-plugins
+/plugin install archi-tools@archi-marketplace
 ```
 
 De plugin brengt de drie skills mee. Voor het `archi`-commando zelf: `uv tool

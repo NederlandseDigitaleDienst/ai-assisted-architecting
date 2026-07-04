@@ -1,22 +1,6 @@
 repos:
   - repo: local
     hooks:
-      - id: archi-validate
-        name: archi validate (modelintegriteit)
-        entry: uv run archi validate
-        language: system
-        # ook bij tooling- en conventiewijzigingen: de validator leest
-        # docs/conventies.md en de checks zelf kunnen veranderen
-        files: ^(models/.*\.archimate$|docs/conventies\.md$|tools/archi_tool/)
-        pass_filenames: false
-      - id: archi-render
-        name: archi render (views naar Mermaid en HTML, decks naar slides)
-        entry: uv run archi render
-        language: system
-        # ook bij tooling- en deckwijzigingen: een aangepaste renderer of
-        # deckdefinitie moet de gecommitte output meteen bijwerken
-        files: ^(models/.*\.archimate$|tools/archi_tool/|decks/)
-        pass_filenames: false
       - id: pytest
         name: pytest (archi_tool)
         entry: uv run pytest -q

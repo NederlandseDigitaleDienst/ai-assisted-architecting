@@ -30,7 +30,7 @@ def display_model_path(model) -> str:
         # outside the working directory: the bare name keeps it deterministic
         return path.name
 
-# (fill, stroke, text) per ArchiMate layer — same palette as the ADO
+# (fill, stroke, text) per ArchiMate layer, matching Archi's own layer
 # diagram conventions (Strategy amber, Motivation purple, Business lemon)
 LAYER_PALETTE = {
     "strategy": ("#FAC75A", "#D4882A", "#633806"),

@@ -1,8 +1,7 @@
-# Dezelfde checks als de pre-commit hooks, maar server-side afgedwongen
-# (hooks zijn lokaal te omzeilen met --no-verify). Draait op Ubuntu én
-# Windows, zodat platformonafhankelijkheid en byte-identieke renders geen
-# papieren claim zijn. `normalize` vergt een Archi-installatie en blijft
-# lokale discipline (zie CLAUDE.md).
+# Checks voor de archi-cli-tool: draait op Ubuntu én Windows zodat
+# platformonafhankelijkheid geen papieren claim is. De tool is generiek (werkt
+# op elk .archimate-bestand), dus er is geen modelbestand in deze repo om tegen
+# te valideren of te renderen; de testsuite werkt op een fixture.
 name: checks
 
 on:
@@ -21,11 +20,5 @@ jobs:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v8.2.0
       - run: uv sync
-      - run: uv run archi validate
-      - run: uv run archi render
-      - name: gecommitte views synchroon met het model (ADR 0002)
-        shell: bash
-        run: |
-          git add --intent-to-add .
-          git diff --exit-code
+      - run: uv run archi --help   # rooktest: de CLI start
       - run: uv run pytest

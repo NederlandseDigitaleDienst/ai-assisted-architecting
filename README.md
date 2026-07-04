@@ -1,208 +1,109 @@
-# AI-assisted architecting
+# archi-cli
 
 [![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
 [![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 
-Experiment van Bureau Architectuur Digitale Overheid: een ArchiMate-model in
-het native Archi-formaat als bron van waarheid, bijgehouden met AI-assistentie
-en deterministische tooling. Het modelbestand opent direct in Archi, zonder
-import-stap, en de views zijn op GitHub zelf te bekijken.
+*ar·cli·mate*: de CLI in je ArchiMate. Een deterministische command line tool
+voor native `.archimate`-modellen, plus de Claude Code skills die de werkwijze
+beschrijven. Je inspecteert, muteert, valideert en rendert een model zonder de
+Archi-GUI te openen, en de tool weigert een kapot model op te slaan.
 
-## De `archi`-CLI los gebruiken
+De tool is generiek: hij werkt op elk `.archimate`-bestand. Het ADO-model
+waarvoor hij ontstond woont in een eigen repo en gebruikt `archi-cli` als
+dependency.
 
-De tooling is ook een zelfstandig pakket, `archi-cli` (*ar·cli·mate*: de CLI in
-je ArchiMate). Je installeert het commando `archi` los van deze repo:
+## Installeren
 
 ```bash
 uv tool install archi-cli
 archi --help
 ```
 
-`archi` werkt op elk `.archimate`-model: geef `--model <pad>` op, of leg het
-model vast in een `archi.toml` (`[tool.archi] model = "..."`), of draai in een
-map met precies één `.archimate`-bestand. Voor `normalize` heb je de Archi-
-engine nodig; die haalt `archi` bij het eerste gebruik zelf op (of expliciet
-met `archi setup`). De rest van dit document beschrijft het werken in deze repo.
+Dat zet het commando `archi` op je `$PATH`. Voor `normalize` is de Archi-engine
+nodig; die haalt `archi` bij het eerste gebruik zelf op (of expliciet met
+`archi setup`), dus je hoeft Archi niet apart te installeren.
 
-## Het idee
+## Gebruiken
 
-`models/ado.archimate` is de bron. Er zijn twee gelijkwaardige manieren om
-eraan te werken: via de `archi`-CLI (meestal aangestuurd door een AI-sessie
-zoals Claude Code) of gewoon in de Archi-GUI. Beide routes komen samen in
-dezelfde controles:
+Het model wordt gevonden via `--model <pad>` (vóór het subcommando), via een
+`archi.toml` in de map (`[tool.archi] model = "..."`), of als het enige
+`.archimate`-bestand in de werkmap.
 
-- `just validate` controleert de integriteit: unieke ids, kloppende
-  verwijzingen van relaties en view-objecten, juiste folder-plaatsing, en
-  property-keys tegen de conventielijst.
-- `just normalize` laat headless Archi het bestand opnieuw serialiseren.
-  Archi is daarmee de canonieke serializer, dus diffs blijven klein en
-  reviewbaar, wie of wat er ook geschreven heeft.
-- `just render` genereert uit elke view in het model een Mermaid-diagram
-  (rendert op GitHub, in `views/`) en een NLDD-gestileerde HTML-pagina die de
-  layout uit het model pixelgetrouw volgt (`views/html/`), inclusief de
-  ArchiMate-notatie-iconen per elementtype, notes, groups en bendpoints.
-  Daarnaast rendert het uit elke deckdefinitie in `decks/` een presentatie
-  (`views/html/slides/`): een lineair verhaal als zelfstandige HTML-slides
-  in Rijkshuisstijl, met views uit het model als diagrammen, afgewisseld
-  met tekst- en bulletslides.
+```bash
+archi stats                                    # tellingen per type
+archi list --type Capability                   # elementen, gefilterd
+archi show "<elementnaam of id>"               # één element met relaties
+archi tree                                     # folderstructuur
 
-Pre-commit hooks dwingen validatie en verse renders af bij elke commit die
-het model raakt. De afweging achter deze opzet, inclusief wat we inleveren
-ten opzichte van de JSON-aanpak in het zusterexperiment, staat in
-`adr/0001-archimate-als-bron.md`; het besluit om gegenereerde renders wel te
-committen staat in `adr/0002-views-als-mermaid-in-git.md`, dat voor de
-slidedecks in `adr/0003-slidedecks-als-toml-in-git.md`.
+archi add-element --type Capability --name "..." --property "Omschrijving=..."
+archi add-relation --type Aggregation --source "..." --target "..." --name "bevat"
+archi set-property <ref> "Omschrijving=..."
+archi rename <ref> "Nieuwe naam"
+archi remove <ref> --cascade
+
+archi add-view --name "..." --layout cluster --type Capability --relation Aggregation
+archi slides --deck decks/<naam>.toml
+
+archi validate                                 # integriteitschecks
+archi normalize                                # canonieke serialisatie via Archi
+archi render                                   # views naar Mermaid en HTML
+```
+
+`archi <commando> --help` toont de volledige set vlaggen. Shell-completion
+installeer je met `archi --install-completion`.
+
+## Wat het doet
+
+- **Muteren met een vangnet.** Elke wijziging valideert het model in het
+  geheugen; bij een integriteitsfout weigert de CLI op te slaan. Ids zijn
+  onveranderlijk en worden door de tooling gegenereerd.
+- **Canonieke serialisatie.** `normalize` laat de headless Archi-engine het
+  bestand herschrijven, zodat git-diffs klein blijven, ongeacht of de laatste
+  wijziging van deze tool of van de Archi-GUI kwam.
+- **Renderen.** `render` maakt van elke view een Mermaid-diagram (rendert op
+  GitHub) en een HTML-pagina die de layout uit het model volgt, plus een
+  presentatie per deckdefinitie in `decks/`.
+
+## Als Claude Code plugin
+
+De skills zijn los te installeren, zodat je ze in een ander project met je
+eigen `.archimate`-model gebruikt. Deze repo is tegelijk de plugin
+(`archi-tools`) en de marketplace die hem aanbiedt (`archi-marketplace`):
+
+```
+/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
+/plugin install archi-tools@archi-marketplace
+```
+
+De plugin brengt de skills `archi-model`, `archi-view` en `archi-slides` mee;
+het `archi`-commando zelf komt van `uv tool install archi-cli`. Zie
+`adr/0007-claude-code-plugin.md`.
+
+## Ontwikkelen
+
+```bash
+just setup       # venv, dependencies en de pre-commit hook
+just test        # de testsuite (draait op een fixture-model)
+just demo        # de CLI op het fixture-model
+just build       # distributies bouwen en de metadata controleren
+```
+
+De testsuite draait op `tests/fixtures/klein-model.archimate`, niet op een echt
+model. Wijzigingen lopen via een branch en een PR; CI draait de suite op Ubuntu
+en Windows. Publiceren naar PyPI gebeurt op een versie-tag, zie `CLAUDE.md` en
+`adr/0006-publiceren-op-pypi.md`.
 
 ## Structuur
 
 ```
-models/ado.archimate         Het model, de bron van waarheid
-decks/                       Deckdefinities voor presentaties (TOML)
-views/                       Gerenderde views als Mermaid (.md, rendert op GitHub)
-views/html/                  Dezelfde views als NLDD-HTML, lokaal te bekijken
-views/html/slides/           Gerenderde slidedecks (één HTML per deck)
-docs/conventies.md           Types, property-keys en naamgeving
-docs/spelregels.md           Rollen, workflow en de een-schrijver-afspraak
-adr/                         Architectuurbeslissingen
-tools/archi_tool/            De archi-CLI (Python, lxml; beheerd met uv)
-tests/                       pytest-suite met een klein fixture-model
-.claude/skills/              Claude Code skills (archi-model, archi-view, archi-slides)
-.claude-plugin/              Plugin- en marketplace-manifest
-justfile                     Vaste taken
+tools/archi_tool/       De archi-CLI (Python, lxml, Typer; beheerd met uv)
+tests/                  pytest-suite met een klein fixture-model
+.claude/skills/         Claude Code skills (archi-model, archi-view, archi-slides)
+.claude-plugin/         Plugin- en marketplace-manifest
+adr/                    Architectuurbeslissingen
+justfile                Vaste taken
 ```
-
-## Aan de slag
-
-Nodig: [uv](https://docs.astral.sh/uv/), [just](https://just.systems/) en
-[Archi](https://www.archimatetool.com/) voor normalisatie.
-
-macOS:
-
-```bash
-brew install uv just
-brew install --cask archi
-```
-
-Windows (PowerShell):
-
-```powershell
-winget install --id astral-sh.uv -e
-winget install --id Casey.Just -e
-winget install --id Archi.Archi -e
-```
-
-Linux: uv via `curl -LsSf https://astral.sh/uv/install.sh | sh`, just via je
-packagemanager, Archi als tgz van
-[archimatetool.com/download](https://www.archimatetool.com/download/).
-
-Archi wordt automatisch gevonden op `/Applications/Archi.app` (macOS),
-`C:\Program Files\Archi\Archi.exe` (Windows) en `/opt/Archi/Archi` (Linux);
-een ander pad geef je op via de env var `ARCHI_APP`. Python en pre-commit
-hoef je niet zelf te installeren: uv regelt de Python-versie en pre-commit
-is een dev-dependency.
-
-```bash
-just setup       # eenmalig per clone: venv, dependencies en pre-commit hooks
-just stats       # wat zit erin
-just open        # model openen in Archi
-just serve       # gerenderde HTML-views op http://localhost:8766
-```
-
-Sla `just setup` niet over: zonder de pre-commit hooks kun je committen
-zonder validatie en met verouderde renders.
-
-Alle vaste taken:
-
-| Commando | Wat het doet |
-|---|---|
-| `just setup` | venv, dependencies en pre-commit hooks installeren |
-| `just validate` | integriteitschecks (draait ook als pre-commit hook) |
-| `just render` | views en decks renderen naar `views/` en `views/html/` (ook hook) |
-| `just normalize` | canonieke serialisatie via headless Archi, duurt zo'n 15 s |
-| `just stats` | telling per elementtype, relaties en views |
-| `just tree` | folderstructuur van het model met inhoud |
-| `just list *args` | elementen tonen, bv. `just list --type Capability` |
-| `just show *args` | één element met properties en relaties, bv. `just show "Gegevensuitwisseling"` |
-| `just test` | pytest-suite |
-| `just open` | model openen in Archi |
-| `just serve` | HTML-views serveren op http://localhost:8766 |
-
-Wijzigen doe je met de CLI. Die valideert het model na elke mutatie en
-weigert op te slaan zolang er fouten zijn. Elementen zijn aanspreekbaar op id
-of op naam, zolang die uniek is:
-
-```bash
-uv run archi list --type Capability --property "Capability-niveau=gebied"
-uv run archi show "Gegevensuitwisseling"
-uv run archi tree
-uv run archi add-element --type Capability --name "..." \
-    --property "Capability-niveau=bouwblok" --property "Omschrijving=..."
-uv run archi add-relation --type Aggregation \
-    --source "Gegevensuitwisseling" --target "..." --name "bevat"
-uv run archi set-property "Gegevensuitwisseling" "Omschrijving=..."
-uv run archi rename "Oude naam" "Nieuwe naam"
-uv run archi set-documentation "Gegevensuitwisseling" "..."
-uv run archi remove "Gegevensuitwisseling" --cascade
-uv run archi add-view --name "..." --layout cluster \
-    --type Capability --relation Aggregation
-uv run archi add-view --name "... in detail" --layout cluster \
-    --root "Gegevensuitwisseling" --related
-uv run archi add-view --name "Losse selectie" --layout grid \
-    --element "Gegevensuitwisseling" --element "Kunstmatige Intelligentie"
-uv run archi slides --deck decks/ado.toml
-uv run archi set-model-name "..."
-uv run archi --help
-```
-
-Elk commando heeft nog wat minder gebruikte vlaggen: `add-element --folder`
-overschrijft de folder-plaatsing (default volgt uit het type), `add-view
---element` voegt losse elementen aan een selectie toe (zie hierboven), en
-`slides` accepteert `--deck`, `--decks` en `--out` om gericht te renderen. De
-volledige set toont `uv run archi <commando> --help`.
-
-## Werkwijze
-
-Branch afsplitsen, wijzigen, `just validate`, `just normalize`, committen en
-een PR openen. De pre-commit hook rendert de views mee; verandert er iets in
-`views/`, dan faalt de commit een keer en stage je de verse renders erbij.
-CI draait dezelfde checks (validatie, actuele renders, tests) op Ubuntu en
-Windows, dus een omzeilde hook strandt alsnog op de PR. De
-architect-eigenaar reviewt en merget.
-
-De belangrijkste afspraak: een schrijver tegelijk op het modelbestand. Een
-enkel XML-bestand merget slecht, dus parallelle branches met modelwijzigingen
-zijn er niet. Tooling- en documentatie-PR's kunnen wel naast elkaar lopen.
-Details en rollen staan in `docs/spelregels.md`; de modelconventies (welke
-types, welke property-keys, Nederlandse naamgeving) in `docs/conventies.md`.
-
-Werk je met Claude Code, dan wordt `CLAUDE.md` automatisch geladen en
-triggeren de skills `archi-model` (modelwijzigingen doorvoeren), `archi-view`
-(views genereren) en `archi-slides` (presentaties maken) zodra je erom
-vraagt.
-
-## Als Claude Code plugin
-
-De skills zijn ook los te installeren, zodat je ze in een ander project met
-je eigen `.archimate`-model kunt gebruiken. De repo is tegelijk een plugin
-(`archi-tools`) en de marketplace die hem aanbiedt (`ado-plugins`):
-
-```
-/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
-/plugin install archi-tools@ado-plugins
-```
-
-De plugin brengt de drie skills mee; het `archi`-commando zelf installeer je
-met `uv tool install archi-cli`. De achtergrond staat in
-`adr/0007-claude-code-plugin.md`.
-
-## Herkomst
-
-Het seedmodel is de export van het ADO-niveau-1-model uit
-[`ADO-architectuurmodel-experiment`](https://github.com/BureauArchitectuurDigitaleOverheid/ADO-architectuurmodel-experiment),
-waar JSON de bron is en ArchiMate een exportformaat. Dit repo draait die
-verhouding om: het Archi-bestand is de bron, en al het andere wordt eruit
-gegenereerd.
 
 ## Licentie
 

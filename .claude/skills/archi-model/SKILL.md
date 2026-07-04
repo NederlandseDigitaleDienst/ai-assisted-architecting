@@ -1,19 +1,14 @@
 ---
 name: archi-model
-description: Werkwijze voor het .archimate-model - elementen, relaties en properties wijzigen via de archi-CLI, valideren en normaliseren. Gebruik bij elke wijziging aan models/ado.archimate, bij "voeg element/bouwblok/doel/relatie toe", "wijzig het model", "verwijder element", "hernoem", of vragen over de modelconventies.
+description: Werkwijze voor het bewerken van een native .archimate-model met de archi-CLI - elementen, relaties en properties toevoegen of wijzigen, valideren en normaliseren. Gebruik bij "voeg element/relatie/doel toe", "wijzig het model", "verwijder element", "hernoem", of vragen over de archi-CLI.
 ---
 
-# Werken aan het .archimate-model
+# Werken aan een .archimate-model
 
 Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
-De commando's hieronder gebruiken `archi`. Werk je binnen deze repo, dan kan
-dat ook via `uv run archi ...`, en lopen de vaste stappen via `just` (`just
-validate`, `just normalize`, `just render`).
-
-## Leesvolgorde
-
-1. `docs/conventies.md`: types in gebruik, property-keys, naamgeving
-2. `docs/spelregels.md`: workflow en de een-schrijver-afspraak
+De CLI werkt op elk native `.archimate`-bestand. Het model wordt gevonden via
+`--model <pad>` (vóór het subcommando), via `[tool.archi] model` in een
+`archi.toml`, of als het enige `.archimate`-bestand in de werkmap.
 
 ## Harde regels
 
@@ -21,32 +16,28 @@ validate`, `just normalize`, `just render`).
   `archi ...`. De CLI valideert automatisch en weigert op te slaan bij
   integriteitsfouten.
 - Bestaande ids nooit wijzigen; nieuwe ids genereert de tooling.
-- Nieuwe property-keys eerst toevoegen aan `docs/conventies.md` §3, anders
-  waarschuwt de validator. Nieuwe elementtypes of structurele keuzes krijgen
-  een ADR in `adr/`.
-- Elk commando accepteert `--model <pad>` (vóór het subcommando) voor een
-  ander modelbestand; zonder vlag vindt de CLI het model via `archi.toml`
-  (`[tool.archi] model`), in deze repo `models/ado.archimate`.
+- Property-keys worden getoetst aan de conventielijst van het project (een
+  `conventies.md` met een `Property-keys`-sectie, gevonden via `archi.toml`
+  of naast het model) of aan een ingebouwde standaardset. Een onbekende key
+  geeft een waarschuwing, geen fout.
 
 ## Modelwijziging doorvoeren
 
-1. Branch afsplitsen (nooit direct op `main`). Check dat er geen andere
-   model-PR openstaat: een schrijver tegelijk.
-2. Kijk eerst wat er staat:
+1. Kijk eerst wat er staat:
    ```bash
    archi stats
-   archi list --type Capability --property "Capability-niveau=gebied"
-   archi show "Gegevensuitwisseling"    # id of unieke naam
+   archi list --type Capability --property "<key>=<waarde>"
+   archi show "<elementnaam of id>"
    archi tree
    ```
-3. Wijzig via de CLI. Elementen en relaties zijn aanspreekbaar op id of op
+2. Wijzig via de CLI. Elementen en relaties zijn aanspreekbaar op id of op
    naam zolang die uniek is; bij een dubbele naam somt de CLI de kandidaten
    op en gebruik je het id.
    ```bash
-   archi add-element --type Capability --name "..." \
-       --property "Capability-niveau=bouwblok" --property "Omschrijving=..."
+   archi add-element --type Capability --name "<naam>" \
+       --property "<key>=<waarde>" --property "Omschrijving=..."
    archi add-relation --type Aggregation \
-       --source "<gebied>" --target "<bouwblok>" --name "bevat"
+       --source "<bron>" --target "<doel>" --name "bevat"
    archi set-property <ref> "Omschrijving=..."
    archi rename <ref> "Nieuwe naam"
    archi set-documentation <ref> "..."
@@ -54,18 +45,13 @@ validate`, `just normalize`, `just render`).
    ```
    `add-element` plaatst het element in de folder die uit het type volgt;
    `--folder <type>` overschrijft dat alleen als je een bewuste reden hebt.
-4. `archi validate`. Moet schoon zijn; waarschuwingen over property-keys los
+3. `archi validate`. Moet schoon zijn; waarschuwingen over property-keys los
    je op in de conventielijst of door de key aan te passen.
-5. `archi normalize`. Verplicht vóór commit: Archi serialiseert canoniek en
-   houdt de diff klein. Duurt ongeveer 15 seconden (headless Archi).
-6. `archi render`. Ververst `views/` en `views/html/`; de gerenderde
-   bestanden committen mee.
-7. Commit (semantisch, Nederlands), push, PR openen. De architect-eigenaar
-   reviewt en merget.
-
-De pre-commit hooks draaien validate en render nogmaals. Faalt de commit
-omdat render bestanden bijwerkte, stage die dan en commit opnieuw; dat is het
-normale pad, geen fout.
+4. `archi normalize`. Aanbevolen vóór commit: Archi serialiseert canoniek en
+   houdt de diff klein. Vereist een Archi-installatie; `archi` haalt de engine
+   bij het eerste gebruik zelf op (of expliciet met `archi setup`).
+5. `archi render`. Ververst de gerenderde views (Mermaid en HTML) als het
+   project die committeert.
 
 ## Verwijderen en de cascade
 
@@ -79,5 +65,5 @@ de view-objecten en hun connections, inclusief het opschonen van
 
 Dat is toegestaan; het bestand is de bron. Draai daarna wel de volledige rij:
 `archi validate`, `archi normalize`, `archi render`, en commit het geheel.
-Validate wijst eventuele hangende verwijzingen aan die de GUI-bewerking
-heeft achtergelaten.
+Validate wijst eventuele hangende verwijzingen aan die de GUI-bewerking heeft
+achtergelaten.

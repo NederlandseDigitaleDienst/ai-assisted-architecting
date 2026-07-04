@@ -1,20 +1,15 @@
 ---
 name: archi-view
-description: Genereer of verwijder een view (diagram) in het .archimate-model met deterministische layout. Gebruik bij "maak een view", "genereer een diagram", "visualiseer de gebieden/bouwblokken", "verwijder view", of als een selectie van elementen zichtbaar moet worden in Archi of op GitHub.
+description: Genereer of verwijder een view (diagram) in een .archimate-model met deterministische layout met de archi-CLI. Gebruik bij "maak een view", "genereer een diagram", "visualiseer een selectie elementen", "verwijder view", of als een selectie zichtbaar moet worden in Archi of op GitHub.
 ---
 
-# Views genereren in het .archimate-model
+# Views genereren in een .archimate-model
 
 Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
-Werk je binnen deze repo, dan kan dat ook via `uv run archi ...` en lopen de
-vaste stappen via `just` (`just validate`, `just normalize`, `just render`,
-`just serve`).
 
-Views worden onderdeel van het modelbestand zelf. Ze zijn daarna op drie
-plekken zichtbaar: in Archi (Models-boom, map Views), als Mermaid op GitHub
-(`views/<slug>.md`) en als NLDD-HTML (`views/html/<slug>.html`, bekijken met
-`just serve`). De slug volgt uit de viewnaam; beide indexbestanden worden
-automatisch bijgewerkt.
+Views worden onderdeel van het modelbestand zelf. Na `archi render` zijn ze
+ook zichtbaar buiten Archi: als Mermaid op GitHub en als HTML lokaal (de
+locatie hangt af van het project). De slug volgt uit de viewnaam.
 
 ## Genereren
 
@@ -24,18 +19,18 @@ archi add-view --name "<naam>" --layout <grid|cluster> \
     [--root "<element>"] [--related] [--element "<element>" ...]
 ```
 
-Voorbeeld, een brede selectieview:
+Voorbeeld, een brede selectieview op een elementtype:
 
 ```bash
-archi add-view --name "Ontwikkelingsgebieden en functionele bouwblokken" \
+archi add-view --name "Alle capabilities" \
     --layout cluster --type Capability --relation Aggregation
 ```
 
-Voorbeeld, een detailview van één gebied met alles eromheen:
+Voorbeeld, een detailview van één element met alles eromheen:
 
 ```bash
-archi add-view --name "Gegevensuitwisseling in detail" \
-    --layout cluster --root "Gegevensuitwisseling" --related
+archi add-view --name "<element> in detail" \
+    --layout cluster --root "<element>" --related
 ```
 
 ## Layoutkeuze
@@ -46,7 +41,7 @@ archi add-view --name "Gegevensuitwisseling in detail" \
 - **`cluster`**: groepeert op structurele relaties (Aggregation en
   Composition binnen de selectie). Het bronelement komt als kop boven zijn
   doelelementen, met ruimte voor de pijlen. Elementen zonder koppeling komen
-  los achteraan. Dit is de keuze voor gebied-naar-bouwblok-structuren.
+  los achteraan. Dit is de keuze voor hiërarchische structuren.
 
 ## Selectie
 
@@ -54,7 +49,7 @@ archi add-view --name "Gegevensuitwisseling in detail" \
 een property-waarde. `--root "<element>"` selecteert dat element plus alles
 wat het (recursief) aggregeert of composeert; `--related` voegt daar de
 direct gerelateerde elementen aan toe (één stap, beide richtingen), zoals de
-doelen en diensten rond een gebied. `--element "<id of unieke naam>"`
+doelen en diensten rondom een element. `--element "<id of unieke naam>"`
 (herhaalbaar) voegt een specifiek element aan de selectie toe, naast of in
 plaats van de filters; handig als je een handjevol elementen bij naam wilt
 tonen zonder een type- of property-filter te bedenken. Zonder filters gaat
@@ -65,8 +60,8 @@ selectie geeft een foutmelding in plaats van een lege view.
 
 1. `archi validate` (draait ook automatisch bij het opslaan door de CLI).
 2. `archi normalize` vóór commit.
-3. `archi render`, zodat de nieuwe view ook in `views/` en `views/html/`
-   staat; de pre-commit hook dwingt dit af en de renders committen mee.
+3. `archi render`, zodat de nieuwe view ook als Mermaid en HTML op schijf
+   staat als het project die committeert.
 4. Layout fijnslijpen kan daarna in de Archi-GUI. Het bestand is de bron,
    dus zo'n aanpassing is een gewone modelwijziging: opnieuw normaliseren,
    renderen en committen.
@@ -78,6 +73,6 @@ archi remove "<viewnaam of id>"
 ```
 
 Een view heeft zelden inkomende verwijzingen, dus dit kan meestal zonder
-`--cascade`. Daarna `archi render`: de bijbehorende bestanden in `views/`
+`--cascade`. Daarna `archi render`: de bijbehorende gerenderde bestanden
 worden opgeruimd (alleen bestanden met het generatie-markercommentaar; iets
 wat een mens daar zelf heeft neergezet blijft staan).

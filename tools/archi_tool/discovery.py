@@ -1,9 +1,9 @@
-"""Locate the model file and the conventions list without assuming this repo.
+"""Locate the model file and the conventions list without assuming a layout.
 
-The CLI used to hardcode ``models/ado.archimate`` and find the conventions at
-``<model>/../../docs/conventies.md``. Both assumptions are specific to this
-repository. Discovery makes ``archi`` work on any model, in any layout, while
-keeping the ADO defaults working through an ``archi.toml`` in the repo root.
+An earlier version hardcoded a fixed model path and found the conventions doc
+at a fixed location. Discovery makes ``archi`` work on any model, in any
+layout: a project points at its model and conventions through an ``archi.toml``
+(or ``pyproject.toml``), or the tool falls back to sensible defaults.
 
 Resolution order for the model:
   1. an explicit ``--model`` path (handled by the caller)
@@ -27,19 +27,14 @@ from .model import ModelError
 CONFIG_NAMES = ("archi.toml", "pyproject.toml")
 CONVENTION_NEIGHBOURS = ("conventies.md", "conventions.md")
 
-# Keys that ship with the tool. A project can override this by pointing at its
-# own conventions doc; without one, these keep the property-key check useful.
-# Mirrors docs/conventies.md §3 so behaviour is identical for this repo when no
-# doc is found (it normally is, via archi.toml).
+# Generic keys that ship with the tool as a fallback allowlist. A project
+# overrides this by pointing at its own conventions doc (with a Property-keys
+# section); without one, these keep the property-key check useful instead of
+# silently disabling it.
 DEFAULT_PROPERTY_KEYS = {
     "Omschrijving",
     "Toelichting",
     "Bron",
-    "Capability-niveau",
-    "Niveau (herkomst)",
-    "Driver-categorie",
-    "constraint-type",
-    "Artefact-type",
 }
 
 

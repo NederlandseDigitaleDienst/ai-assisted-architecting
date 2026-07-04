@@ -2,10 +2,9 @@ from pathlib import Path
 
 from lxml import etree
 
+from archi_tool.discovery import DEFAULT_PROPERTY_KEYS
 from archi_tool.model import XSI_TYPE
 from archi_tool.validate import allowed_property_keys, validate
-
-REPO_CONVENTIONS = Path(__file__).parent.parent / "docs" / "conventies.md"
 
 
 def test_clean_model_validates(model):
@@ -108,14 +107,27 @@ def test_property_key_heading_may_be_numbered(tmp_path):
     assert allowed_property_keys(conventions) == {"Omschrijving", "Bron"}
 
 
-def test_repo_conventions_parse_nonempty():
-    """Guard against the real conventions doc drifting away from the
-    parser (a heading rename once silently disabled this check)."""
-    keys = allowed_property_keys(REPO_CONVENTIONS)
+def test_conventions_parser_matches_a_real_doc(tmp_path):
+    """Guard against the parser drifting from the conventions-doc format
+    (a heading rename once silently disabled this check). Uses a doc in the
+    shape the tool documents, not a project-specific one."""
+    doc = tmp_path / "conventies.md"
+    doc.write_text(
+        "## 3. Property-keys\n\n"
+        "- `Omschrijving` — toelichting (mag `backticks` in de tekst hebben)\n"
+        "- `Bron` — bronverwijzing\n",
+        encoding="utf-8")
+    keys = allowed_property_keys(doc)
     assert "Omschrijving" in keys
-    assert "Capability-niveau" in keys
+    assert "Bron" in keys
     # inline backticks in descriptions must not count as keys
-    assert "gebied" not in keys
+    assert "backticks" not in keys
+
+
+def test_builtin_default_keys_nonempty():
+    """The built-in fallback set must stay usable so the property-key check
+    still runs when a project ships no conventions doc."""
+    assert "Omschrijving" in DEFAULT_PROPERTY_KEYS
 
 
 def test_missing_property_key_section_warns(model, tmp_path):

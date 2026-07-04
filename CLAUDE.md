@@ -4,37 +4,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Wat deze repo is
 
-Experiment "AI-assisted architecting": een ArchiMate-model in native
-Archi-formaat (`models/ado.archimate`) als bron van waarheid, direct te
-openen in Archi en via de deterministische CLI in `tools/archi_tool` te
-manipuleren. Er is geen conversielaag; de afweging staat in
-`adr/0001-archimate-als-bron.md`, het besluit om gegenereerde renders te
-committen in `adr/0002-views-als-mermaid-in-git.md`.
+`archi-cli`: een deterministische CLI (`tools/archi_tool/`, commando `archi`)
+voor het inspecteren, muteren, valideren en renderen van native
+`.archimate`-modellen, plus de Claude Code skills die de werkwijze beschrijven.
+De tool is generiek en werkt op elk `.archimate`-bestand; er zit geen model in
+deze repo (het ADO-model is losgetrokken naar een eigen repo). De testsuite
+draait op een klein fixture-model in `tests/fixtures/`.
+
+De tool is gepubliceerd op PyPI als `archi-cli` en distribueert zichzelf als
+Claude Code plugin (`archi-tools`) via de marketplace `archi-marketplace`.
 
 ## Commando's
 
 ```bash
 just setup            # eenmalig: uv sync + pre-commit install
-just validate         # integriteitschecks (ook pre-commit hook)
-just render           # views naar Mermaid (views/) en NLDD-HTML (views/html/), decks naar slides (views/html/slides/), ook pre-commit hook
-just normalize        # canonieke serialisatie via headless Archi (~15 s)
-just stats            # aantallen per type, relaties en views
 just test             # pytest
-just open             # model openen in Archi
-just serve            # gerenderde HTML-views op http://localhost:8766
+just demo             # de CLI op het fixture-model
+just build            # distributies bouwen + twine check (vóór een release)
 
-# Commando's met argumenten lopen via de CLI zelf:
-uv run archi list|show|tree ...            # inspectie
+# De CLI zelf (op elk model; --model vóór het subcommando):
+uv run archi stats|list|show|tree ...      # inspectie
 uv run archi add-element|add-relation|set-property|rename|set-documentation|remove ...
 uv run archi add-view --name ... --layout grid|cluster
 uv run archi slides [--deck decks/<naam>.toml]
-uv run archi set-model-name ...
+uv run archi validate|normalize|render
 uv run archi setup                         # Archi-engine ophalen naar de cache
 ```
 
-Vuistregel: vaste taken via `just`, geparametriseerde commando's via
-`uv run archi`. Elk commando accepteert `--model <pad>` voor een ander
-bestand dan `models/ado.archimate`.
+Het model wordt gevonden via `--model <pad>`, via `[tool.archi] model` in een
+`archi.toml`, of als het enige `.archimate`-bestand in de werkmap.
 
 ## Prerequisites: controleren en zo nodig installeren
 
@@ -46,7 +44,7 @@ wat ontbreekt, zonder de gebruiker ernaartoe te sturen:
   `curl -LsSf https://astral.sh/uv/install.sh | sh` of `brew install uv`;
   Windows `winget install --id astral-sh.uv -e` of
   `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`.
-  uv regelt zelf een passende Python (>=3.11).
+  uv regelt zelf een passende Python (>=3.12).
 - `just` ontbreekt: macOS `brew install just`; Windows
   `winget install --id Casey.Just -e`; Linux via de packagemanager.
 - Venv of dependencies ontbreken (`.venv/` bestaat niet, of `uv run archi`
@@ -55,15 +53,9 @@ wat ontbreekt, zonder de gebruiker ernaartoe te sturen:
   geen pre-commit-aanroep): `uv run pre-commit install`. pre-commit zelf is
   een dev-dependency en komt mee met `uv sync`; er is geen globale
   installatie nodig.
-- Archi ontbreekt (geen match in `ARCHI_CANDIDATES` uit
-  `tools/archi_tool/normalize.py` en `ARCHI_APP` is niet gezet): macOS
-  `brew install --cask archi`; Windows `winget install --id Archi.Archi -e`;
-  Linux tgz van archimatetool.com. Of meld dat alleen `normalize` hierdoor
-  niet kan; valideren, renderen en muteren werken zonder Archi.
-
-`just setup` dekt de venv en de hooks in één keer, maar vereist dat uv en
-just er al zijn. Alle installatiebronnen (URL's en winget-id's) zijn
-geverifieerd op 2026-07-02.
+- Archi ontbreekt (alleen nodig voor `normalize`): `archi` haalt de engine
+  bij het eerste gebruik zelf op, of expliciet met `archi setup`. Valideren,
+  renderen en muteren werken zonder Archi.
 
 ## Testen
 
@@ -76,9 +68,9 @@ geverifieerd op 2026-07-02.
 
 ## Publiceren naar PyPI
 
-De CLI is ook een zelfstandig pakket, `archi-cli` (importnaam `archi_tool`,
-commando `archi`), gepubliceerd op https://pypi.org/project/archi-cli/. De
-achtergrond staat in `adr/0006-publiceren-op-pypi.md`.
+De CLI is een pakket `archi-cli` (importnaam `archi_tool`, commando `archi`),
+gepubliceerd op https://pypi.org/project/archi-cli/. De achtergrond staat in
+`adr/0006-publiceren-op-pypi.md`.
 
 **Wanneer publiceren.** Alleen bij een bewuste release, niet per merge. Een
 merge naar `main` triggert niets: de release-workflow luistert uitsluitend
@@ -103,9 +95,7 @@ als `main` groen is en de wijziging klaar is voor gebruikers.
 
 **Vóór een release verifiëren** (goedkoop, en een PyPI-versie is onomkeerbaar):
 ```bash
-uv build
-uv run --with twine python -m twine check dist/*   # moet PASSED geven
-rm -rf dist
+just build   # uv build + twine check; moet PASSED geven
 ```
 
 **Eenmalig al geregeld:** de Trusted Publisher is op PyPI gekoppeld
@@ -114,29 +104,15 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
 
 ## Harde regels
 
-- **Bron van waarheid**: `models/ado.archimate`. AEF-exports, afbeeldingen en
-  `.bak`-bestanden zijn afgeleid en gitignored. Uitzondering: `views/` bevat
-  gegenereerde weergaven die wel gecommit worden (ADR 0002, voor slides
-  ADR 0003); nooit handmatig bewerken, `just render` houdt ze synchroon.
-  Deckdefinities in `decks/*.toml` zijn bron (met de hand te bewerken); de
-  gerenderde slides in `views/html/slides/` zijn afgeleid en gecommit.
-- **Nooit handmatig XML bewerken** in het modelbestand. Alle mutaties via de
+- **Nooit handmatig XML bewerken** in een modelbestand. Alle mutaties via de
   `archi`-CLI, die valideert automatisch en weigert opslaan bij fouten. Voor
   procedures: skills `archi-model`, `archi-view` en `archi-slides`.
 - Ids (`id-<uuid4>`) zijn onveranderlijk; de tooling genereert nieuwe.
-- Vóór elke commit die het model raakt: `just validate`, `just normalize` en
-  `just render`. De pre-commit hooks dwingen validate, render en pytest af
-  (ook bij tooling-wijzigingen); normalize niet (te traag voor een hook), dus
-  die stap is discipline. CI (`.github/workflows/ci.yml`) draait dezelfde
-  checks op Ubuntu en Windows en faalt als de gecommitte views niet synchroon
-  zijn met het model.
-- Nieuwe property-keys eerst vastleggen in `docs/conventies.md` §3; de
-  validator waarschuwt op onbekende keys. Structurele beslissingen krijgen
-  een ADR in `adr/`.
-- **Eén schrijver tegelijk** op het modelbestand: geen parallelle branches
-  met modelwijzigingen (spelregels §4; XML merget slecht).
-- Wijzigingen via branch → commit → PR (`docs/spelregels.md`). Semantische
-  Nederlandstalige commit-berichten.
+- Nieuwe checks in `validate.py` krijgen een test. Structurele beslissingen
+  krijgen een ADR in `adr/`.
+- Wijzigingen via branch → commit → PR. Semantische Nederlandstalige
+  commit-berichten. De pre-commit hook draait pytest; CI
+  (`.github/workflows/ci.yml`) draait de suite op Ubuntu en Windows.
 
 ## Architectuur van de tooling
 
@@ -148,9 +124,13 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
   `Relationship` (Amerikaanse spelling); bounds van geneste view-objecten
   zijn relatief aan hun parent. `remove` ruimt bij cascade ook
   view-objecten, connections en `targetConnections`-attributen op.
-- `validate.py`: integriteitschecks plus conventiecheck tegen
-  `docs/conventies.md` (sectie "Property-keys", eventueel genummerd; telt
-  alleen bullets die met een backticked key beginnen).
+- `validate.py`: integriteitschecks plus conventiecheck tegen een
+  conventies-doc (sectie "Property-keys", eventueel genummerd; telt alleen
+  bullets die met een backticked key beginnen).
+- `discovery.py`: vindt het modelbestand (`--model` > `[tool.archi] model` in
+  `archi.toml`/`pyproject.toml`, omhoog gezocht > enig `.archimate` in de map)
+  en de conventielijst (config > `conventies.md` naast het model > ingebouwde
+  standaardset). Maakt de CLI onafhankelijk van een vaste repo-layout.
 - `normalize.py`: load+save-roundtrip door de headless Archi CLI. Binary via
   env var `ARCHI_APP`, anders het eerste bestaande pad uit `ARCHI_CANDIDATES`
   (macOS, Windows machine- en user-scope, Linux), anders de gecachte engine.
@@ -161,10 +141,9 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
   gepind en het archief wordt tegen de SHA-1 uit het `SUMSSHA1`-bestand
   gecontroleerd. Aangeroepen door `archi setup` en door de auto-fetch in
   `normalize`. Zie ADR 0005.
-- `views.py`: view-generatie met grid- of cluster-layout (geport uit het
-  ADO-exportscript). `--root` selecteert een element plus zijn
-  aggregatie/compositie-closure, `--related` voegt direct gerelateerde
-  elementen toe (detailviews per gebied); het kolomaantal van de
+- `views.py`: view-generatie met grid- of cluster-layout. `--root` selecteert
+  een element plus zijn aggregatie/compositie-closure, `--related` voegt direct
+  gerelateerde elementen toe (detailviews per element); het kolomaantal van de
   cluster-layout groeit mee met het aantal clusters.
 - `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
   toegankelijkheid en het ArchiMate-laagkleurenpalet (`LAYER_PALETTE`).
@@ -177,24 +156,18 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
   nooit dubbel wikkelen. Diagram-canvas is bewust altijd licht.
   `diagram_canvas()` en `DIAGRAM_CSS` worden gedeeld met de slide-renderer.
 - `render_slides.py`: decks (`decks/*.toml`, stdlib-`tomllib`) naar
-  zelfstandige HTML-presentaties in `views/html/slides/`: één lineair
-  verhaal per deck, geen overzichts- of menumechanismen. Slidetypes:
-  title, section, view, text, bullets, closing. Deterministisch: de
-  optionele datum op de titelslide is deckdata (letterlijk weergegeven),
-  geen timestamps of absolute paden in de output. View-slides tekenen het
-  echte diagram op een witte kaart binnen de Rijksblauwe slide
-  (markerprefix `s<n>-` tegen dubbele SVG-ids, `ref_base="../"` voor
-  view-referenties); een `focus`-veld zoomt de camera op één element en
-  dimt de rest (rect server-side berekend, animatie client-side).
+  zelfstandige HTML-presentaties: één lineair verhaal per deck, geen
+  overzichts- of menumechanismen. Slidetypes: title, section, view, text,
+  bullets, closing. Deterministisch: de optionele datum op de titelslide is
+  deckdata (letterlijk weergegeven), geen timestamps of absolute paden in de
+  output. View-slides tekenen het echte diagram op een witte kaart binnen de
+  slide (markerprefix `s<n>-` tegen dubbele SVG-ids); een `focus`-veld zoomt de
+  camera op één element en dimt de rest (rect server-side berekend, animatie
+  client-side).
 - `cli.py`: Typer-subcommands (getypeerde functies, `--model` als globale
   optie); mutaties slaan alleen op bij schone validatie.
-- `discovery.py`: vindt het modelbestand (`--model` > `[tool.archi] model` in
-  `archi.toml`/`pyproject.toml`, omhoog gezocht > enig `.archimate` in de map)
-  en de conventielijst (config > `docs/conventies.md` naast het model >
-  ingebouwde standaardset). Maakt de CLI onafhankelijk van deze repo.
 
-Gegenereerde bestanden in `views/` dragen een markercommentaar (eerste
-regel); alleen bestanden met die marker worden overschreven of opgeruimd.
+Gegenereerde view-bestanden dragen een markercommentaar (eerste regel); alleen
+bestanden met die marker worden overschreven of opgeruimd.
 
-Alles in deze repo is Nederlandstalig (modelinhoud, docs, commits); code en
-comments zijn Engels.
+Docs en commit-berichten zijn Nederlandstalig; code en comments zijn Engels.

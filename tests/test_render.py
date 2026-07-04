@@ -5,8 +5,8 @@ from archi_tool.render import MARKER, render_all, render_view, slugify
 
 
 def test_slugify():
-    assert slugify("Ontwikkelingsgebieden (relatieweergave)") == \
-        "ontwikkelingsgebieden-relatieweergave"
+    assert slugify("Capabilities (relatieweergave)") == \
+        "capabilities-relatieweergave"
     assert slugify("???") == "view"
 
 

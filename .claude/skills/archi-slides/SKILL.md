@@ -1,21 +1,17 @@
 ---
 name: archi-slides
-description: Genereer NLDD-gestileerde HTML-slidedecks uit het .archimate-model vanuit decks/*.toml, een lineair verhaal met views uit het model afgewisseld met tekst. Gebruik bij "maak een presentatie", "genereer slides", "maak een slidedeck", "presenteer de views", of als een deck in decks/ moet worden toegevoegd, aangepast of verwijderd.
+description: Genereer HTML-slidedecks uit een .archimate-model met de archi-CLI, vanuit decks/*.toml - een lineair verhaal met views uit het model afgewisseld met tekst. Gebruik bij "maak een presentatie", "genereer slides", "maak een slidedeck", "presenteer de views", of als een deck moet worden toegevoegd, aangepast of verwijderd.
 ---
 
-# Slidedecks genereren uit het .archimate-model
+# Slidedecks genereren uit een .archimate-model
 
 Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
-Werk je binnen deze repo, dan kan dat ook via `uv run archi ...` en lopen de
-vaste stappen via `just` (`just render`, `just serve`).
 
 Een deck is een TOML-bestand in `decks/` met één lineaire verhaallijn:
 titel, secties, views uit het model, afgewisseld met tekst en bullets. De
 architectuurbeelden komen bij het renderen rechtstreeks uit het model.
-`archi render` (en dus `just render` en de pre-commit hook) rendert elk deck
-naar één zelfstandig HTML-bestand in `views/html/slides/<slug>.html`,
-bekijken met `just serve` op `http://localhost:8766/slides/<slug>.html`.
-De achtergrond staat in `adr/0003-slidedecks-als-toml-in-git.md`.
+`archi render` rendert elk deck naar één zelfstandig HTML-bestand; `archi
+slides` doet alleen de decks.
 
 ## Een deck schrijven
 
@@ -83,18 +79,18 @@ Toegestane sleutels per type (alles daarbuiten is een harde fout):
 ## Renderen
 
 ```bash
-just render                          # alles: views, HTML én decks
-archi slides                  # alleen de decks
-archi slides --deck decks/ado.toml   # één deck, zonder opruiming
+archi render                            # alles: views, HTML én decks
+archi slides                            # alleen de decks
+archi slides --deck decks/<naam>.toml   # één deck, zonder opruiming
 ```
 
 Een deck dat naar een niet-bestaande view verwijst laat het renderen falen
 met een foutmelding die de beschikbare views opsomt; een onbekende `focus`
 noemt de containers in de view.
 
-Een sterke verhaallijn is: overzichtsview → `focus`-slide op één gebied →
-detailview van dat gebied. Detailviews genereer je met
-`archi add-view --layout cluster --root "<gebied>" --related`
+Een sterke verhaallijn is: overzichtsview → `focus`-slide op één element →
+detailview van dat element. Detailviews genereer je met
+`archi add-view --layout cluster --root "<element>" --related`
 (zie de skill archi-view).
 
 ## In de browser
@@ -105,13 +101,13 @@ browser geeft één slide per pagina (PDF-export).
 
 ## Na het genereren
 
-1. `just render` en de gegenereerde bestanden in `views/html/slides/`
-   mee-committen; de pre-commit hook dwingt dit af.
+1. `archi render` en de gegenereerde slide-HTML mee-committen als het project
+   die committeert.
 2. Gegenereerde HTML nooit handmatig bewerken (markercommentaar op regel 1);
    wijzig het deck-TOML of het model en render opnieuw.
 
 ## Verwijderen
 
-Verwijder het TOML-bestand uit `decks/` en draai `just render`: de
+Verwijder het TOML-bestand uit `decks/` en draai `archi render`: de
 bijbehorende HTML wordt opgeruimd (alleen bestanden met het marker-
 commentaar; handgemaakte bestanden blijven staan).
