@@ -18,7 +18,7 @@ def test_missing_file_gives_dutch_error(tmp_path, capsys):
     missing = tmp_path / "bestaat-niet.archimate"
     status, output = run(capsys, "--model", str(missing), "validate")
     assert status == 1
-    assert output.startswith("FOUT: kan")
+    assert "Modelbestand niet gevonden" in output
 
 
 def test_unparseable_file_gives_dutch_error(tmp_path, capsys):

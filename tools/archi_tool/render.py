@@ -15,6 +15,21 @@ from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
 
 MARKER = "<!-- Gegenereerd door `archi render` — niet handmatig bewerken -->"
 
+
+def display_model_path(model) -> str:
+    """The model path as it should appear in generated output: relative to the
+    working directory so renders stay byte-identical across machines, even
+    when discovery resolved an absolute path via archi.toml."""
+    path = Path(model.path)
+    if not path.is_absolute():
+        # already relative (the common case): keep it as written
+        return path.as_posix()
+    try:
+        return path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        # outside the working directory: the bare name keeps it deterministic
+        return path.name
+
 # (fill, stroke, text) per ArchiMate layer — same palette as the ADO
 # diagram conventions (Strategy amber, Motivation purple, Business lemon)
 LAYER_PALETTE = {
@@ -137,14 +152,14 @@ def render_view(model, diagram) -> str:
     if documentation:
         parts += [documentation, ""]
     parts += ["```mermaid", *lines, "```", "",
-              f"*Gegenereerd uit `{Path(model.path).as_posix()}` — "
+              f"*Gegenereerd uit `{display_model_path(model)}` — "
               f"{EDGE_LEGEND}.*", ""]
     return "\n".join(parts)
 
 
 def render_index(model, entries) -> str:
     rows = [MARKER, "", "# Views", "",
-            f"Gerenderde views uit `{Path(model.path).as_posix()}`. "
+            f"Gerenderde views uit `{display_model_path(model)}`. "
             "Deze bestanden worden gegenereerd door `archi render`; "
             "bewerk ze niet handmatig.", ""]
     for name, filename in entries:

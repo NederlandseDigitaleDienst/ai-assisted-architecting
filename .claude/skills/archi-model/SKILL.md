@@ -19,8 +19,9 @@ description: Werkwijze voor het .archimate-model - elementen, relaties en proper
 - Nieuwe property-keys eerst toevoegen aan `docs/conventies.md` §3, anders
   waarschuwt de validator. Nieuwe elementtypes of structurele keuzes krijgen
   een ADR in `adr/`.
-- Elk commando accepteert `--model <pad>` voor een ander modelbestand;
-  zonder vlag geldt `models/ado.archimate`.
+- Elk commando accepteert `--model <pad>` (vóór het subcommando) voor een
+  ander modelbestand; zonder vlag vindt de CLI het model via `archi.toml`
+  (`[tool.archi] model`), in deze repo `models/ado.archimate`.
 
 ## Modelwijziging doorvoeren
 

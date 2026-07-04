@@ -7,13 +7,16 @@ serialization stays Archi-canonical.
 """
 from __future__ import annotations
 
-import argparse
 import sys
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Optional
 
+import typer
 from lxml import etree
 
+from .discovery import discover_conventions, discover_model
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
 from .render import render_all, write_if_changed
@@ -21,9 +24,6 @@ from .render_html import render_all_html
 from .render_slides import load_deck, render_all_slides, render_deck_html
 from .validate import validate
 from .views import add_view
-
-DEFAULT_MODEL = "models/ado.archimate"
-DEFAULT_CONVENTIONS = "docs/conventies.md"
 
 
 def parse_properties(pairs):
@@ -36,14 +36,13 @@ def parse_properties(pairs):
     return properties
 
 
-def conventions_path(model_path):
-    candidate = Path(model_path).resolve().parent.parent / DEFAULT_CONVENTIONS
-    return candidate if candidate.exists() else None
-
-
 def report_validation(model, model_path) -> bool:
     """Print validation results; return True when the model is sound."""
-    errors, warnings = validate(model, conventions_path(model_path))
+    # anchor conventions discovery at the model, not the working directory, so
+    # validating a model from another project uses that project's conventions
+    allowed_keys, _ = discover_conventions(
+        model_path, start=Path(model_path).resolve().parent)
+    errors, warnings = validate(model, allowed_keys=allowed_keys)
     for warning in warnings:
         print(f"WAARSCHUWING: {warning}")
     for error in errors:
@@ -272,152 +271,234 @@ def cmd_slides(model, args):
     return 0
 
 
-DESCRIPTION = """CLI voor deterministische bewerking van native .archimate-modellen.
+# --- Typer app --------------------------------------------------------------
+#
+# Typer owns argument parsing and help; the cmd_* functions above own the
+# behaviour. Each command is a thin typed wrapper that packs its parameters
+# into a namespace (so the cmd_* signatures stay untouched) and hands them to
+# _run, which centralises model discovery, loading and Dutch error handling.
 
-Gebruik: archi <subcommando> [--model PAD] ...
-Muterende subcommando's valideren het model in het geheugen en weigeren op
-te slaan zolang er fouten zijn. Draai `archi normalize` vóór het committen,
-zodat de serialisatie Archi-canoniek blijft.
+HELP = """CLI voor deterministische bewerking van native .archimate-modellen.
+
+Muterende subcommando's valideren het model in het geheugen en weigeren op te
+slaan zolang er fouten zijn. Draai `archi normalize` vóór het committen, zodat
+de serialisatie Archi-canoniek blijft.
 """
 
+app = typer.Typer(
+    help=HELP, no_args_is_help=True, add_completion=True,
+    context_settings={"help_option_names": ["-h", "--help"]})
 
-def build_parser():
-    parser = argparse.ArgumentParser(
-        prog="archi", description=DESCRIPTION,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--model", default=DEFAULT_MODEL,
-                        help=f"pad naar het .archimate-bestand "
-                             f"(default: {DEFAULT_MODEL})")
-    sub = parser.add_subparsers(dest="command", required=True)
+# the global --model, shared by every command through the app callback
+_state = SimpleNamespace(model=None)
 
-    sub.add_parser("stats", help="aantallen per type, relaties en views")
-
-    p = sub.add_parser("list", help="elementen tonen, optioneel gefilterd")
-    p.add_argument("--type", help="filter op elementtype (bv. Capability)")
-    p.add_argument("--property", action="append",
-                   help="filter op property, key=value (herhaalbaar)")
-
-    p = sub.add_parser("show", help="één element met properties en relaties")
-    p.add_argument("ref", help="id of (unieke) naam")
-
-    sub.add_parser("tree", help="folderstructuur met inhoud")
-    sub.add_parser("validate", help="integriteitschecks draaien")
-    sub.add_parser("normalize",
-                   help="serialisatie canoniek maken via de Archi CLI")
-
-    p = sub.add_parser("add-element", help="element toevoegen")
-    p.add_argument("--type", required=True,
-                   help="elementtype (bv. Capability)")
-    p.add_argument("--name", required=True, help="naam van het element")
-    p.add_argument("--folder", help="folder-type; default volgt uit het type")
-    p.add_argument("--property", action="append", help="key=value (herhaalbaar)")
-    p.add_argument("--documentation")
-
-    p = sub.add_parser("add-relation", help="relatie toevoegen")
-    p.add_argument("--type", required=True,
-                   help="bv. Aggregation of AggregationRelationship")
-    p.add_argument("--source", required=True, help="id of unieke naam")
-    p.add_argument("--target", required=True, help="id of unieke naam")
-    p.add_argument("--name", help="NL-label op de relatie")
-
-    p = sub.add_parser("set-property", help="property zetten of bijwerken")
-    p.add_argument("ref", help="id of (unieke) naam")
-    p.add_argument("pair", help="key=value")
-
-    p = sub.add_parser("rename", help="element of relatie hernoemen")
-    p.add_argument("ref", help="id of (unieke) naam")
-    p.add_argument("name", help="nieuwe naam")
-
-    p = sub.add_parser("set-documentation", help="documentatie zetten")
-    p.add_argument("ref", help="id of (unieke) naam")
-    p.add_argument("text", help="documentatietekst")
-
-    p = sub.add_parser("remove", help="element of relatie verwijderen")
-    p.add_argument("ref", help="id of (unieke) naam")
-    p.add_argument("--cascade", action="store_true",
-                   help="verwijder ook relaties en view-objecten die ernaar "
-                        "verwijzen")
-
-    p = sub.add_parser("set-model-name", help="modelnaam wijzigen")
-    p.add_argument("name", help="nieuwe modelnaam")
-
-    p = sub.add_parser("render",
-                       help="views renderen naar Mermaid-markdown (views/), "
-                            "NLDD-HTML (views/html/) en slidedecks "
-                            "(views/html/slides/)")
-    p.add_argument("--out", default="views",
-                   help="doelmap voor de markdown-bestanden (default: views)")
-    p.add_argument("--decks", default="decks",
-                   help="map met deckdefinities in TOML (default: decks)")
-
-    p = sub.add_parser("slides",
-                       help="slidedecks renderen naar zelfstandige HTML "
-                            "(views/html/slides/)")
-    p.add_argument("--deck", action="append",
-                   help="specifiek deckbestand (.toml); herhaalbaar; "
-                        "default: alle decks in de decks-map")
-    p.add_argument("--decks", default="decks",
-                   help="map met deckdefinities in TOML (default: decks)")
-    p.add_argument("--out", default="views/html/slides",
-                   help="doelmap voor de HTML-bestanden "
-                        "(default: views/html/slides)")
-
-    p = sub.add_parser("add-view", help="view genereren met berekende layout")
-    p.add_argument("--name", required=True, help="naam van de nieuwe view")
-    p.add_argument("--layout", choices=["grid", "cluster"], default="grid")
-    p.add_argument("--type", action="append",
-                   help="elementtype in de selectie (herhaalbaar)")
-    p.add_argument("--relation", action="append",
-                   help="relatietype in de selectie (herhaalbaar)")
-    p.add_argument("--property", help="selectiefilter, key=value")
-    p.add_argument("--root",
-                   help="element (id of naam): selecteer dit element plus "
-                        "alles wat het aggregeert of composeert")
-    p.add_argument("--related", action="store_true",
-                   help="voeg ook direct gerelateerde elementen toe "
-                        "(één stap, alleen samen met --root zinvol)")
-    p.add_argument("--element", action="append",
-                   help="element (id of unieke naam) toevoegen aan de "
-                        "selectie (herhaalbaar)")
-
-    return parser
+ModelOption = typer.Option(
+    None, "--model",
+    help="pad naar het .archimate-bestand; standaard gevonden via archi.toml "
+         "of het enige .archimate-bestand in de huidige map")
 
 
-COMMANDS = {
-    "stats": cmd_stats,
-    "list": cmd_list,
-    "show": cmd_show,
-    "tree": cmd_tree,
-    "validate": cmd_validate,
-    "normalize": cmd_normalize,
-    "add-element": cmd_add_element,
-    "add-relation": cmd_add_relation,
-    "set-property": cmd_set_property,
-    "rename": cmd_rename,
-    "set-documentation": cmd_set_documentation,
-    "remove": cmd_remove,
-    "set-model-name": cmd_set_model_name,
-    "add-view": cmd_add_view,
-    "render": cmd_render,
-    "slides": cmd_slides,
-}
+@app.callback()
+def _main(model: Optional[str] = ModelOption):
+    _state.model = model
+
+
+def _run(command_fn, *, load_model=True, **fields) -> None:
+    """Discover the model, run a cmd_* function, translate errors, set exit.
+
+    ``load_model=False`` is for normalize, which must not let lxml parse the
+    file first (Archi is the canonical serializer and may load what lxml
+    refuses). Raises typer.Exit with the command's status code.
+    """
+    args = SimpleNamespace(model=None, **fields)
+    try:
+        args.model = discover_model(_state.model)
+        model = None if not load_model else ArchiModel(args.model)
+        status = command_fn(model, args)
+    except ModelError as exc:
+        typer.echo(f"FOUT: {exc}", err=True)
+        raise typer.Exit(1)
+    except (etree.XMLSyntaxError, OSError) as exc:
+        typer.echo(f"FOUT: kan {args.model} niet lezen: {exc}", err=True)
+        raise typer.Exit(1)
+    raise typer.Exit(status)
+
+
+# Repeated options declared once; Typer reads the default value + help here.
+PropertyFilter = typer.Option(
+    None, "--property", help="filter op property, key=value (herhaalbaar)")
+
+
+@app.command(help="aantallen per type, relaties en views")
+def stats():
+    _run(cmd_stats)
+
+
+@app.command("list", help="elementen tonen, optioneel gefilterd")
+def list_elements(
+    type: Optional[str] = typer.Option(
+        None, help="filter op elementtype (bv. Capability)"),
+    property: Optional[list[str]] = PropertyFilter,
+):
+    _run(cmd_list, type=type, property=property)
+
+
+@app.command(help="één element met properties en relaties")
+def show(ref: str = typer.Argument(help="id of (unieke) naam")):
+    _run(cmd_show, ref=ref)
+
+
+@app.command(help="folderstructuur met inhoud")
+def tree():
+    _run(cmd_tree)
+
+
+@app.command("validate", help="integriteitschecks draaien")
+def validate_command():
+    _run(cmd_validate)
+
+
+@app.command("normalize", help="serialisatie canoniek maken via de Archi CLI")
+def normalize_command():
+    _run(cmd_normalize, load_model=False)
+
+
+@app.command("add-element", help="element toevoegen")
+def add_element(
+    type: str = typer.Option(..., help="elementtype (bv. Capability)"),
+    name: str = typer.Option(..., help="naam van het element"),
+    folder: Optional[str] = typer.Option(
+        None, help="folder-type; default volgt uit het type"),
+    property: Optional[list[str]] = typer.Option(
+        None, "--property", help="key=value (herhaalbaar)"),
+    documentation: Optional[str] = typer.Option(None),
+):
+    _run(cmd_add_element, type=type, name=name, folder=folder,
+         property=property, documentation=documentation)
+
+
+@app.command("add-relation", help="relatie toevoegen")
+def add_relation(
+    type: str = typer.Option(
+        ..., help="bv. Aggregation of AggregationRelationship"),
+    source: str = typer.Option(..., help="id of unieke naam"),
+    target: str = typer.Option(..., help="id of unieke naam"),
+    name: Optional[str] = typer.Option(None, help="NL-label op de relatie"),
+):
+    _run(cmd_add_relation, type=type, source=source,
+         target=target, name=name)
+
+
+@app.command("set-property", help="property zetten of bijwerken")
+def set_property(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    pair: str = typer.Argument(help="key=value"),
+):
+    _run(cmd_set_property, ref=ref, pair=pair)
+
+
+@app.command(help="element of relatie hernoemen")
+def rename(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    name: str = typer.Argument(help="nieuwe naam"),
+):
+    _run(cmd_rename, ref=ref, name=name)
+
+
+@app.command("set-documentation", help="documentatie zetten")
+def set_documentation(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    text: str = typer.Argument(help="documentatietekst"),
+):
+    _run(cmd_set_documentation, ref=ref, text=text)
+
+
+@app.command(help="element of relatie verwijderen")
+def remove(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    cascade: bool = typer.Option(
+        False, help="verwijder ook relaties en view-objecten die ernaar "
+                    "verwijzen"),
+):
+    _run(cmd_remove, ref=ref, cascade=cascade)
+
+
+@app.command("set-model-name", help="modelnaam wijzigen")
+def set_model_name(name: str = typer.Argument(help="nieuwe modelnaam")):
+    _run(cmd_set_model_name, name=name)
+
+
+@app.command(help="views renderen naar Mermaid, NLDD-HTML en slidedecks")
+def render(
+    out: str = typer.Option(
+        "views", help="doelmap voor de markdown-bestanden (default: views)"),
+    decks: str = typer.Option(
+        "decks", help="map met deckdefinities in TOML (default: decks)"),
+):
+    _run(cmd_render, out=out, decks=decks)
+
+
+@app.command(help="slidedecks renderen naar zelfstandige HTML")
+def slides(
+    deck: Optional[list[str]] = typer.Option(
+        None, "--deck", help="specifiek deckbestand (.toml); herhaalbaar; "
+                             "default: alle decks in de decks-map"),
+    decks: str = typer.Option(
+        "decks", help="map met deckdefinities in TOML (default: decks)"),
+    out: str = typer.Option(
+        "views/html/slides", help="doelmap voor de HTML-bestanden"),
+):
+    _run(cmd_slides, deck=deck, decks=decks, out=out)
+
+
+@app.command("add-view", help="view genereren met berekende layout")
+def add_view_command(
+    name: str = typer.Option(..., help="naam van de nieuwe view"),
+    layout: str = typer.Option("grid", help="grid of cluster"),
+    type: Optional[list[str]] = typer.Option(
+        None, help="elementtype in de selectie (herhaalbaar)"),
+    relation: Optional[list[str]] = typer.Option(
+        None, help="relatietype in de selectie (herhaalbaar)"),
+    property: Optional[str] = typer.Option(
+        None, "--property", help="selectiefilter, key=value"),
+    root: Optional[str] = typer.Option(
+        None, help="element (id of naam): dit element plus alles wat het "
+                   "aggregeert of composeert"),
+    related: bool = typer.Option(
+        False, help="voeg ook direct gerelateerde elementen toe (één stap, "
+                    "alleen samen met --root zinvol)"),
+    element: Optional[list[str]] = typer.Option(
+        None, "--element", help="element (id of unieke naam) toevoegen aan de "
+                                "selectie (herhaalbaar)"),
+):
+    if layout not in ("grid", "cluster"):
+        typer.echo("FOUT: --layout moet grid of cluster zijn", err=True)
+        raise typer.Exit(1)
+    _run(cmd_add_view, name=name, layout=layout, type=type,
+         relation=relation, property=property, root=root, related=related,
+         element=element)
 
 
 def main(argv=None) -> int:
-    args = build_parser().parse_args(argv)
+    """Entry point. Returns an exit code so tests can call it directly.
+
+    With standalone_mode=False, Typer returns the command's exit code (from
+    typer.Exit) instead of calling sys.exit, and lets usage errors surface as
+    Click exceptions. We translate both into an int so `sys.exit(main())` and
+    direct test calls behave identically.
+    """
+    # Typer vendors Click; there is no top-level `click` module to import.
+    from typer._click.exceptions import ClickException
+
     try:
-        # normalize must not depend on lxml parsing the file first: Archi is
-        # the canonical serializer and may load what lxml refuses
-        if args.command == "normalize":
-            return cmd_normalize(None, args)
-        model = ArchiModel(args.model)
-        return COMMANDS[args.command](model, args)
-    except ModelError as exc:
-        print(f"FOUT: {exc}", file=sys.stderr)
+        result = app(args=argv, standalone_mode=False)
+    except ClickException as exc:  # e.g. missing/unknown option
+        exc.show()
+        return exc.exit_code
+    except typer.Abort:
+        typer.echo("Afgebroken.", err=True)
         return 1
-    except (etree.XMLSyntaxError, OSError) as exc:
-        print(f"FOUT: kan {args.model} niet lezen: {exc}", file=sys.stderr)
-        return 1
+    return int(result or 0)
 
 
 if __name__ == "__main__":

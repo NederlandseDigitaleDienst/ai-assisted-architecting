@@ -14,7 +14,8 @@ from pathlib import Path
 
 from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
 from .render import (CONTAINMENT_TYPES, DOTTED_TYPES, LAYER_PALETTE, MARKER,
-                     is_descendant, slugify, write_if_changed)
+                     display_model_path, is_descendant, slugify,
+                     write_if_changed)
 
 NLDD_VERSION = "0.8.64"
 NLDD_CSS = (f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}"
@@ -579,7 +580,7 @@ def render_view_html(model, diagram) -> str:
         f'      <p class="meta">{len(canvas["boxes"])} elementen, '
         f'{len(canvas["edges"])} '
         f'getekende verbindingen · gegenereerd uit '
-        f'<code>{html.escape(Path(model.path).as_posix())}</code></p>')
+        f'<code>{html.escape(display_model_path(model))}</code></p>')
     return page_shell(name, body)
 
 
@@ -600,7 +601,7 @@ def render_index_html(model, entries) -> str:
         f'      <nldd-title size="2"><h1>{html.escape(model.name)}'
         f'</h1></nldd-title>\n'
         f'      <p class="doc">Views gegenereerd uit '
-        f'<code>{html.escape(Path(model.path).as_posix())}</code>, '
+        f'<code>{html.escape(display_model_path(model))}</code>, '
         f'met de layout zoals die in het model is vastgelegd.</p>\n'
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <nldd-collection layout="grid" item-width="320px">\n'

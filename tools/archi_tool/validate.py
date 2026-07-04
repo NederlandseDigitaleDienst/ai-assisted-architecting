@@ -40,7 +40,13 @@ def top_folder_of(model, node):
     return top
 
 
-def validate(model, conventions_path=None) -> tuple[list, list]:
+def validate(model, conventions_path=None, allowed_keys=None) -> tuple[list, list]:
+    """Run integrity checks; return (errors, warnings).
+
+    Property-key checking uses ``allowed_keys`` when given (a set resolved by
+    discovery), otherwise parses ``conventions_path``. Passing neither skips
+    the property-key check.
+    """
     errors, warnings = [], []
 
     # 1. unique ids
@@ -123,22 +129,22 @@ def validate(model, conventions_path=None) -> tuple[list, list]:
                         f"naar een object in dezelfde view ({ref})")
 
     # 5. property keys against conventions (warning only)
-    if conventions_path:
+    allowed = allowed_keys
+    if allowed is None and conventions_path:
         allowed = allowed_property_keys(conventions_path)
-        if allowed:
-            seen_unknown = set()
-            for prop in model.root.iter("property"):
-                key = prop.get("key")
-                if key and key not in allowed and key not in seen_unknown:
-                    seen_unknown.add(key)
-                    warnings.append(
-                        f"Property-key '{key}' staat niet in de "
-                        "conventielijst (docs/conventies.md)")
-        else:
-            # an empty list silently disables this check; say so loudly
-            warnings.append(
-                f"Geen property-keys gevonden in {conventions_path}: "
-                "de conventiecheck op property-keys staat hierdoor uit "
-                "(ontbreekt de sectie 'Property-keys'?)")
+    if allowed:
+        seen_unknown = set()
+        for prop in model.root.iter("property"):
+            key = prop.get("key")
+            if key and key not in allowed and key not in seen_unknown:
+                seen_unknown.add(key)
+                warnings.append(
+                    f"Property-key '{key}' staat niet in de conventielijst")
+    elif conventions_path:
+        # an empty list silently disables this check; say so loudly
+        warnings.append(
+            f"Geen property-keys gevonden in {conventions_path}: "
+            "de conventiecheck op property-keys staat hierdoor uit "
+            "(ontbreekt de sectie 'Property-keys'?)")
 
     return errors, warnings

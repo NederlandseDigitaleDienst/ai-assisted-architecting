@@ -140,8 +140,12 @@ geverifieerd op 2026-07-02.
   (markerprefix `s<n>-` tegen dubbele SVG-ids, `ref_base="../"` voor
   view-referenties); een `focus`-veld zoomt de camera op één element en
   dimt de rest (rect server-side berekend, animatie client-side).
-- `cli.py`: argparse-subcommands; mutaties slaan alleen op bij schone
-  validatie.
+- `cli.py`: Typer-subcommands (getypeerde functies, `--model` als globale
+  optie); mutaties slaan alleen op bij schone validatie.
+- `discovery.py`: vindt het modelbestand (`--model` > `[tool.archi] model` in
+  `archi.toml`/`pyproject.toml`, omhoog gezocht > enig `.archimate` in de map)
+  en de conventielijst (config > `docs/conventies.md` naast het model >
+  ingebouwde standaardset). Maakt de CLI onafhankelijk van deze repo.
 
 Gegenereerde bestanden in `views/` dragen een markercommentaar (eerste
 regel); alleen bestanden met die marker worden overschreven of opgeruimd.
