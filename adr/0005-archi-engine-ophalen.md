@@ -6,7 +6,7 @@
 ## Context
 
 `archi normalize` draait de headless command-line-app van Archi, de canonieke
-serializer (ADR 0001). Tot nu toe zocht de tool een lokaal geïnstalleerde Archi
+serializer. Tot nu toe zocht de tool een lokaal geïnstalleerde Archi
 op vaste paden en faalde als die er niet was; normaliseren bleef daardoor
 "lokale discipline". Voor een zelfstandig, publiceerbaar pakket (ADR 0004) is
 dat te zwak: een nieuwe gebruiker of een CI-runner heeft geen Archi en kan dus

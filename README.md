@@ -1,34 +1,36 @@
-# archi-cli
+# AI-assisted architecting
 
 [![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
 [![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 
-*ar·cli·mate*: de CLI in je ArchiMate. Een deterministische command line tool
-voor native `.archimate`-modellen, plus de Claude Code skills die de werkwijze
-beschrijven. Je inspecteert, muteert, valideert en rendert een model zonder de
-Archi-GUI te openen, en de tool weigert een kapot model op te slaan.
+Een manier van architecteren waarbij een ArchiMate-model in het native
+Archi-formaat de bron van waarheid is, en je het met AI-assistentie bijhoudt in
+plaats van met de hand door de GUI te klikken. Deze repo levert de twee dingen
+die daarvoor nodig zijn:
 
-De tool is generiek: hij werkt op elk `.archimate`-bestand. Het ADO-model
-waarvoor hij ontstond woont in een eigen repo en gebruikt `archi-cli` als
-dependency.
+- **`archi-cli`**: een deterministische command line tool die een
+  `.archimate`-model inspecteert, muteert, valideert en rendert, en weigert een
+  kapot model op te slaan. Op PyPI, werkt op elk model.
+- **De skills** (`archi-model`, `archi-view`, `archi-slides`): de werkwijze
+  die een AI-sessie zoals Claude Code volgt om via de CLI aan het model te
+  werken. Te installeren als Claude Code plugin.
 
-## Installeren
+Het model zelf hoort niet hier: dat woont in een eigen repo en gebruikt
+`archi-cli` als tool. Het ADO-model waarvoor dit ontstond is daar het
+voorbeeld.
+
+## De CLI
 
 ```bash
 uv tool install archi-cli
 archi --help
 ```
 
-Dat zet het commando `archi` op je `$PATH`. Voor `normalize` is de Archi-engine
-nodig; die haalt `archi` bij het eerste gebruik zelf op (of expliciet met
-`archi setup`), dus je hoeft Archi niet apart te installeren.
-
-## Gebruiken
-
-Het model wordt gevonden via `--model <pad>` (vóór het subcommando), via een
-`archi.toml` in de map (`[tool.archi] model = "..."`), of als het enige
-`.archimate`-bestand in de werkmap.
+Dat zet het commando `archi` op je `$PATH`. Het model wordt gevonden via
+`--model <pad>` (vóór het subcommando), via een `archi.toml` in de map
+(`[tool.archi] model = "..."`), of als het enige `.archimate`-bestand in de
+werkmap.
 
 ```bash
 archi stats                                    # tellingen per type
@@ -38,7 +40,6 @@ archi tree                                     # folderstructuur
 
 archi add-element --type Capability --name "..." --property "Omschrijving=..."
 archi add-relation --type Aggregation --source "..." --target "..." --name "bevat"
-archi set-property <ref> "Omschrijving=..."
 archi rename <ref> "Nieuwe naam"
 archi remove <ref> --cascade
 
@@ -50,37 +51,36 @@ archi normalize                                # canonieke serialisatie via Arch
 archi render                                   # views naar Mermaid en HTML
 ```
 
-`archi <commando> --help` toont de volledige set vlaggen. Shell-completion
-installeer je met `archi --install-completion`.
+Voor `normalize` is de Archi-engine nodig; die haalt `archi` bij het eerste
+gebruik zelf op (of expliciet met `archi setup`), dus je hoeft Archi niet apart
+te installeren. `archi <commando> --help` toont de volledige set vlaggen;
+shell-completion zet je aan met `archi --install-completion`.
 
-## Wat het doet
+Wat de tool bijzonder maakt:
 
 - **Muteren met een vangnet.** Elke wijziging valideert het model in het
-  geheugen; bij een integriteitsfout weigert de CLI op te slaan. Ids zijn
-  onveranderlijk en worden door de tooling gegenereerd.
+  geheugen; bij een fout weigert de CLI op te slaan. Ids zijn onveranderlijk.
 - **Canonieke serialisatie.** `normalize` laat de headless Archi-engine het
-  bestand herschrijven, zodat git-diffs klein blijven, ongeacht of de laatste
-  wijziging van deze tool of van de Archi-GUI kwam.
-- **Renderen.** `render` maakt van elke view een Mermaid-diagram (rendert op
-  GitHub) en een HTML-pagina die de layout uit het model volgt, plus een
-  presentatie per deckdefinitie in `decks/`.
+  bestand herschrijven, zodat git-diffs klein blijven, of de wijziging nu van
+  de tool of van de Archi-GUI kwam.
+- **Renderen.** Elke view wordt een Mermaid-diagram (rendert op GitHub) en een
+  HTML-pagina die de layout uit het model volgt, plus een presentatie per
+  deckdefinitie.
 
-## Als Claude Code plugin
+## De skills als Claude Code plugin
 
-De skills zijn los te installeren, zodat je ze in een ander project met je
-eigen `.archimate`-model gebruikt. Deze repo is tegelijk de plugin
-(`archi-tools`) en de marketplace die hem aanbiedt (`archi-marketplace`):
+Deze repo is tegelijk de plugin (`archi-tools`) en de marketplace die hem
+aanbiedt (`archi-marketplace`). Zo installeer je de skills bij je eigen model:
 
 ```
 /plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
 /plugin install archi-tools@archi-marketplace
 ```
 
-De plugin brengt de skills `archi-model`, `archi-view` en `archi-slides` mee;
-het `archi`-commando zelf komt van `uv tool install archi-cli`. Zie
-`adr/0007-claude-code-plugin.md`.
+De plugin brengt de drie skills mee; het `archi`-commando zelf komt van
+`uv tool install archi-cli`. Zie `adr/0007-claude-code-plugin.md`.
 
-## Ontwikkelen
+## Ontwikkelen aan de tool
 
 ```bash
 just setup       # venv, dependencies en de pre-commit hook
@@ -99,9 +99,9 @@ en Windows. Publiceren naar PyPI gebeurt op een versie-tag, zie `CLAUDE.md` en
 ```
 tools/archi_tool/       De archi-CLI (Python, lxml, Typer; beheerd met uv)
 tests/                  pytest-suite met een klein fixture-model
-.claude/skills/         Claude Code skills (archi-model, archi-view, archi-slides)
+.claude/skills/         De skills (archi-model, archi-view, archi-slides)
 .claude-plugin/         Plugin- en marketplace-manifest
-adr/                    Architectuurbeslissingen
+adr/                    Architectuurbeslissingen over de tool
 justfile                Vaste taken
 ```
 
