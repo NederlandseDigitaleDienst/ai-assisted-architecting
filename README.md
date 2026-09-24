@@ -38,8 +38,11 @@ archi list --type Capability                   # elementen, gefilterd
 archi show "<elementnaam of id>"               # één element met relaties
 archi tree                                     # folderstructuur
 
-archi add-element --type Capability --name "..." --property "Omschrijving=..."
+archi add-element --type Capability --name "..." --documentation "..."
 archi add-relation --type Aggregation --source "..." --target "..." --name "bevat"
+archi set-property <ref> "<key>=<waarde>"      # property zetten of bijwerken
+archi remove-property <ref> "<key>"            # property verwijderen
+archi set-documentation <ref> "..."            # Archi's documentatieveld
 archi rename <ref> "Nieuwe naam"
 archi remove <ref> --cascade
 

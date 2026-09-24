@@ -58,6 +58,20 @@ def test_set_property_confirms(model_path, capsys):
     assert "Property gezet op 'id-el-alfa': Bron = test" in output
 
 
+def test_remove_property_confirms(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "remove-property",
+                         "id-el-alfa", "Capability-niveau")
+    assert status == 0
+    assert "Property verwijderd van 'id-el-alfa': Capability-niveau" in output
+
+
+def test_remove_property_missing_key_fails(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "remove-property",
+                         "id-el-alfa", "Bestaat-niet")
+    assert status == 1
+    assert "Property 'Bestaat-niet' niet gevonden" in output
+
+
 def test_rename_confirms(model_path, capsys):
     status, output = run(capsys, "--model", str(model_path), "rename",
                          "id-el-beta", "Bouwblok Beta 2")

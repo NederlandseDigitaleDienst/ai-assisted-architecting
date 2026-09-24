@@ -524,8 +524,11 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
         if box["kind"] == "element":
             kind = "container" if box["container"] else "leaf"
             name = html.escape(box["element"].get("name") or "")
+            # Archi's eigen documentatieveld eerst; de property
+            # "Omschrijving" alleen als terugval voor oudere modellen.
             description = html.escape(
-                model.properties(box["element"]).get("Omschrijving", ""))
+                model.documentation(box["element"])
+                or model.properties(box["element"]).get("Omschrijving", ""))
             title_attr = f' title="{description}"' if description else ""
             divs.append(
                 f'<div class="box {kind} {layer_of(box["element"])}{dim}" '

@@ -488,8 +488,8 @@ def _slide_view(model, slide: dict, n: int, source: str) -> str:
     if focus_el is not None:
         title = slide.get("title") or focus_el.get("name") or name
         intro = (slide.get("intro")
-                 or model.properties(focus_el).get("Omschrijving", "")
-                 or model.documentation(focus_el))
+                 or model.documentation(focus_el)
+                 or model.properties(focus_el).get("Omschrijving", ""))
     else:
         title = slide.get("title") or name
         intro = slide.get("intro") or model.documentation(diagram)

@@ -172,6 +172,14 @@ def cmd_set_property(model, args):
     return status
 
 
+def cmd_remove_property(model, args):
+    model.remove_property(args.ref, args.key)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Property verwijderd van '{args.ref}': {args.key}")
+    return status
+
+
 def cmd_rename(model, args):
     model.rename(args.ref, args.name)
     status = save_validated(model, args)
@@ -418,6 +426,14 @@ def set_property(
     pair: str = typer.Argument(help="key=value"),
 ):
     _run(cmd_set_property, ref=ref, pair=pair)
+
+
+@app.command("remove-property", help="property verwijderen")
+def remove_property(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    key: str = typer.Argument(help="property-key"),
+):
+    _run(cmd_remove_property, ref=ref, key=key)
 
 
 @app.command(help="element of relatie hernoemen")

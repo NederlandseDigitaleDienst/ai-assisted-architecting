@@ -42,7 +42,7 @@ notes = "Sprekersnotitie."           # optioneel op elk slidetype
 type = "view"                        # zelfde view, ingezoomd: de camera
 view = "Viewnaam of view-id"         # glijdt naar het element, de rest dimt
 focus = "Elementnaam of -id"         # titel en intro defaulten dan naar de
-                                     # naam en Omschrijving van dat element
+                                     # naam en documentatie van dat element
 
 [[slides]]
 type = "text"                        # lopende tekst tussen de views

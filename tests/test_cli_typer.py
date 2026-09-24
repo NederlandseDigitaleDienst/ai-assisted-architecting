@@ -12,7 +12,8 @@ def test_help_lists_all_commands():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     for command in ("stats", "list", "show", "tree", "validate", "normalize",
-                    "add-element", "add-relation", "set-property", "rename",
+                    "add-element", "add-relation", "set-property",
+                    "remove-property", "rename",
                     "set-documentation", "remove", "set-model-name", "render",
                     "slides", "add-view"):
         assert command in result.output

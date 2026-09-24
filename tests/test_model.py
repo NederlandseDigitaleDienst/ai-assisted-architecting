@@ -75,6 +75,19 @@ def test_set_property_updates_and_creates(model):
     assert props == {"Capability-niveau": "bouwblok", "Bron": "test"}
 
 
+def test_remove_property_removes_only_that_key(model):
+    model.set_property("id-el-alfa", "Omschrijving", "tekst")
+    model.remove_property("id-el-alfa", "Omschrijving")
+    props = model.properties(model.resolve("id-el-alfa"))
+    assert props == {"Capability-niveau": "gebied"}
+    assert_valid(model)
+
+
+def test_remove_property_refuses_missing_key(model):
+    with pytest.raises(ModelError, match="niet gevonden"):
+        model.remove_property("id-el-alfa", "Bestaat-niet")
+
+
 def test_rename_and_documentation(model):
     model.rename("id-el-beta", "Bouwblok Beta 2")
     model.set_documentation("id-el-beta", "nieuw")

@@ -205,6 +205,17 @@ class ArchiModel:
                 return
         etree.SubElement(el, "property", {"key": key, "value": value})
 
+    def remove_property(self, ref: str, key: str):
+        """Verwijdert alle properties met deze key. Een ontbrekende key is een
+        fout, zodat een tikfout in de key niet stilzwijgend niets doet."""
+        el = self.resolve(ref)
+        treffers = [p for p in el.findall("property") if p.get("key") == key]
+        if not treffers:
+            raise ModelError(
+                f"Property '{key}' niet gevonden op '{ref}'")
+        for p in treffers:
+            el.remove(p)
+
     def rename(self, ref: str, name: str):
         self.resolve(ref).set("name", name)
 

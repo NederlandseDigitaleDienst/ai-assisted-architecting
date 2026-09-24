@@ -51,6 +51,16 @@ def test_render_view_html_structure(model):
     assert "bevat" in output          # containment edge hint (aggregation)
 
 
+def test_tooltip_prefers_documentation_over_omschrijving(model):
+    model.set_documentation("id-el-alfa", "Uit documentatie")
+    model.set_property("id-el-alfa", "Omschrijving", "Uit property")
+    model.set_property("id-el-beta", "Omschrijving", "Alleen property")
+    output = render_view_html(model, model.diagrams()[0])
+    assert 'title="Uit documentatie"' in output
+    assert 'title="Uit property"' not in output
+    assert 'title="Alleen property"' in output  # terugval voor oudere modellen
+
+
 def test_element_boxes_carry_type_icon(model):
     output = render_view_html(model, model.diagrams()[0])
     # nested notation: every element box gets its ArchiMate icon top-right
