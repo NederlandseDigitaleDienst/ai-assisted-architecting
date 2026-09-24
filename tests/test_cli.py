@@ -72,6 +72,27 @@ def test_remove_property_missing_key_fails(model_path, capsys):
     assert "Property 'Bestaat-niet' niet gevonden" in output
 
 
+def test_move_confirms_and_missing_subfolder_fails(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-el-gamma", "--subfolder", "Gebied X")
+    assert status == 1
+    assert "Submap 'Gebied X' niet gevonden" in output
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-el-gamma", "--subfolder", "Gebied X",
+                         "--create-subfolder")
+    assert status == 0
+    assert "Verplaatst: 'id-el-gamma' naar folder 'Gebied X'" in output
+
+
+def test_add_element_with_subfolder(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "add-element",
+                         "--type", "BusinessService", "--name", "Dienst",
+                         "--subfolder", "Gebied X", "--create-subfolder",
+                         "--documentation", "Omschrijving in documentatie")
+    assert status == 0
+    assert "Toegevoegd:" in output
+
+
 def test_rename_confirms(model_path, capsys):
     status, output = run(capsys, "--model", str(model_path), "rename",
                          "id-el-beta", "Bouwblok Beta 2")

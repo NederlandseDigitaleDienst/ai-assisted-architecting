@@ -43,6 +43,8 @@ archi add-relation --type Aggregation --source "..." --target "..." --name "beva
 archi set-property <ref> "<key>=<waarde>"      # property zetten of bijwerken
 archi remove-property <ref> "<key>"            # property verwijderen
 archi set-documentation <ref> "..."            # Archi's documentatieveld
+archi add-element ... --subfolder "Gebied X"    # in een submap van de laag
+archi move <ref> --subfolder "Gebied X"        # naar een submap verplaatsen
 archi rename <ref> "Nieuwe naam"
 archi remove <ref> --cascade
 

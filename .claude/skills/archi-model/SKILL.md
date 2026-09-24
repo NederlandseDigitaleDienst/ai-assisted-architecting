@@ -50,6 +50,13 @@ De CLI werkt op elk native `.archimate`-bestand. Het model wordt gevonden via
    `Omschrijving`. Properties zijn voor gestructureerde kenmerken.
    `add-element` plaatst het element in de folder die uit het type volgt;
    `--folder <type>` overschrijft dat alleen als je een bewuste reden hebt.
+   Gebruikt het model submappen binnen een laag (bv. per gebied), geef die
+   dan direct mee met `--subfolder "<map>"` (bij `add-element` én
+   `add-relation`; geneste mappen met `/`). Een bestaand element, relatie of
+   view verplaats je met `archi move <ref> --subfolder "<map>"` (leeg = terug
+   naar de laagfolder). Een ontbrekende submap is een fout met de lijst van
+   bestaande submappen; alleen met `--create-subfolder` wordt hij bewust
+   aangemaakt, zodat een tikfout geen nieuwe map oplevert.
 3. `archi validate`. Moet schoon zijn; waarschuwingen over property-keys los
    je op in de conventielijst of door de key aan te passen.
 4. `archi normalize`. Aanbevolen vóór commit: Archi serialiseert canoniek en

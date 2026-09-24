@@ -88,6 +88,39 @@ def test_remove_property_refuses_missing_key(model):
         model.remove_property("id-el-alfa", "Bestaat-niet")
 
 
+def test_add_element_in_subfolder_refuses_missing_without_create(model):
+    with pytest.raises(ModelError, match="Submap 'Gebied X' niet gevonden"):
+        model.add_element("BusinessService", "Dienst", subfolder="Gebied X")
+
+
+def test_add_element_and_relation_in_created_subfolder(model):
+    el = model.add_element("BusinessService", "Dienst",
+                           subfolder="Gebied X/Sub", create_subfolder=True)
+    assert el.getparent().get("name") == "Sub"
+    assert el.getparent().getparent().get("name") == "Gebied X"
+    assert model.top_folder(el).get("type") == "business"
+    # tweede keer: de submap bestaat nu, geen create nodig en geen duplicaat
+    el2 = model.add_element("BusinessService", "Dienst 2", subfolder="Gebied X/Sub")
+    assert el2.getparent() is el.getparent()
+    rel = model.add_relation("Realization", el.get("id"), "id-el-beta",
+                             subfolder="Gebied X", create_subfolder=True)
+    assert rel.getparent().get("name") == "Gebied X"
+    assert model.top_folder(rel).get("type") == "relations"
+    assert_valid(model)
+
+
+def test_move_within_layer_and_back(model):
+    model.move("id-el-gamma", "Gebied X", create_subfolder=True)
+    el = model.resolve("id-el-gamma")
+    assert el.getparent().get("name") == "Gebied X"
+    assert model.top_folder(el).get("type") == "motivation"
+    model.move("id-rel-agg", "Gebied X", create_subfolder=True)
+    assert model.top_folder(model.resolve("id-rel-agg")).get("type") == "relations"
+    model.move("id-el-gamma", "")
+    assert model.resolve("id-el-gamma").getparent().get("type") == "motivation"
+    assert_valid(model)
+
+
 def test_rename_and_documentation(model):
     model.rename("id-el-beta", "Bouwblok Beta 2")
     model.set_documentation("id-el-beta", "nieuw")

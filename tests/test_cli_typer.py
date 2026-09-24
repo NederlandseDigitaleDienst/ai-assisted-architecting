@@ -13,7 +13,7 @@ def test_help_lists_all_commands():
     assert result.exit_code == 0
     for command in ("stats", "list", "show", "tree", "validate", "normalize",
                     "add-element", "add-relation", "set-property",
-                    "remove-property", "rename",
+                    "remove-property", "move", "rename",
                     "set-documentation", "remove", "set-model-name", "render",
                     "slides", "add-view"):
         assert command in result.output

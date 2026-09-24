@@ -112,6 +112,40 @@ class ArchiModel:
                 return f
         raise ModelError(f"Folder met type '{folder_type}' niet gevonden")
 
+    def subfolder(self, top, path: str, create: bool = False):
+        """De (geneste) submap `path` onder folder `top`; segmenten gescheiden
+        door '/'. Een leeg pad geeft `top` zelf. Een ontbrekende submap is een
+        fout (met de beschikbare submappen erbij), tenzij `create`: een
+        tikfout mag niet stilzwijgend een nieuwe map opleveren."""
+        current = top
+        for deel in (d.strip() for d in (path or "").split("/")):
+            if not deel:
+                continue
+            gevonden = [f for f in current.findall("folder") if f.get("name") == deel]
+            if gevonden:
+                current = gevonden[0]
+            elif create:
+                current = etree.SubElement(
+                    current, "folder", {"name": deel, "id": new_id()})
+            else:
+                beschikbaar = ", ".join(
+                    f.get("name") for f in current.findall("folder")) or "(geen)"
+                raise ModelError(
+                    f"Submap '{deel}' niet gevonden in '{current.get('name')}'. "
+                    f"Beschikbaar: {beschikbaar}. Gebruik --create-subfolder "
+                    "om hem aan te maken.")
+        return current
+
+    @staticmethod
+    def top_folder(node):
+        """De laagfolder (direct onder de modelroot) waarin `node` staat."""
+        top, parent = None, node.getparent()
+        while parent is not None:
+            if parent.tag == "folder":
+                top = parent
+            parent = parent.getparent()
+        return top
+
     def elements(self) -> list:
         return [n for n in self.root.iter("element") if is_element(n)]
 
@@ -153,12 +187,15 @@ class ArchiModel:
         self.root.set("name", name)
 
     def add_element(self, el_type: str, name: str, folder_type: str = None,
-                    properties: dict = None, documentation: str = None):
+                    properties: dict = None, documentation: str = None,
+                    subfolder: str = None, create_subfolder: bool = False):
         if el_type not in FOLDER_BY_ELEMENT_TYPE:
             known = ", ".join(sorted(FOLDER_BY_ELEMENT_TYPE))
             raise ModelError(
                 f"Onbekend elementtype '{el_type}'. Toegestaan: {known}")
-        target = self.folder(folder_type or FOLDER_BY_ELEMENT_TYPE[el_type])
+        target = self.subfolder(
+            self.folder(folder_type or FOLDER_BY_ELEMENT_TYPE[el_type]),
+            subfolder, create=create_subfolder)
         el = etree.SubElement(target, "element", {
             XSI_TYPE: f"archimate:{el_type}", "name": name, "id": new_id()})
         if documentation:
@@ -169,7 +206,8 @@ class ArchiModel:
         return el
 
     def add_relation(self, rel_type: str, source: str, target: str,
-                     name: str = None):
+                     name: str = None, subfolder: str = None,
+                     create_subfolder: bool = False):
         rel_type = rel_type.removesuffix("Relationship")
         if rel_type not in RELATIONSHIP_TYPES:
             known = ", ".join(sorted(RELATIONSHIP_TYPES))
@@ -195,7 +233,20 @@ class ArchiModel:
                  "source": src.get("id"), "target": tgt.get("id")}
         if name:
             attrs["name"] = name
-        return etree.SubElement(self.folder("relations"), "element", attrs)
+        folder = self.subfolder(self.folder("relations"), subfolder,
+                                create=create_subfolder)
+        return etree.SubElement(folder, "element", attrs)
+
+    def move(self, ref: str, subfolder: str, create_subfolder: bool = False):
+        """Verplaatst een element, relatie of view naar `subfolder` binnen de
+        laagfolder waarin het nu staat; een leeg pad = naar die laagfolder
+        zelf. Blijft zo altijd in de laag die bij het type hoort."""
+        node = self.resolve(ref)
+        target = self.subfolder(self.top_folder(node), subfolder,
+                                create=create_subfolder)
+        node.getparent().remove(node)
+        target.append(node)
+        return target
 
     def set_property(self, ref: str, key: str, value: str):
         el = self.resolve(ref)
