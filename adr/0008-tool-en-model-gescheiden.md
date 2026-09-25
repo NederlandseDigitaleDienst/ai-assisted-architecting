@@ -45,7 +45,8 @@ terwijl hij dat allang niet meer is.
   het model in de oude commits staan; alleen de bestanden zijn weg.
 - **Ingebouwde default-property-keys generiek gemaakt.** `DEFAULT_PROPERTY_KEYS`
   bevatte ADO-keys (`Capability-niveau`, `Driver-categorie`, …); nu alleen
-  generieke (`Omschrijving`, `Toelichting`, `Bron`). Een project levert zijn
+  generieke (`Omschrijving`, `Toelichting`, `Bron`; sinds ADR 0009 alleen nog
+  `Bron`). Een project levert zijn
   eigen keys via een `conventies.md`.
 
 ## Gevolgen

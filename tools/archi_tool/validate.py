@@ -101,6 +101,16 @@ def validate(model, conventions_path=None, allowed_keys=None) -> tuple[list, lis
                     f"'{node.get('name')}') staat in folder '{folder_type}', "
                     f"verwacht '{expected}'")
 
+    # 3b. diagram parts belong inside a view; a view object or connection
+    # directly in a folder means it was torn out of its view (Archi still
+    # loads such a file, so without this check the damage goes unnoticed)
+    for node in model.root.iter("child", "sourceConnection"):
+        parent = node.getparent()
+        if parent is not None and parent.tag == "folder":
+            errors.append(
+                f"View-onderdeel {node.get('id')} ({node.tag}) staat los in "
+                f"folder '{parent.get('name')}' in plaats van in een view")
+
     # 4. view integrity
     for diagram in model.diagrams():
         object_ids = {c.get("id") for c in diagram.iter("child")}

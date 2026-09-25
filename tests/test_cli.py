@@ -58,6 +58,57 @@ def test_set_property_confirms(model_path, capsys):
     assert "Property gezet op 'id-el-alfa': Bron = test" in output
 
 
+def test_remove_property_confirms(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "remove-property",
+                         "id-el-alfa", "Capability-niveau")
+    assert status == 0
+    assert "Property verwijderd van 'id-el-alfa': Capability-niveau" in output
+
+
+def test_remove_property_missing_key_fails(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "remove-property",
+                         "id-el-alfa", "Bestaat-niet")
+    assert status == 1
+    assert "Property 'Bestaat-niet' niet gevonden" in output
+
+
+def test_move_confirms_and_missing_subfolder_fails(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-el-gamma", "--subfolder", "Gebied X")
+    assert status == 1
+    assert "Submap 'Gebied X' niet gevonden" in output
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-el-gamma", "--subfolder", "Gebied X",
+                         "--create-subfolder")
+    assert status == 0
+    assert "Verplaatst: 'id-el-gamma' naar folder 'Gebied X'" in output
+
+
+def test_move_back_to_layer_folder_with_empty_subfolder(model_path, capsys):
+    run(capsys, "--model", str(model_path), "move", "id-el-gamma",
+        "--subfolder", "Gebied X", "--create-subfolder")
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-el-gamma", "--subfolder", "")
+    assert status == 0
+    assert "Verplaatst: 'id-el-gamma' naar folder 'Motivation'" in output
+
+
+def test_move_refuses_view_object(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-obj-alfa", "--subfolder", "")
+    assert status == 1
+    assert "geen element, relatie of view" in output
+
+
+def test_add_element_with_subfolder(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "add-element",
+                         "--type", "BusinessService", "--name", "Dienst",
+                         "--subfolder", "Gebied X", "--create-subfolder",
+                         "--documentation", "Omschrijving in documentatie")
+    assert status == 0
+    assert "Toegevoegd:" in output
+
+
 def test_rename_confirms(model_path, capsys):
     status, output = run(capsys, "--model", str(model_path), "rename",
                          "id-el-beta", "Bouwblok Beta 2")

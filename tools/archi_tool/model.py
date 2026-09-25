@@ -112,6 +112,46 @@ class ArchiModel:
                 return f
         raise ModelError(f"Folder met type '{folder_type}' niet gevonden")
 
+    def subfolder(self, top, path: str, create: bool = False):
+        """Return the (nested) subfolder `path` below folder `top`; segments
+        are separated by '/'. An empty path returns `top` itself. A missing
+        subfolder is an error (listing the existing ones) unless `create`,
+        and an ambiguous name is always an error: a typo must never silently
+        pick or create the wrong folder."""
+        current = top
+        for part in (p.strip() for p in (path or "").split("/")):
+            if not part:
+                continue
+            matches = [f for f in current.findall("folder") if f.get("name") == part]
+            if len(matches) > 1:
+                raise ModelError(
+                    f"Submap '{part}' komt {len(matches)}x voor in "
+                    f"'{current.get('name')}'; maak de mapnamen eerst uniek")
+            if matches:
+                current = matches[0]
+            elif create:
+                current = etree.SubElement(
+                    current, "folder", {"name": part, "id": new_id()})
+            else:
+                available = ", ".join(
+                    f.get("name") for f in current.findall("folder")) or "(geen)"
+                raise ModelError(
+                    f"Submap '{part}' niet gevonden in '{current.get('name')}'. "
+                    f"Beschikbaar: {available}. Gebruik --create-subfolder "
+                    "om hem aan te maken.")
+        return current
+
+    @staticmethod
+    def top_folder(node):
+        """Return the layer folder (directly below the model root) that
+        contains `node`, or None if it is not inside a folder."""
+        top, parent = None, node.getparent()
+        while parent is not None:
+            if parent.tag == "folder":
+                top = parent
+            parent = parent.getparent()
+        return top
+
     def elements(self) -> list:
         return [n for n in self.root.iter("element") if is_element(n)]
 
@@ -153,12 +193,15 @@ class ArchiModel:
         self.root.set("name", name)
 
     def add_element(self, el_type: str, name: str, folder_type: str = None,
-                    properties: dict = None, documentation: str = None):
+                    properties: dict = None, documentation: str = None,
+                    subfolder: str = None, create_subfolder: bool = False):
         if el_type not in FOLDER_BY_ELEMENT_TYPE:
             known = ", ".join(sorted(FOLDER_BY_ELEMENT_TYPE))
             raise ModelError(
                 f"Onbekend elementtype '{el_type}'. Toegestaan: {known}")
-        target = self.folder(folder_type or FOLDER_BY_ELEMENT_TYPE[el_type])
+        target = self.subfolder(
+            self.folder(folder_type or FOLDER_BY_ELEMENT_TYPE[el_type]),
+            subfolder, create=create_subfolder)
         el = etree.SubElement(target, "element", {
             XSI_TYPE: f"archimate:{el_type}", "name": name, "id": new_id()})
         if documentation:
@@ -169,7 +212,8 @@ class ArchiModel:
         return el
 
     def add_relation(self, rel_type: str, source: str, target: str,
-                     name: str = None):
+                     name: str = None, subfolder: str = None,
+                     create_subfolder: bool = False):
         rel_type = rel_type.removesuffix("Relationship")
         if rel_type not in RELATIONSHIP_TYPES:
             known = ", ".join(sorted(RELATIONSHIP_TYPES))
@@ -195,7 +239,33 @@ class ArchiModel:
                  "source": src.get("id"), "target": tgt.get("id")}
         if name:
             attrs["name"] = name
-        return etree.SubElement(self.folder("relations"), "element", attrs)
+        folder = self.subfolder(self.folder("relations"), subfolder,
+                                create=create_subfolder)
+        return etree.SubElement(folder, "element", attrs)
+
+    def move(self, ref: str, subfolder: str, create_subfolder: bool = False):
+        """Move an element, relationship or view to `subfolder` within the
+        layer folder it currently lives in; an empty path moves it to that
+        layer folder itself, so it always stays in the layer that fits its
+        type. Anything else with an id (diagram objects, connections,
+        folders, the model root) is refused: moving those would silently
+        damage a view or the folder structure."""
+        node = self.resolve(ref)
+        if node.tag == "folder":
+            raise ModelError(
+                f"'{ref}' is een map; mappen verplaatsen wordt niet "
+                "ondersteund, doe dat in Archi")
+        if not (is_element(node) or is_relationship(node) or is_diagram(node)):
+            raise ModelError(
+                f"'{ref}' is geen element, relatie of view (maar een "
+                f"'{etree.QName(node).localname}') en kan niet verplaatst worden")
+        top = self.top_folder(node)
+        if top is None:
+            raise ModelError(f"'{ref}' staat niet in een folder")
+        target = self.subfolder(top, subfolder, create=create_subfolder)
+        node.getparent().remove(node)
+        target.append(node)
+        return target
 
     def set_property(self, ref: str, key: str, value: str):
         el = self.resolve(ref)
@@ -204,6 +274,17 @@ class ArchiModel:
                 p.set("value", value)
                 return
         etree.SubElement(el, "property", {"key": key, "value": value})
+
+    def remove_property(self, ref: str, key: str):
+        """Remove all properties with this key. A missing key is an error, so
+        a typo in the key never silently does nothing."""
+        el = self.resolve(ref)
+        matches = [p for p in el.findall("property") if p.get("key") == key]
+        if not matches:
+            raise ModelError(
+                f"Property '{key}' niet gevonden op '{ref}'")
+        for p in matches:
+            el.remove(p)
 
     def rename(self, ref: str, name: str):
         self.resolve(ref).set("name", name)

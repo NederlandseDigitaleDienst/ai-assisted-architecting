@@ -144,7 +144,9 @@ def cmd_validate(model, args):
 def cmd_add_element(model, args):
     el = model.add_element(args.type, args.name, folder_type=args.folder,
                            properties=parse_properties(args.property),
-                           documentation=args.documentation)
+                           documentation=args.documentation,
+                           subfolder=args.subfolder,
+                           create_subfolder=args.create_subfolder)
     status = save_validated(model, args)
     if status == 0:
         print(f"Toegevoegd: {describe(model, el)}")
@@ -153,7 +155,8 @@ def cmd_add_element(model, args):
 
 def cmd_add_relation(model, args):
     rel = model.add_relation(args.type, args.source, args.target,
-                             name=args.name)
+                             name=args.name, subfolder=args.subfolder,
+                             create_subfolder=args.create_subfolder)
     status = save_validated(model, args)
     if status == 0:
         print(f"Toegevoegd: {rel.get('id')} [{xsi_type(rel)}] "
@@ -169,6 +172,23 @@ def cmd_set_property(model, args):
     status = save_validated(model, args)
     if status == 0:
         print(f"Property gezet op '{args.ref}': {key} = {value}")
+    return status
+
+
+def cmd_move(model, args):
+    target = model.move(args.ref, args.subfolder,
+                        create_subfolder=args.create_subfolder)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Verplaatst: '{args.ref}' naar folder '{target.get('name')}'")
+    return status
+
+
+def cmd_remove_property(model, args):
+    model.remove_property(args.ref, args.key)
+    status = save_validated(model, args)
+    if status == 0:
+        print(f"Property verwijderd van '{args.ref}': {args.key}")
     return status
 
 
@@ -395,9 +415,15 @@ def add_element(
     property: Optional[list[str]] = typer.Option(
         None, "--property", help="key=value (herhaalbaar)"),
     documentation: Optional[str] = typer.Option(None),
+    subfolder: Optional[str] = typer.Option(
+        None, help="submap binnen de laagfolder, geneste mappen met '/'"),
+    create_subfolder: bool = typer.Option(
+        False, "--create-subfolder",
+        help="ontbrekende submap aanmaken (anders: fout)"),
 ):
     _run(cmd_add_element, type=type, name=name, folder=folder,
-         property=property, documentation=documentation)
+         property=property, documentation=documentation,
+         subfolder=subfolder, create_subfolder=create_subfolder)
 
 
 @app.command("add-relation", help="relatie toevoegen")
@@ -407,9 +433,29 @@ def add_relation(
     source: str = typer.Option(..., help="id of unieke naam"),
     target: str = typer.Option(..., help="id of unieke naam"),
     name: Optional[str] = typer.Option(None, help="NL-label op de relatie"),
+    subfolder: Optional[str] = typer.Option(
+        None, help="submap binnen Relations, geneste mappen met '/'"),
+    create_subfolder: bool = typer.Option(
+        False, "--create-subfolder",
+        help="ontbrekende submap aanmaken (anders: fout)"),
 ):
     _run(cmd_add_relation, type=type, source=source,
-         target=target, name=name)
+         target=target, name=name, subfolder=subfolder,
+         create_subfolder=create_subfolder)
+
+
+@app.command(help="element, relatie of view naar een submap verplaatsen")
+def move(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    subfolder: str = typer.Option(
+        ..., help="submap binnen de huidige laagfolder, geneste mappen met "
+                  "'/'; leeg ('') = terug naar de laagfolder zelf"),
+    create_subfolder: bool = typer.Option(
+        False, "--create-subfolder",
+        help="ontbrekende submap aanmaken (anders: fout)"),
+):
+    _run(cmd_move, ref=ref, subfolder=subfolder,
+         create_subfolder=create_subfolder)
 
 
 @app.command("set-property", help="property zetten of bijwerken")
@@ -418,6 +464,14 @@ def set_property(
     pair: str = typer.Argument(help="key=value"),
 ):
     _run(cmd_set_property, ref=ref, pair=pair)
+
+
+@app.command("remove-property", help="property verwijderen")
+def remove_property(
+    ref: str = typer.Argument(help="id of (unieke) naam"),
+    key: str = typer.Argument(help="property-key"),
+):
+    _run(cmd_remove_property, ref=ref, key=key)
 
 
 @app.command(help="element of relatie hernoemen")

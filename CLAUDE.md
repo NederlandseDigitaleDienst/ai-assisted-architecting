@@ -24,7 +24,7 @@ just build            # distributies bouwen + twine check (vóór een release)
 
 # De CLI zelf (op elk model; --model vóór het subcommando):
 uv run archi stats|list|show|tree ...      # inspectie
-uv run archi add-element|add-relation|set-property|rename|set-documentation|remove ...
+uv run archi add-element|add-relation|set-property|remove-property|move|rename|set-documentation|remove ...
 uv run archi add-view --name ... --layout grid|cluster
 uv run archi slides [--deck decks/<naam>.toml]
 uv run archi validate|normalize|render

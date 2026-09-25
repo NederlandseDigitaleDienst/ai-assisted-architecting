@@ -1,6 +1,9 @@
-import pytest
+import re
 
-from archi_tool.model import ArchiModel, ModelError, xsi_type
+import pytest
+from lxml import etree
+
+from archi_tool.model import ArchiModel, ModelError, new_id, xsi_type
 from archi_tool.validate import validate
 
 
@@ -73,6 +76,87 @@ def test_set_property_updates_and_creates(model):
     model.set_property("id-el-alfa", "Bron", "test")
     props = model.properties(model.resolve("id-el-alfa"))
     assert props == {"Capability-niveau": "bouwblok", "Bron": "test"}
+
+
+def test_remove_property_removes_only_that_key(model):
+    model.set_property("id-el-alfa", "Omschrijving", "tekst")
+    model.remove_property("id-el-alfa", "Omschrijving")
+    props = model.properties(model.resolve("id-el-alfa"))
+    assert props == {"Capability-niveau": "gebied"}
+    assert_valid(model)
+
+
+def test_remove_property_refuses_missing_key(model):
+    with pytest.raises(ModelError, match="niet gevonden"):
+        model.remove_property("id-el-alfa", "Bestaat-niet")
+
+
+def test_add_element_in_subfolder_refuses_missing_without_create(model):
+    with pytest.raises(ModelError, match="Submap 'Gebied X' niet gevonden"):
+        model.add_element("BusinessService", "Dienst", subfolder="Gebied X")
+
+
+def test_add_element_and_relation_in_created_subfolder(model):
+    el = model.add_element("BusinessService", "Dienst",
+                           subfolder="Gebied X/Sub", create_subfolder=True)
+    assert el.getparent().get("name") == "Sub"
+    assert el.getparent().getparent().get("name") == "Gebied X"
+    assert model.top_folder(el).get("type") == "business"
+    # tweede keer: de submap bestaat nu, geen create nodig en geen duplicaat
+    el2 = model.add_element("BusinessService", "Dienst 2", subfolder="Gebied X/Sub")
+    assert el2.getparent() is el.getparent()
+    rel = model.add_relation("Realization", el.get("id"), "id-el-beta",
+                             subfolder="Gebied X", create_subfolder=True)
+    assert rel.getparent().get("name") == "Gebied X"
+    assert model.top_folder(rel).get("type") == "relations"
+    assert_valid(model)
+
+
+def test_move_within_layer_and_back(model):
+    model.move("id-el-gamma", "Gebied X", create_subfolder=True)
+    el = model.resolve("id-el-gamma")
+    assert el.getparent().get("name") == "Gebied X"
+    assert model.top_folder(el).get("type") == "motivation"
+    model.move("id-rel-agg", "Gebied X", create_subfolder=True)
+    assert model.top_folder(model.resolve("id-rel-agg")).get("type") == "relations"
+    model.move("id-el-gamma", "")
+    assert model.resolve("id-el-gamma").getparent().get("type") == "motivation"
+    assert_valid(model)
+
+
+@pytest.mark.parametrize("ref, message", [
+    ("id-obj-alfa", "geen element, relatie of view (maar een 'child')"),
+    ("id-conn-1", "geen element, relatie of view (maar een 'sourceConnection')"),
+    ("id-model-1", "geen element, relatie of view (maar een 'model')"),
+    ("id-folder-motivation", "is een map"),
+])
+def test_move_refuses_non_concepts(model, ref, message):
+    with pytest.raises(ModelError, match=re.escape(message)):
+        model.move(ref, "", create_subfolder=True)
+    assert_valid(model)
+
+
+def test_move_refuses_subfolder(model):
+    model.move("id-el-gamma", "Gebied X", create_subfolder=True)
+    folder = model.resolve("id-el-gamma").getparent()
+    with pytest.raises(ModelError, match="is een map"):
+        model.move(folder.get("id"), "", create_subfolder=True)
+
+
+def test_move_view_to_subfolder(model):
+    model.move("id-view-1", "Overzichten", create_subfolder=True)
+    view = model.resolve("id-view-1")
+    assert view.getparent().get("name") == "Overzichten"
+    assert model.top_folder(view).get("type") == "diagrams"
+    assert_valid(model)
+
+
+def test_subfolder_refuses_ambiguous_name(model):
+    business = model.folder("business")
+    for _ in range(2):
+        etree.SubElement(business, "folder", {"name": "Dubbel", "id": new_id()})
+    with pytest.raises(ModelError, match="komt 2x voor"):
+        model.add_element("BusinessService", "Dienst", subfolder="Dubbel")
 
 
 def test_rename_and_documentation(model):
