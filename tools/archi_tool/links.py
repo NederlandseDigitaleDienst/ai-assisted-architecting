@@ -16,6 +16,7 @@ it lives in this sidecar and not in the model (ADR 0010).
 """
 from __future__ import annotations
 
+import os
 import re
 import tomllib
 from pathlib import Path
@@ -87,7 +88,10 @@ def check_link_files(links: dict, views_root, html_dir, view_slugs) -> list:
         for name, target in mapping.items():
             if _NOT_RELATIVE.match(target):
                 continue
-            if not (source_dir / target).exists():
+            # normalise ".." lexically first: POSIX resolves it through the
+            # filesystem, so a not-yet-existing source dir would otherwise make
+            # an existing target look missing (Windows already does this)
+            if not Path(os.path.normpath(source_dir / target)).exists():
                 warnings.append(
                     f"Links: '{source}' → '{name}' verwijst naar "
                     f"'{target}', dat niet bestaat")
