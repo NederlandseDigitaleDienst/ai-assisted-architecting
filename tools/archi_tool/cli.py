@@ -16,10 +16,11 @@ from typing import Optional
 import typer
 from lxml import etree
 
-from .discovery import discover_conventions, discover_model
+from .discovery import discover_conventions, discover_links, discover_model
+from .links import check_link_files, load_links
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
-from .render import render_all, write_if_changed
+from .render import render_all, slugify, write_if_changed
 from .render_html import render_all_html
 from .render_slides import load_deck, render_all_slides, render_deck_html
 from .validate import validate
@@ -42,7 +43,8 @@ def report_validation(model, model_path) -> bool:
     # validating a model from another project uses that project's conventions
     allowed_keys, _ = discover_conventions(
         model_path, start=Path(model_path).resolve().parent)
-    errors, warnings = validate(model, allowed_keys=allowed_keys)
+    links = load_links(discover_links(model_path))
+    errors, warnings = validate(model, allowed_keys=allowed_keys, links=links)
     for warning in warnings:
         print(f"WAARSCHUWING: {warning}")
     for error in errors:
@@ -264,10 +266,12 @@ def cmd_setup(model, args):
 
 
 def cmd_render(model, args):
+    links = load_links(discover_links(args.model))
     written, removed = render_all(model, args.out)
-    html_written, html_removed = render_all_html(model, Path(args.out) / "html")
+    html_dir = Path(args.out) / "html"
+    html_written, html_removed = render_all_html(model, html_dir, links=links)
     deck_written, deck_removed = render_all_slides(
-        model, Path(args.decks), Path(args.out) / "html" / "slides")
+        model, Path(args.decks), html_dir / "slides", links=links)
     for path in written + html_written + deck_written:
         print(f"Geschreven: {path}")
     for path in removed + html_removed:
@@ -277,22 +281,28 @@ def cmd_render(model, args):
     if not (written or removed or html_written or html_removed
             or deck_written or deck_removed):
         print("Views zijn al actueel.")
+    view_slugs = {slugify(d.get("name") or d.get("id"))
+                  for d in model.diagrams()}
+    for warning in check_link_files(links, args.out, html_dir, view_slugs):
+        print(f"WAARSCHUWING: {warning}")
     return 0
 
 
 def cmd_slides(model, args):
+    links = load_links(discover_links(args.model))
     if args.deck:
         written = []
         for deck_path in args.deck:
             deck = load_deck(Path(deck_path), model)
             path = Path(args.out) / f"{deck['slug']}.html"
             path.parent.mkdir(parents=True, exist_ok=True)
-            if write_if_changed(path, render_deck_html(model, deck)):
+            if write_if_changed(path, render_deck_html(model, deck,
+                                                       links=links)):
                 written.append(path)
         removed = []
     else:
         written, removed = render_all_slides(
-            model, Path(args.decks), Path(args.out))
+            model, Path(args.decks), Path(args.out), links=links)
     for path in written:
         print(f"Geschreven: {path}")
     for path in removed:

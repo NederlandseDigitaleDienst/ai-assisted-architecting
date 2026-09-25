@@ -18,6 +18,7 @@ import tomllib
 from pathlib import Path
 
 from .model import ModelError
+from .links import links_for
 from .render import (MARKER, is_descendant, slugify, view_stems,
                      write_if_changed)
 from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, absolute_boxes,
@@ -479,7 +480,8 @@ def _resolve_focus(model, diagram, ref: str, source: str, n: int):
     return focus["element"], (x, y, w, h), dim_ids
 
 
-def _slide_view(model, slide: dict, n: int, source: str) -> str:
+def _slide_view(model, slide: dict, n: int, source: str,
+                links: dict | None = None) -> str:
     diagram = slide["diagram"]
     name = diagram.get("name") or "(naamloze view)"
     focus_el, rect, dim_ids = None, None, None
@@ -494,8 +496,11 @@ def _slide_view(model, slide: dict, n: int, source: str) -> str:
     else:
         title = slide.get("title") or name
         intro = slide.get("intro") or model.documentation(diagram)
+    # the deck lives one directory below the views, hence the "../" base
+    view_links = links_for(links or {}, slugify(name), base="../")
     canvas = diagram_canvas(model, diagram, marker_prefix=f"s{n}-",
-                            ref_base="../", dim_ids=dim_ids)
+                            ref_base="../", dim_ids=dim_ids,
+                            links=view_links)
     stem = view_stems(model)[diagram.get("id")]
     intro_html = (f'<p class="intro">{html.escape(intro)}</p>'
                   if intro else "")
@@ -558,14 +563,16 @@ def _slide_closing(slide: dict) -> str:
     return "".join(parts)
 
 
-def render_slide_html(model, deck: dict, slide: dict, n: int) -> str:
+def render_slide_html(model, deck: dict, slide: dict, n: int,
+                      links: dict | None = None) -> str:
     kind = slide["type"]
     if kind == "title":
         inner = _slide_title(deck, slide)
     elif kind == "section":
         inner = _slide_section(slide)
     elif kind == "view":
-        inner = _slide_view(model, slide, n, deck.get("source", ""))
+        inner = _slide_view(model, slide, n, deck.get("source", ""),
+                            links=links)
     elif kind == "text":
         inner = _slide_text(slide)
     elif kind == "bullets":
@@ -576,11 +583,12 @@ def render_slide_html(model, deck: dict, slide: dict, n: int) -> str:
             f"{inner}{_notes_html(slide)}</section>")
 
 
-def render_deck_html(model, deck: dict) -> str:
-    """One self-contained HTML document for a validated deck."""
+def render_deck_html(model, deck: dict, links: dict | None = None) -> str:
+    """One self-contained HTML document for a validated deck. links is the
+    parsed links file; embedded views pick up their own section."""
     total = len(deck["slides"])
     slides_html = "\n".join(
-        render_slide_html(model, deck, slide, n)
+        render_slide_html(model, deck, slide, n, links=links)
         for n, slide in enumerate(deck["slides"], start=1))
     return f"""{MARKER}
 <!doctype html>
@@ -616,7 +624,8 @@ n notities &middot; a autoplay</div>
 """
 
 
-def render_all_slides(model, decks_dir, out_dir) -> tuple[list, list]:
+def render_all_slides(model, decks_dir, out_dir,
+                      links: dict | None = None) -> tuple[list, list]:
     """Render every decks/*.toml; returns (written, removed) path lists.
     A missing or empty decks dir is not an error: nothing is rendered and
     stale generated decks are cleaned up."""
@@ -637,7 +646,7 @@ def render_all_slides(model, decks_dir, out_dir) -> tuple[list, list]:
     written, produced = [], set()
     for deck in decks:
         path = out / f"{deck['slug']}.html"
-        if write_if_changed(path, render_deck_html(model, deck)):
+        if write_if_changed(path, render_deck_html(model, deck, links=links)):
             written.append(path)
         produced.add(path.name)
 

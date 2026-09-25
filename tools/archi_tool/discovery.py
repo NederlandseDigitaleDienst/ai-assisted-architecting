@@ -96,6 +96,24 @@ def discover_model(explicit=None, start=None):
         "--model <pad> of leg het vast in archi.toml.")
 
 
+def discover_links(model_path, start=None):
+    """Return the path of the links file, or None when none is configured.
+
+    Only ``[tool.archi] links`` in a config file counts (there is no
+    filesystem fallback: click-through is opt-in). A configured path that
+    does not exist is a config error.
+    """
+    start = Path(start or Path(model_path).resolve().parent)
+    table, config_path = _read_archi_config(start)
+    if "links" not in table:
+        return None
+    path = (config_path.parent / table["links"]).resolve()
+    if not path.exists():
+        raise ModelError(
+            f"Linkspad uit {config_path.name} bestaat niet: {path}")
+    return path
+
+
 def discover_conventions(model_path, start=None):
     """Return (allowed_property_keys, source_label).
 

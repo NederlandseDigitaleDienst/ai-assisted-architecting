@@ -71,6 +71,35 @@ Wat de tool bijzonder maakt:
 - **Renderen.** Elke view wordt een Mermaid-diagram (rendert op GitHub) en een
   HTML-pagina die de layout uit het model volgt, plus een presentatie per
   deckdefinitie.
+- **Doorklikken tussen views.** Met een links-bestand
+  (`[tool.archi] links = "…"` in `archi.toml`) worden elementen in de
+  HTML-views en slides klikbaar naar een andere view of een ander bestand,
+  bijvoorbeeld een SVG die een project met eigen scripts maakt. Zie
+  hieronder.
+
+### Doorklikken met een links-bestand
+
+Welk element waarheen doorklikt is een redactionele keuze, geen modelfeit;
+het staat daarom in een apart TOML-bestand (zie ADR 0010):
+
+```toml
+# archi.toml
+[tool.archi]
+links = "tools/links.toml"
+
+# tools/links.toml
+["overzicht-van-de-gebieden"]            # bestandsnaam van de bronplaat, zonder extensie
+"Gebied A" = "gebied-a-in-detail.html"   # elementnaam = pad, relatief aan de bronplaat
+"Gebied B" = "../eigen-svg/gebied-b.svg"
+```
+
+Een sectie hoort bij de HTML-view met die bestandsnaam (de slug van de
+viewnaam), of bij een bestand dat een project zelf genereert: dezelfde
+sectievorm is dan bruikbaar voor eigen scripts, zodat één bestand over alle
+doorkliks gaat. In slides worden relatieve paden automatisch gecorrigeerd
+voor de submap. `archi validate` waarschuwt voor elementnamen die niet in de
+view (of het model) staan, `archi render` voor doelen die niet bestaan en
+voor secties die bij geen view of bestand horen.
 
 ## De skills als Claude Code plugin
 
