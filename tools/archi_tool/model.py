@@ -113,32 +113,38 @@ class ArchiModel:
         raise ModelError(f"Folder met type '{folder_type}' niet gevonden")
 
     def subfolder(self, top, path: str, create: bool = False):
-        """De (geneste) submap `path` onder folder `top`; segmenten gescheiden
-        door '/'. Een leeg pad geeft `top` zelf. Een ontbrekende submap is een
-        fout (met de beschikbare submappen erbij), tenzij `create`: een
-        tikfout mag niet stilzwijgend een nieuwe map opleveren."""
+        """Return the (nested) subfolder `path` below folder `top`; segments
+        are separated by '/'. An empty path returns `top` itself. A missing
+        subfolder is an error (listing the existing ones) unless `create`,
+        and an ambiguous name is always an error: a typo must never silently
+        pick or create the wrong folder."""
         current = top
-        for deel in (d.strip() for d in (path or "").split("/")):
-            if not deel:
+        for part in (p.strip() for p in (path or "").split("/")):
+            if not part:
                 continue
-            gevonden = [f for f in current.findall("folder") if f.get("name") == deel]
-            if gevonden:
-                current = gevonden[0]
+            matches = [f for f in current.findall("folder") if f.get("name") == part]
+            if len(matches) > 1:
+                raise ModelError(
+                    f"Submap '{part}' komt {len(matches)}x voor in "
+                    f"'{current.get('name')}'; maak de mapnamen eerst uniek")
+            if matches:
+                current = matches[0]
             elif create:
                 current = etree.SubElement(
-                    current, "folder", {"name": deel, "id": new_id()})
+                    current, "folder", {"name": part, "id": new_id()})
             else:
-                beschikbaar = ", ".join(
+                available = ", ".join(
                     f.get("name") for f in current.findall("folder")) or "(geen)"
                 raise ModelError(
-                    f"Submap '{deel}' niet gevonden in '{current.get('name')}'. "
-                    f"Beschikbaar: {beschikbaar}. Gebruik --create-subfolder "
+                    f"Submap '{part}' niet gevonden in '{current.get('name')}'. "
+                    f"Beschikbaar: {available}. Gebruik --create-subfolder "
                     "om hem aan te maken.")
         return current
 
     @staticmethod
     def top_folder(node):
-        """De laagfolder (direct onder de modelroot) waarin `node` staat."""
+        """Return the layer folder (directly below the model root) that
+        contains `node`, or None if it is not inside a folder."""
         top, parent = None, node.getparent()
         while parent is not None:
             if parent.tag == "folder":
@@ -238,12 +244,25 @@ class ArchiModel:
         return etree.SubElement(folder, "element", attrs)
 
     def move(self, ref: str, subfolder: str, create_subfolder: bool = False):
-        """Verplaatst een element, relatie of view naar `subfolder` binnen de
-        laagfolder waarin het nu staat; een leeg pad = naar die laagfolder
-        zelf. Blijft zo altijd in de laag die bij het type hoort."""
+        """Move an element, relationship or view to `subfolder` within the
+        layer folder it currently lives in; an empty path moves it to that
+        layer folder itself, so it always stays in the layer that fits its
+        type. Anything else with an id (diagram objects, connections,
+        folders, the model root) is refused: moving those would silently
+        damage a view or the folder structure."""
         node = self.resolve(ref)
-        target = self.subfolder(self.top_folder(node), subfolder,
-                                create=create_subfolder)
+        if node.tag == "folder":
+            raise ModelError(
+                f"'{ref}' is een map; mappen verplaatsen wordt niet "
+                "ondersteund, doe dat in Archi")
+        if not (is_element(node) or is_relationship(node) or is_diagram(node)):
+            raise ModelError(
+                f"'{ref}' is geen element, relatie of view (maar een "
+                f"'{etree.QName(node).localname}') en kan niet verplaatst worden")
+        top = self.top_folder(node)
+        if top is None:
+            raise ModelError(f"'{ref}' staat niet in een folder")
+        target = self.subfolder(top, subfolder, create=create_subfolder)
         node.getparent().remove(node)
         target.append(node)
         return target
@@ -257,14 +276,14 @@ class ArchiModel:
         etree.SubElement(el, "property", {"key": key, "value": value})
 
     def remove_property(self, ref: str, key: str):
-        """Verwijdert alle properties met deze key. Een ontbrekende key is een
-        fout, zodat een tikfout in de key niet stilzwijgend niets doet."""
+        """Remove all properties with this key. A missing key is an error, so
+        a typo in the key never silently does nothing."""
         el = self.resolve(ref)
-        treffers = [p for p in el.findall("property") if p.get("key") == key]
-        if not treffers:
+        matches = [p for p in el.findall("property") if p.get("key") == key]
+        if not matches:
             raise ModelError(
                 f"Property '{key}' niet gevonden op '{ref}'")
-        for p in treffers:
+        for p in matches:
             el.remove(p)
 
     def rename(self, ref: str, name: str):

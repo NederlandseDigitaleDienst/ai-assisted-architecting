@@ -1,6 +1,9 @@
-import pytest
+import re
 
-from archi_tool.model import ArchiModel, ModelError, xsi_type
+import pytest
+from lxml import etree
+
+from archi_tool.model import ArchiModel, ModelError, new_id, xsi_type
 from archi_tool.validate import validate
 
 
@@ -119,6 +122,41 @@ def test_move_within_layer_and_back(model):
     model.move("id-el-gamma", "")
     assert model.resolve("id-el-gamma").getparent().get("type") == "motivation"
     assert_valid(model)
+
+
+@pytest.mark.parametrize("ref, message", [
+    ("id-obj-alfa", "geen element, relatie of view (maar een 'child')"),
+    ("id-conn-1", "geen element, relatie of view (maar een 'sourceConnection')"),
+    ("id-model-1", "geen element, relatie of view (maar een 'model')"),
+    ("id-folder-motivation", "is een map"),
+])
+def test_move_refuses_non_concepts(model, ref, message):
+    with pytest.raises(ModelError, match=re.escape(message)):
+        model.move(ref, "", create_subfolder=True)
+    assert_valid(model)
+
+
+def test_move_refuses_subfolder(model):
+    model.move("id-el-gamma", "Gebied X", create_subfolder=True)
+    folder = model.resolve("id-el-gamma").getparent()
+    with pytest.raises(ModelError, match="is een map"):
+        model.move(folder.get("id"), "", create_subfolder=True)
+
+
+def test_move_view_to_subfolder(model):
+    model.move("id-view-1", "Overzichten", create_subfolder=True)
+    view = model.resolve("id-view-1")
+    assert view.getparent().get("name") == "Overzichten"
+    assert model.top_folder(view).get("type") == "diagrams"
+    assert_valid(model)
+
+
+def test_subfolder_refuses_ambiguous_name(model):
+    business = model.folder("business")
+    for _ in range(2):
+        etree.SubElement(business, "folder", {"name": "Dubbel", "id": new_id()})
+    with pytest.raises(ModelError, match="komt 2x voor"):
+        model.add_element("BusinessService", "Dienst", subfolder="Dubbel")
 
 
 def test_rename_and_documentation(model):

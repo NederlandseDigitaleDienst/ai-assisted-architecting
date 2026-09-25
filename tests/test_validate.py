@@ -52,6 +52,18 @@ def test_element_in_wrong_layer_warns(model):
     assert any("verwacht 'motivation'" in w for w in warnings)
 
 
+def test_view_parts_loose_in_folder_detected(model):
+    views = model.folder("diagrams")
+    for part_id in ("id-obj-alfa", "id-conn-1"):
+        part = model.id_index()[part_id]
+        part.getparent().remove(part)
+        views.append(part)
+    errors, _ = validate(model)
+    assert any("View-onderdeel id-obj-alfa (child) staat los" in e for e in errors)
+    assert any("View-onderdeel id-conn-1 (sourceConnection) staat los" in e
+               for e in errors)
+
+
 def test_dangling_connection_relationship_detected(model):
     conn = model.root.iter("sourceConnection").__next__()
     conn.set("archimateRelationship", "id-weg")
@@ -126,8 +138,10 @@ def test_conventions_parser_matches_a_real_doc(tmp_path):
 
 def test_builtin_default_keys_nonempty():
     """The built-in fallback set must stay usable so the property-key check
-    still runs when a project ships no conventions doc."""
-    assert "Omschrijving" in DEFAULT_PROPERTY_KEYS
+    still runs when a project ships no conventions doc. Descriptions belong
+    in the documentation field, so "Omschrijving" is not a default (ADR 0009)."""
+    assert "Bron" in DEFAULT_PROPERTY_KEYS
+    assert "Omschrijving" not in DEFAULT_PROPERTY_KEYS
 
 
 def test_missing_property_key_section_warns(model, tmp_path):

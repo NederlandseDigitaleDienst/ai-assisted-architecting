@@ -30,10 +30,10 @@ CONVENTION_NEIGHBOURS = ("conventies.md", "conventions.md")
 # Generic keys that ship with the tool as a fallback allowlist. A project
 # overrides this by pointing at its own conventions doc (with a Property-keys
 # section); without one, these keep the property-key check useful instead of
-# silently disabling it.
+# silently disabling it. Descriptions belong in Archi's documentation field,
+# not in a property, so "Omschrijving"/"Toelichting" are deliberately absent
+# (ADR 0009).
 DEFAULT_PROPERTY_KEYS = {
-    "Omschrijving",
-    "Toelichting",
     "Bron",
 }
 

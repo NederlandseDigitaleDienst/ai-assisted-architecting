@@ -84,6 +84,22 @@ def test_move_confirms_and_missing_subfolder_fails(model_path, capsys):
     assert "Verplaatst: 'id-el-gamma' naar folder 'Gebied X'" in output
 
 
+def test_move_back_to_layer_folder_with_empty_subfolder(model_path, capsys):
+    run(capsys, "--model", str(model_path), "move", "id-el-gamma",
+        "--subfolder", "Gebied X", "--create-subfolder")
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-el-gamma", "--subfolder", "")
+    assert status == 0
+    assert "Verplaatst: 'id-el-gamma' naar folder 'Motivation'" in output
+
+
+def test_move_refuses_view_object(model_path, capsys):
+    status, output = run(capsys, "--model", str(model_path), "move",
+                         "id-obj-alfa", "--subfolder", "")
+    assert status == 1
+    assert "geen element, relatie of view" in output
+
+
 def test_add_element_with_subfolder(model_path, capsys):
     status, output = run(capsys, "--model", str(model_path), "add-element",
                          "--type", "BusinessService", "--name", "Dienst",
