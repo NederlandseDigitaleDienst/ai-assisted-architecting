@@ -147,6 +147,10 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
   cluster-layout groeit mee met het aantal clusters.
 - `render.py`: views naar Mermaid-markdown, met `accTitle`/`accDescr` voor
   toegankelijkheid en het ArchiMate-laagkleurenpalet (`LAYER_PALETTE`).
+  `view_stems()` is de enige bron voor bestandsnamen van views (slug van de
+  naam; bij een botsing krijgen alle betrokken views een id-suffix,
+  onafhankelijk van de volgorde in het model). Alle links naar
+  een view (index, view-referenties, slides) gaan via deze functie.
 - `render_html.py`: views naar NLDD-gestileerde HTML met de layout uit het
   model, inclusief de ArchiMate-notatie-iconen per elementtype
   (`ICON_GLYPHS`, geometrie geport uit de Archi-broncode), notes, groups,

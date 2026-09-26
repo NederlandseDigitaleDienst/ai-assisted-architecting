@@ -18,7 +18,8 @@ import tomllib
 from pathlib import Path
 
 from .model import ModelError
-from .render import MARKER, is_descendant, slugify, write_if_changed
+from .render import (MARKER, is_descendant, slugify, view_stems,
+                     write_if_changed)
 from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, absolute_boxes,
                           diagram_canvas, layer_css, legend_html)
 
@@ -495,6 +496,7 @@ def _slide_view(model, slide: dict, n: int, source: str) -> str:
         intro = slide.get("intro") or model.documentation(diagram)
     canvas = diagram_canvas(model, diagram, marker_prefix=f"s{n}-",
                             ref_base="../", dim_ids=dim_ids)
+    stem = view_stems(model)[diagram.get("id")]
     intro_html = (f'<p class="intro">{html.escape(intro)}</p>'
                   if intro else "")
     focus_attrs = (f' data-fx="{rect[0]}" data-fy="{rect[1]}"'
@@ -512,7 +514,7 @@ def _slide_view(model, slide: dict, n: int, source: str) -> str:
         f'{legend_html(canvas["boxes"], canvas["edges"])}'
         f"</div>"
         f'<footer class="view-foot">'
-        f'<a class="view-open" href="../{slugify(name)}.html">'
+        f'<a class="view-open" href="../{stem}.html">'
         f"open als losse pagina</a></footer>")
 
 

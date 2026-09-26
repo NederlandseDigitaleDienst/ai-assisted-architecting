@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .model import (FOLDER_BY_ELEMENT_TYPE, is_diagram, is_element,
                     is_relationship, xsi_type)
+from .render import slugify, view_stems
 
 # tolerate an optional section number ("## Property-keys", "## 3. Property-keys")
 PROPERTY_KEYS_HEADING = re.compile(
@@ -137,6 +138,24 @@ def validate(model, conventions_path=None, allowed_keys=None) -> tuple[list, lis
                     errors.append(
                         f"Verbinding {conn.get('id')}: {attr} verwijst niet "
                         f"naar een object in dezelfde view ({ref})")
+
+    # 4b. view names that slugify alike would share an output file; render
+    # gives each of them an id suffix, but nobody guesses that name from the
+    # view name, so ask for a rename (warning only)
+    stems = view_stems(model)
+    by_base = {}
+    for diagram in model.diagrams():
+        base = slugify(diagram.get("name") or diagram.get("id"))
+        by_base.setdefault(base, []).append(diagram)
+    for base, diagrams in by_base.items():
+        if len(diagrams) > 1:
+            names = ", ".join(
+                f"'{d.get('name') or '(naamloos)'}' ({d.get('id')}) → "
+                f"{stems[d.get('id')]}"
+                for d in diagrams)
+            warnings.append(
+                f"Views met dezelfde bestandsnaam '{base}': {names}. "
+                "Hernoem er een voor een voorspelbare bestandsnaam")
 
     # 5. property keys against conventions (warning only)
     allowed = allowed_keys

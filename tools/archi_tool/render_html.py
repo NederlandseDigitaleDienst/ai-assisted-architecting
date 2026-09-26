@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
 from .render import (CONTAINMENT_TYPES, DOTTED_TYPES, LAYER_PALETTE, MARKER,
-                     display_model_path, is_descendant, slugify,
+                     display_model_path, is_descendant, view_stems,
                      write_if_changed)
 
 NLDD_VERSION = "0.8.64"
@@ -547,7 +547,9 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
         else:  # reference to another view
             ref = index.get(box["node"].get("model") or "")
             ref_name = (ref.get("name") or "") if ref is not None else ""
-            href = ref_base + slugify(ref_name or "view") + ".html"
+            stem = (view_stems(model).get(ref.get("id"), "view")
+                    if ref is not None else "view")
+            href = ref_base + stem + ".html"
             divs.append(
                 f'<div class="box ref{dim}" style="{style}">'
                 f'{VIEW_REF_ICON}<a href="{href}">'
@@ -620,9 +622,10 @@ def render_all_html(model, out_dir) -> tuple[list, list]:
     written, produced, entries = [], set(), []
 
     index = model.id_index()
+    stems = view_stems(model)
     for diagram in model.diagrams():
         name = diagram.get("name") or diagram.get("id")
-        filename = slugify(name) + ".html"
+        filename = stems[diagram.get("id")] + ".html"
         path = out / filename
         if write_if_changed(path, render_view_html(model, diagram)):
             written.append(path)

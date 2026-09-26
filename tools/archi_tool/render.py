@@ -9,6 +9,7 @@ cleaned up safely.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from pathlib import Path
 
 from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
@@ -58,6 +59,38 @@ EDGE_LEGEND = ("pijlstijlen: `--o` bevat (aggregatie/compositie), "
 def slugify(name: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
     return slug or "view"
+
+
+def view_stems(model) -> dict:
+    """Output file stem per view id, unique across the model.
+
+    The stem is the slug of the view name. Names that slugify alike
+    ("Overzicht" and "Overzicht!") would otherwise write to the same file, so
+    every view in such a group gets a suffix from its id. The result never
+    depends on model order: moving a view to another folder must not hand
+    its file name to a different view, and an old link to the plain name
+    should break loudly rather than silently open another view. A counter
+    suffix ("-2") is avoided on purpose: it could collide with a view that
+    is really called "Overzicht 2".
+    """
+    bases = {d.get("id"): slugify(d.get("name") or d.get("id"))
+             for d in model.diagrams()}
+    base_counts = Counter(bases.values())
+    unique = {b for b, n in base_counts.items() if n == 1}
+    id_slugs = {v: slugify(v.removeprefix("id-")) for v in bases}
+    short = {v: f"{b}-{id_slugs[v][:8]}"
+             for v, b in bases.items() if base_counts[b] > 1}
+    short_counts = Counter(short.values())
+    stems = {}
+    for view_id, base in bases.items():
+        if base in unique:
+            stems[view_id] = base
+        elif short_counts[short[view_id]] == 1 and short[view_id] not in unique:
+            stems[view_id] = short[view_id]
+        else:
+            # ids are unique, so the full id settles any remaining clash
+            stems[view_id] = f"{base}-{id_slugs[view_id]}"
+    return stems
 
 
 def is_descendant(node, ancestor) -> bool:
@@ -182,9 +215,10 @@ def render_all(model, out_dir) -> tuple[list, list]:
     out.mkdir(parents=True, exist_ok=True)
     written, produced, entries = [], set(), []
 
+    stems = view_stems(model)
     for diagram in model.diagrams():
         name = diagram.get("name") or diagram.get("id")
-        filename = slugify(name) + ".md"
+        filename = stems[diagram.get("id")] + ".md"
         path = out / filename
         if write_if_changed(path, render_view(model, diagram)):
             written.append(path)
