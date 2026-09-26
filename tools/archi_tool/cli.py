@@ -43,7 +43,14 @@ def report_validation(model, model_path) -> bool:
     # validating a model from another project uses that project's conventions
     allowed_keys, _ = discover_conventions(
         model_path, start=Path(model_path).resolve().parent)
-    links = load_links(discover_links(model_path))
+    # validation runs after every mutation: a broken links file must not
+    # block modelling (ADR 0010), so here it degrades to a warning; render
+    # and slides, which actually use the links, still fail on it
+    try:
+        links = load_links(discover_links(model_path))
+    except ModelError as exc:
+        print(f"WAARSCHUWING: links-bestand genegeerd: {exc}")
+        links = {}
     errors, warnings = validate(model, allowed_keys=allowed_keys, links=links)
     for warning in warnings:
         print(f"WAARSCHUWING: {warning}")

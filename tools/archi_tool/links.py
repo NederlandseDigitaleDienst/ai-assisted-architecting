@@ -84,6 +84,15 @@ def check_link_files(links: dict, views_root, html_dir, view_slugs) -> list:
                     f"bestand onder {views_root} (hernoemd of nog niet "
                     "gegenereerd?)")
                 continue
+            if len({p.parent for p in found}) > 1:
+                # targets are relative to the source's directory, which is
+                # ambiguous here; checking against an arbitrary one would
+                # give misleading results
+                candidates = ", ".join(str(p) for p in found)
+                warnings.append(
+                    f"Links: sectie '{source}' past bij meerdere bestanden "
+                    f"({candidates}); doelen niet gecontroleerd")
+                continue
             source_dir = found[0].parent
         for name, target in mapping.items():
             if _NOT_RELATIVE.match(target):

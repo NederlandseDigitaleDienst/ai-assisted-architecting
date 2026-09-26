@@ -113,6 +113,43 @@ def test_check_link_files(tmp_path):
                for w in warnings)
 
 
+def test_check_link_files_warns_on_ambiguous_source(tmp_path):
+    views = tmp_path / "views"
+    write(views / "a" / "eigen.svg", "<svg/>")
+    write(views / "b" / "eigen.html", "<html/>")
+    warnings = check_link_files({"eigen": {"X": "weg.svg"}}, views,
+                                views / "html", set())
+    assert len(warnings) == 1
+    assert "past bij meerdere bestanden" in warnings[0]
+
+
+@pytest.mark.parametrize("config, links_file", [
+    ('links = "weg.toml"', None),                        # path does not exist
+    ('links = "links.toml"', "[kapot\n"),                # invalid TOML
+])
+def test_broken_links_file_does_not_block_mutations(model_path, tmp_path,
+                                                    capsys, config, links_file):
+    if links_file is not None:
+        write(tmp_path / "links.toml", links_file)
+    write(tmp_path / "archi.toml", f"[tool.archi]\n{config}\n")
+    status = main(["--model", str(model_path), "add-element",
+                   "--type", "Goal", "--name", "Nieuw doel"])
+    output = capsys.readouterr().out
+    assert status == 0
+    assert "WAARSCHUWING: links-bestand genegeerd" in output
+    assert "Toegevoegd:" in output
+
+
+def test_broken_links_file_fails_render(model_path, tmp_path, capsys):
+    write(tmp_path / "archi.toml", '[tool.archi]\nlinks = "weg.toml"\n')
+    status = main(["--model", str(model_path), "render",
+                   "--out", str(tmp_path / "views"),
+                   "--decks", str(tmp_path / "decks")])
+    assert status == 1
+    captured = capsys.readouterr()
+    assert "Linkspad uit archi.toml bestaat niet" in captured.out + captured.err
+
+
 def test_render_command_uses_configured_links(model_path, tmp_path, capsys,
                                               monkeypatch):
     write(tmp_path / "links.toml",

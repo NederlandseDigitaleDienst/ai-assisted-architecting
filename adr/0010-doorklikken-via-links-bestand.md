@@ -35,10 +35,25 @@ redactionele keuze voor de presentatie, geen eigenschap van de architectuur.
    in het model); `render` controleert of doelbestanden bestaan en of elke
    sectie bij een view of een bestaand bestand hoort. Zo valt een hernoemde
    view of een tikfout op zonder dat een ontbrekende link het werk blokkeert.
+   Ook een ontbrekend of ongeldig links-bestand blokkeert het modelleren
+   niet: de validatie na een mutatie meldt het als waarschuwing en gaat
+   verder zonder links. Alleen `render` en `slides`, die de links echt
+   gebruiken, falen er dan op.
 5. **Niet voor Mermaid:** GitHub blokkeert klikbare links in Mermaid.
 
 ## Gevolgen
 
 - Een hernoemde view verandert zijn bestandsnaam en dus zijn sectienaam;
   `render` waarschuwt dan, en de sectie moet mee worden hernoemd.
-- Een element dat in een view meerdere keren voorkomt, linkt overal.
+- Links gaan op **elementnaam**, niet op id. Dat houdt het bestand leesbaar
+  en compatibel met het bestaande links.toml van het ADO-model, maar:
+  - een element dat in een view meerdere keren voorkomt, linkt overal, en
+    twee verschillende elementen met dezelfde naam in één view worden
+    allebei klikbaar;
+  - een hernoemd element verliest zijn link; `validate` waarschuwt dan.
+- Past een sectienaam bij meerdere bestanden in verschillende mappen, dan
+  zijn de relatieve doelen dubbelzinnig: `render` waarschuwt en controleert
+  die doelen niet.
+- Bekende beperking, al bestaand voor view-referenties: slides gaan uit van
+  de standaardlocatie een map onder de views (`../`). Met
+  `archi slides --out <andere map>` kloppen relatieve links in slides niet.
