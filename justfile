@@ -15,6 +15,10 @@ setup:
 test:
     uv run pytest
 
+# Alle pre-commit hooks op alle bestanden, zoals CI ze draait
+lint:
+    uv run pre-commit run --all-files
+
 # Toon de CLI in actie op het testfixture-model
 demo:
     uv run archi --model tests/fixtures/klein-model.archimate stats

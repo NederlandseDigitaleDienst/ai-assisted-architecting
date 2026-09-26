@@ -153,7 +153,7 @@ def _safe_extract_tar(tar, target):
     try:
         tar.extractall(target, filter="data")
     except tarfile.FilterError as exc:
-        raise ModelError(f"Onveilig pad in archief: {exc}")
+        raise ModelError(f"Onveilig pad in archief: {exc}") from exc
 
 
 def _safe_extract_zip(zf, target):
@@ -259,7 +259,7 @@ def download_engine(*, quiet=False) -> Path:
         os.replace(staging, version_dir)
     except OSError as exc:
         raise ModelError(
-            f"Kon de Archi-engine niet ophalen van {url}: {exc}")
+            f"Kon de Archi-engine niet ophalen van {url}: {exc}") from exc
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 

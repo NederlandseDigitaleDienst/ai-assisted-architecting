@@ -1,7 +1,6 @@
 """Renders must be byte-identical across machines. Discovery can hand the
 model an absolute path (resolved via archi.toml); the generated output must
 still show a stable, relative path, never a machine-specific absolute one."""
-import os
 
 from archi_tool.render import display_model_path
 

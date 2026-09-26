@@ -611,7 +611,7 @@ def render_index_html(model, entries) -> str:
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <nldd-collection layout="grid" item-width="320px">\n'
         + "\n".join(cards) + "\n"
-        f'      </nldd-collection>')
+        '      </nldd-collection>')
     return page_shell(f"{model.name} · views", body)
 
 

@@ -50,3 +50,16 @@ include = [
 
 [dependency-groups]
 dev = ["pytest>=8", "pre-commit>=4"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# Bugs and dead code first. Import sorting and the formatter follow in a
+# separate PR once the open feature branches have landed, so this one does
+# not cause merge conflicts in every file.
+select = ["E", "F", "W", "B"]
+ignore = [
+    "E501",  # line length is left to the formatter
+    "B008",  # Typer declares options as call defaults by design
+]

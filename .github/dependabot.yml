@@ -1,0 +1,24 @@
+# Wekelijkse updates van GitHub Actions en Python-dependencies, gegroepeerd
+# tot één PR per ecosysteem zodat het geen PR-stroom wordt. De cooldown
+# wacht een week na een release: een gekaapte versie wordt meestal binnen
+# dagen ontdekt en ingetrokken.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        patterns: ["*"]

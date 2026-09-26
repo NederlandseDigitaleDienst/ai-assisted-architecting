@@ -23,7 +23,10 @@ ontwikkelen.
 ## Werkwijze
 
 - Werk op een branch, open een pull request. Push niet naar `main`.
-- De pre-commit hook draait `pytest`. CI draait de suite op Ubuntu en Windows.
+- De pre-commit hooks draaien ruff, een paar bestandscontroles, zizmor (op de
+  workflows), `uv lock` en `pytest`. `just lint` draait ze allemaal op alle
+  bestanden. CI draait dezelfde hooks, plus de tests op Ubuntu (Python 3.12 en
+  3.14) en Windows, en een testbuild van het pakket.
 - Commit-berichten en documentatie zijn Nederlandstalig; code en comments zijn
   Engels. Een Dutch domeinterm zonder goede Engelse tegenhanger
   (`OrganisatieEenheid`, `bewindspersoon`) mag blijven staan.

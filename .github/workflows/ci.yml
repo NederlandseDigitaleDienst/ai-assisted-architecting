@@ -1,7 +1,6 @@
-# Checks voor de archi-cli-tool: draait op Ubuntu én Windows zodat
-# platformonafhankelijkheid geen papieren claim is. De tool is generiek (werkt
-# op elk .archimate-bestand), dus er is geen modelbestand in deze repo om tegen
-# te valideren of te renderen; de testsuite werkt op een fixture.
+# Checks voor de archi-cli-tool. De tool is generiek (werkt op elk
+# .archimate-bestand), dus er is geen modelbestand in deze repo om tegen te
+# valideren of te renderen; de testsuite werkt op een fixture.
 name: checks
 
 on:
@@ -9,16 +8,65 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# Een nieuwe push op dezelfde PR maakt de vorige run overbodig; op main
+# draait elke commit door.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  checks:
+  # Dezelfde hooks als lokaal (.pre-commit-config.yaml), op alle bestanden.
+  # pytest slaat deze job over: dat doet de test-job op meer platforms.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+      - run: uv sync --locked
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - run: uv run pre-commit run --all-files --show-diff-on-failure
+        env:
+          SKIP: pytest
+
+  # Ubuntu én Windows, zodat platformonafhankelijkheid geen papieren claim
+  # is; op Ubuntu ook de laagste en de nieuwste ondersteunde Python.
+  test:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        include:
+          - { os: ubuntu-latest, python: "3.12" }
+          - { os: ubuntu-latest, python: "3.14" }
+          - { os: windows-latest, python: "3.12" }
     runs-on: ${{ matrix.os }}
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v8.2.0
-      - run: uv sync
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
       - run: uv run archi --help   # rooktest: de CLI start
       - run: uv run pytest
+
+  # Wat de release-workflow bij een tag bouwt, hoort al in de PR te slagen:
+  # een PyPI-versie is onomkeerbaar.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+      - run: uv build
+      - run: uvx twine check --strict dist/*

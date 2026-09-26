@@ -9,12 +9,19 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v8.2.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        with:
+          enable-cache: false   # geen cache in een publicerende workflow
 
       - name: Tag matcht de versie in pyproject
         run: |
@@ -26,9 +33,15 @@ jobs:
           fi
           echo "Versie $pkg klopt met de tag."
 
-      - run: uv build
+      # Nooit een versie publiceren die zijn eigen tests niet haalt: de
+      # tag kan op een commit staan waar CI nooit groen op is geweest.
+      - run: uv sync --locked
+      - run: uv run pytest
 
-      - uses: actions/upload-artifact@v4
+      - run: uv build
+      - run: uvx twine check --strict dist/*
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: dist
           path: dist/
@@ -40,8 +53,8 @@ jobs:
     permissions:
       id-token: write   # vereist voor Trusted Publishing (OIDC)
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # release/v1

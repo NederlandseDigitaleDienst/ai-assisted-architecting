@@ -350,10 +350,10 @@ def _run(command_fn, *, load_model=True, need_model=True, **fields) -> None:
         status = command_fn(model, args)
     except ModelError as exc:
         typer.echo(f"FOUT: {exc}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except (etree.XMLSyntaxError, OSError) as exc:
         typer.echo(f"FOUT: kan {args.model} niet lezen: {exc}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     raise typer.Exit(status)
 
 

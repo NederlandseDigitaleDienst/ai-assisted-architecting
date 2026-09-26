@@ -1,9 +1,7 @@
-from pathlib import Path
 
 from lxml import etree
 
 from archi_tool.discovery import DEFAULT_PROPERTY_KEYS
-from archi_tool.model import XSI_TYPE
 from archi_tool.validate import allowed_property_keys, validate
 
 

@@ -19,6 +19,7 @@ Claude Code plugin (`archi-tools`) via de marketplace `archi-marketplace`.
 ```bash
 just setup            # eenmalig: uv sync + pre-commit install
 just test             # pytest
+just lint             # alle pre-commit hooks op alle bestanden (zoals CI)
 just demo             # de CLI op het fixture-model
 just build            # distributies bouwen + twine check (vóór een release)
 
@@ -111,8 +112,11 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
 - Nieuwe checks in `validate.py` krijgen een test. Structurele beslissingen
   krijgen een ADR in `adr/`.
 - Wijzigingen via branch → commit → PR. Semantische Nederlandstalige
-  commit-berichten. De pre-commit hook draait pytest; CI
-  (`.github/workflows/ci.yml`) draait de suite op Ubuntu en Windows.
+  commit-berichten. De pre-commit hooks draaien ruff, bestandscontroles,
+  zizmor, `uv lock` en pytest (`just lint` op alle bestanden). CI
+  (`.github/workflows/ci.yml`) draait dezelfde hooks, de suite op Ubuntu en
+  Windows, en een testbuild; `release.yml` draait de tests nogmaals vóór
+  publicatie.
 
 ## Architectuur van de tooling
 
