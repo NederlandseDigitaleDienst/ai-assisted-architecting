@@ -645,7 +645,7 @@ def render_all_html(model, out_dir, links: dict | None = None) -> tuple[list, li
         name = diagram.get("name") or diagram.get("id")
         filename = stems[diagram.get("id")] + ".html"
         path = out / filename
-        view_links = links_for(links or {}, slugify(name))
+        view_links = links_for(links or {}, stems[diagram.get("id")])
         if write_if_changed(path, render_view_html(model, diagram,
                                                    links=view_links)):
             written.append(path)

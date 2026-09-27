@@ -496,12 +496,12 @@ def _slide_view(model, slide: dict, n: int, source: str,
     else:
         title = slide.get("title") or name
         intro = slide.get("intro") or model.documentation(diagram)
+    stem = view_stems(model)[diagram.get("id")]
     # the deck lives one directory below the views, hence the "../" base
-    view_links = links_for(links or {}, slugify(name), base="../")
+    view_links = links_for(links or {}, stem, base="../")
     canvas = diagram_canvas(model, diagram, marker_prefix=f"s{n}-",
                             ref_base="../", dim_ids=dim_ids,
                             links=view_links)
-    stem = view_stems(model)[diagram.get("id")]
     intro_html = (f'<p class="intro">{html.escape(intro)}</p>'
                   if intro else "")
     focus_attrs = (f' data-fx="{rect[0]}" data-fy="{rect[1]}"'

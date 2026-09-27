@@ -23,8 +23,10 @@ redactionele keuze voor de presentatie, geen eigenschap van de architectuur.
    Zonder die regel verandert er niets.
 2. **Vorm:** per bronplaat een sectie met als naam de bestandsnaam zonder
    extensie; daarin `"elementnaam" = "pad"`, met het pad relatief aan de map
-   van de bronplaat. Voor een HTML-view is de sectienaam de slug van de
-   viewnaam. Dezelfde vorm is bruikbaar voor een project dat eigen diagrammen
+   van de bronplaat. Voor een HTML-view is de sectienaam de bestandsnaam
+   die `archi render` kiest (`view_stems()`: de slug van de viewnaam, met
+   een id-suffix bij botsende namen), zodat een sectie altijd bij precies
+   één view hoort. Dezelfde vorm is bruikbaar voor een project dat eigen diagrammen
    genereert, zodat één bestand over alle doorkliks beslist en views en
    eigen diagrammen naar elkaar kunnen linken.
 3. **archi-cli maakt element-vakjes klikbaar** in de HTML-views en in de

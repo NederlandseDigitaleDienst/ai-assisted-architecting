@@ -20,7 +20,7 @@ from .discovery import discover_conventions, discover_links, discover_model
 from .links import check_link_files, load_links
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
-from .render import render_all, slugify, write_if_changed
+from .render import render_all, view_stems, write_if_changed
 from .render_html import render_all_html
 from .render_slides import load_deck, render_all_slides, render_deck_html
 from .validate import validate
@@ -288,9 +288,8 @@ def cmd_render(model, args):
     if not (written or removed or html_written or html_removed
             or deck_written or deck_removed):
         print("Views zijn al actueel.")
-    view_slugs = {slugify(d.get("name") or d.get("id"))
-                  for d in model.diagrams()}
-    for warning in check_link_files(links, args.out, html_dir, view_slugs):
+    view_files = set(view_stems(model).values())
+    for warning in check_link_files(links, args.out, html_dir, view_files):
         print(f"WAARSCHUWING: {warning}")
     return 0
 

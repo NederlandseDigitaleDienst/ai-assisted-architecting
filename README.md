@@ -94,7 +94,8 @@ links = "tools/links.toml"
 ```
 
 Een sectie hoort bij de HTML-view met die bestandsnaam (de slug van de
-viewnaam), of bij een bestand dat een project zelf genereert: dezelfde
+viewnaam; bij views met botsende namen de naam mét id-suffix die `archi
+render` kiest), of bij een bestand dat een project zelf genereert: dezelfde
 sectievorm is dan bruikbaar voor eigen scripts, zodat één bestand over alle
 doorkliks gaat. In slides worden relatieve paden automatisch gecorrigeerd
 voor de submap. `archi validate` waarschuwt voor elementnamen die niet in de

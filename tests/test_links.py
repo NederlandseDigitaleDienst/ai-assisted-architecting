@@ -1,12 +1,13 @@
 """Click-through links from a links file: loading, discovery, rendering in
 HTML views and slide decks, and the checks in validate and render."""
 import pytest
+from lxml import etree
 
 from archi_tool.cli import main
 from archi_tool.discovery import discover_links
 from archi_tool.links import check_link_files, links_for, load_links, with_base
-from archi_tool.model import ModelError
-from archi_tool.render_html import render_view_html
+from archi_tool.model import XSI_TYPE, ModelError
+from archi_tool.render_html import render_all_html, render_view_html
 from archi_tool.render_slides import load_deck, render_deck_html
 from archi_tool.validate import validate
 
@@ -148,6 +149,32 @@ def test_broken_links_file_fails_render(model_path, tmp_path, capsys):
     assert status == 1
     captured = capsys.readouterr()
     assert "Linkspad uit archi.toml bestaat niet" in captured.out + captured.err
+
+
+def test_sections_follow_view_stems_when_names_collide(model, tmp_path):
+    """"Testview" and "Testview!" slugify alike; render gives both an id
+    suffix, and a links section must follow those file names."""
+    second = etree.SubElement(model.folder("diagrams"), "element", {
+        XSI_TYPE: "archimate:ArchimateDiagramModel",
+        "name": "Testview!", "id": "id-view-2"})
+    obj = etree.SubElement(second, "child", {
+        XSI_TYPE: "archimate:DiagramObject", "id": "id-obj-gamma",
+        "archimateElement": "id-el-gamma"})
+    etree.SubElement(obj, "bounds", {
+        "x": "10", "y": "10", "width": "120", "height": "55"})
+    links = {"testview-view-1": {"Gebied Alfa": "alfa.html"},
+             "testview-view-2": {"Doel Gamma": "gamma.html"}}
+
+    render_all_html(model, tmp_path / "html", links=links)
+    first = (tmp_path / "html" / "testview-view-1.html").read_text(encoding="utf-8")
+    other = (tmp_path / "html" / "testview-view-2.html").read_text(encoding="utf-8")
+    assert 'href="alfa.html"' in first and 'href="gamma.html"' not in first
+    assert 'href="gamma.html"' in other and 'href="alfa.html"' not in other
+
+    _, warnings = validate(model, links=links)
+    assert not [w for w in warnings if w.startswith("Link in")]
+    assert check_link_files({"testview-view-2": {}}, tmp_path, tmp_path / "html",
+                            {"testview-view-1", "testview-view-2"}) == []
 
 
 def test_render_command_uses_configured_links(model_path, tmp_path, capsys,

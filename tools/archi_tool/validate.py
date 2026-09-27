@@ -183,8 +183,8 @@ def validate(model, conventions_path=None, allowed_keys=None,
     # in that view; any other section (e.g. a script-generated diagram) must
     # at least name an element in the model. File checks happen at render.
     if links:
-        views = {slugify(d.get("name") or d.get("id")): d
-                 for d in model.diagrams()}
+        # sections are keyed by output file stem, as render names the files
+        views = {stems[d.get("id")]: d for d in model.diagrams()}
         all_names = {e.get("name") for e in model.elements()}
         for source, mapping in links.items():
             diagram = views.get(source)
