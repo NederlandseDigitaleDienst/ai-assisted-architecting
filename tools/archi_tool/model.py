@@ -88,10 +88,22 @@ def is_element(node) -> bool:
             and not is_relationship(node) and not is_diagram(node))
 
 
+def safe_parser() -> etree.XMLParser:
+    """XML parser for model files that may come from anywhere.
+
+    Archi never writes a DOCTYPE, so a model file has no use for DTDs or
+    entities. Refusing them outright means a crafted file cannot read local
+    files or URLs into the model (and from there into rendered output), on
+    any lxml version.
+    """
+    return etree.XMLParser(resolve_entities=False, load_dtd=False,
+                           no_network=True)
+
+
 class ArchiModel:
     def __init__(self, path):
         self.path = str(path)
-        self.tree = etree.parse(self.path)
+        self.tree = etree.parse(self.path, safe_parser())
         self.root = self.tree.getroot()
         if self.root.tag != MODEL_TAG:
             raise ModelError(
