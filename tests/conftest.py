@@ -2,7 +2,6 @@ import shutil
 from pathlib import Path
 
 import pytest
-
 from archi_tool.model import ArchiModel
 
 FIXTURE = Path(__file__).parent / "fixtures" / "klein-model.archimate"

@@ -2,8 +2,8 @@
 or downloads the real ~165 MB distribution: the download is monkeypatched to
 lay down a fake binary, so cache-hit, auto-fetch and --no-download behaviour
 are all exercised offline."""
-import pytest
 
+import pytest
 from archi_tool import engine
 from archi_tool.model import ModelError
 
@@ -73,6 +73,7 @@ def _fake_network(monkeypatch, texts, latest_tag=None):
 
 def _sums(version, sha1=None):
     import hashlib
+
     digest = sha1 or hashlib.sha1(b"archive").hexdigest()
     return f"{digest}    {_asset(version)}\n"
 
@@ -82,6 +83,7 @@ RELEASES = "https://github.com/archimatetool/archi.io/releases"
 
 class _fake_urlopen:
     """Minimal stand-in for urllib.request.urlopen as a context manager."""
+
     def __init__(self, text):
         self._data = text.encode("utf-8")
 
@@ -100,10 +102,8 @@ def test_platform_binary_paths_match_distribution():
     5.10.0 artifacts (engine-e2e checks them for real on every platform)."""
     assert engine._PLATFORMS["linux"][1] == "Archi/Archi"
     assert engine._PLATFORMS["windows"][1] == "Archi/Archi.exe"
-    assert engine._PLATFORMS["darwin-arm64"][1] == (
-        "Archi.app/Contents/MacOS/Archi")
-    assert engine._PLATFORMS["darwin-x86_64"][1] == (
-        "Archi.app/Contents/MacOS/Archi")
+    assert engine._PLATFORMS["darwin-arm64"][1] == ("Archi.app/Contents/MacOS/Archi")
+    assert engine._PLATFORMS["darwin-x86_64"][1] == ("Archi.app/Contents/MacOS/Archi")
 
 
 def test_cached_binary_none_when_empty(cache):
@@ -138,16 +138,16 @@ def test_download_uses_pinned_version_under_new_tag_format(cache, monkeypatch):
     calls = _fake_network(monkeypatch, {sums_url: _sums(engine.ARCHI_VERSION)})
 
     binary = engine.download_engine(quiet=True)
-    assert binary == cache / engine.ARCHI_VERSION / engine._PLATFORMS[
-        engine._platform_key()][1]
+    assert (
+        binary
+        == cache / engine.ARCHI_VERSION / engine._PLATFORMS[engine._platform_key()][1]
+    )
     assert calls["downloaded"] == [f"{RELEASES}/download/{tag}/{_asset()}"]
 
 
-def test_download_falls_back_to_latest_when_pin_is_gone(cache, monkeypatch,
-                                                       capsys):
+def test_download_falls_back_to_latest_when_pin_is_gone(cache, monkeypatch, capsys):
     sums_url = f"{RELEASES}/download/9.1_0/Archi-9.1.0-SUMSSHA1"
-    calls = _fake_network(monkeypatch, {sums_url: _sums("9.1.0")},
-                          latest_tag="9.1_0")
+    calls = _fake_network(monkeypatch, {sums_url: _sums("9.1.0")}, latest_tag="9.1_0")
 
     binary = engine.download_engine()
     assert binary.exists()
@@ -158,8 +158,11 @@ def test_download_falls_back_to_latest_when_pin_is_gone(cache, monkeypatch,
     assert "9.1.0" in err
 
     # the fallback engine is reused afterwards, without any network access
-    monkeypatch.setattr(engine, "_fetch_text", lambda url: pytest.fail(
-        "a cached fallback engine must not trigger a lookup"))
+    monkeypatch.setattr(
+        engine,
+        "_fetch_text",
+        lambda url: pytest.fail("a cached fallback engine must not trigger a lookup"),
+    )
     assert engine.cached_binary() == binary
     assert engine.download_engine(quiet=True) == binary
 
@@ -180,26 +183,31 @@ def test_no_release_with_checksums_fails_clearly(cache, monkeypatch):
 
 
 def test_checksum_mismatch_aborts_download(cache, monkeypatch):
-    sums_url = (f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
-                f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1")
-    _fake_network(monkeypatch,
-                  {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
+    sums_url = (
+        f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
+        f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1"
+    )
+    _fake_network(monkeypatch, {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
     # extraction must never run on a bad archive
-    monkeypatch.setattr(engine, "_extract", lambda *a: pytest.fail(
-        "extract must not run after a checksum mismatch"))
+    monkeypatch.setattr(
+        engine,
+        "_extract",
+        lambda *a: pytest.fail("extract must not run after a checksum mismatch"),
+    )
     with pytest.raises(ModelError, match="Checksum"):
         engine.download_engine(quiet=True)
 
 
-def test_stale_checksum_list_is_rescued_by_github_digest(cache, monkeypatch,
-                                                         capsys):
+def test_stale_checksum_list_is_rescued_by_github_digest(cache, monkeypatch, capsys):
     """archi.io's SUMSSHA1 for 5.10.0 lists a stale hash for the Windows zip;
     the digest GitHub recorded at upload settles it."""
     import hashlib
-    sums_url = (f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
-                f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1")
-    _fake_network(monkeypatch,
-                  {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
+
+    sums_url = (
+        f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
+        f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1"
+    )
+    _fake_network(monkeypatch, {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
     seen = {}
 
     def github_digest(tag, asset):
@@ -212,25 +220,31 @@ def test_stale_checksum_list_is_rescued_by_github_digest(cache, monkeypatch,
     assert "verouderde hash" in capsys.readouterr().err
 
 
-def test_checksum_mismatch_fails_when_github_digest_also_differs(cache,
-                                                               monkeypatch):
-    sums_url = (f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
-                f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1")
-    _fake_network(monkeypatch,
-                  {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
-    monkeypatch.setattr(engine, "_github_sha256",
-                        lambda tag, asset: "0" * 64)
-    monkeypatch.setattr(engine, "_extract", lambda *a: pytest.fail(
-        "extract must not run after a checksum mismatch"))
+def test_checksum_mismatch_fails_when_github_digest_also_differs(cache, monkeypatch):
+    sums_url = (
+        f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
+        f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1"
+    )
+    _fake_network(monkeypatch, {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
+    monkeypatch.setattr(engine, "_github_sha256", lambda tag, asset: "0" * 64)
+    monkeypatch.setattr(
+        engine,
+        "_extract",
+        lambda *a: pytest.fail("extract must not run after a checksum mismatch"),
+    )
     with pytest.raises(ModelError, match="Checksum"):
         engine.download_engine(quiet=True)
 
 
 def test_github_digest_read_from_release_api(monkeypatch):
     import json
-    release = {"assets": [
-        {"name": "Archi-Win64-5.10.0.zip", "digest": "sha256:ABC123"},
-        {"name": "other.zip", "digest": "sha256:fff"}]}
+
+    release = {
+        "assets": [
+            {"name": "Archi-Win64-5.10.0.zip", "digest": "sha256:ABC123"},
+            {"name": "other.zip", "digest": "sha256:fff"},
+        ]
+    }
     seen = {}
 
     def fake_urlopen(request):
@@ -282,13 +296,13 @@ def test_cache_wins_over_path(cache, monkeypatch):
     from archi_tool import normalize as normalize_mod
 
     binary = _fake_binary(cache)
-    monkeypatch.setattr(
-        normalize_mod.shutil, "which", lambda n: "/somewhere/Archi")
+    monkeypatch.setattr(normalize_mod.shutil, "which", lambda n: "/somewhere/Archi")
     assert normalize_mod.find_archi_binary() == str(binary)
 
 
 def test_normalize_no_download_fails_without_engine(cache, tmp_path):
     from archi_tool.normalize import normalize
+
     model = tmp_path / "m.archimate"
     model.write_text('<?xml version="1.0"?><model/>', encoding="utf-8")
     with pytest.raises(ModelError, match="Archi niet gevonden"):
@@ -320,7 +334,7 @@ def test_symlink_escape_in_tar_is_rejected(cache, tmp_path):
     with tarfile.open(archive, "w:gz") as tar:
         link = tarfile.TarInfo("link")
         link.type = tarfile.SYMTYPE
-        link.linkname = "/etc"        # escapes the extraction target
+        link.linkname = "/etc"  # escapes the extraction target
         tar.addfile(link)
         member = tarfile.TarInfo("link/pwned")
         data = b"x"
@@ -338,7 +352,8 @@ def test_mount_point_parsing_picks_volumes_line():
     stdout = (
         "/dev/disk4          \tGUID_partition_scheme\t\n"
         "/dev/disk4s1        \tApple_APFS         \t\n"
-        "/dev/disk4s2        \tApple_HFS          \t/Volumes/Archi\n")
+        "/dev/disk4s2        \tApple_HFS          \t/Volumes/Archi\n"
+    )
     assert engine._parse_mount_point(stdout) == "/Volumes/Archi"
 
 
@@ -357,8 +372,9 @@ def test_checksum_file_without_asset_line_fails():
     """A SUMSSHA1 that lists no hash for our asset is suspicious and must
     fail, not silently skip verification."""
     with pytest.raises(ModelError, match="geen hash"):
-        engine._expected_sha1(f"Archi-Win64-{engine.ARCHI_VERSION}.zip",
-                              "deadbeef  some-other-file.zip\n")
+        engine._expected_sha1(
+            f"Archi-Win64-{engine.ARCHI_VERSION}.zip", "deadbeef  some-other-file.zip\n"
+        )
 
 
 def test_latest_tag_read_from_redirect(monkeypatch):
@@ -366,6 +382,5 @@ def test_latest_tag_read_from_redirect(monkeypatch):
         def geturl(self):
             return f"{RELEASES}/tag/5.10_0"
 
-    monkeypatch.setattr(engine.urllib.request, "urlopen",
-                        lambda url: Response(""))
+    monkeypatch.setattr(engine.urllib.request, "urlopen", lambda url: Response(""))
     assert engine._latest_tag() == "5.10_0"

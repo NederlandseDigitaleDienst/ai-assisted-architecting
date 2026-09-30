@@ -11,27 +11,33 @@ components, so the component bundle is not loaded). Output is
 deterministic: no timestamps (the optional title date comes verbatim
 from the deck file), stable ordering, marker comment first line.
 """
+
 from __future__ import annotations
 
 import html
 import tomllib
 from pathlib import Path
 
-from .model import ModelError
 from .links import links_for
-from .render import (MARKER, is_descendant, slugify, view_stems,
-                     write_if_changed)
-from .render_html import (DIAGRAM_CSS, FAVICON, NLDD_CSS, absolute_boxes,
-                          diagram_canvas, layer_css, legend_html)
+from .model import ModelError
+from .render import MARKER, is_descendant, slugify, view_stems, write_if_changed
+from .render_html import (
+    DIAGRAM_CSS,
+    FAVICON,
+    NLDD_CSS,
+    absolute_boxes,
+    diagram_canvas,
+    layer_css,
+    legend_html,
+)
 
-FOCUS_MARGIN = 24       # canvas px around the focused subtree
-FOCUS_MAX_SCALE = 2.2   # zoom cap when focusing; 1.4 for the full view
+FOCUS_MARGIN = 24  # canvas px around the focused subtree
+FOCUS_MAX_SCALE = 2.2  # zoom cap when focusing; 1.4 for the full view
 
 RIJKSBLAUW = "#154273"
 GOUD = "#ffb612"
 
-DECK_KEYS = {"title", "slug", "speaker", "affiliation", "date", "lead",
-             "slides"}
+DECK_KEYS = {"title", "slug", "speaker", "affiliation", "date", "lead", "slides"}
 SLIDE_KEYS = {
     "title": {"type", "title", "lead", "notes"},
     "section": {"type", "title", "lead", "notes"},
@@ -309,15 +315,18 @@ def load_deck(path: Path, model) -> dict:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
         raise ModelError(
-            f"Deck '{path.as_posix()}' is geen geldige TOML: {exc}") from exc
-    return validate_deck(data, model, source=path.as_posix(),
-                         default_slug=slugify(path.stem))
+            f"Deck '{path.as_posix()}' is geen geldige TOML: {exc}"
+        ) from exc
+    return validate_deck(
+        data, model, source=path.as_posix(), default_slug=slugify(path.stem)
+    )
 
 
 def _check_str(value, source: str, where: str, key: str) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ModelError(f"Deck '{source}'{where}: '{key}' moet een "
-                         f"niet-lege tekst zijn")
+        raise ModelError(
+            f"Deck '{source}'{where}: '{key}' moet een niet-lege tekst zijn"
+        )
     return value
 
 
@@ -330,21 +339,27 @@ def _resolve_view(model, ref, source: str, n: int):
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
-        raise ModelError(f"Deck '{source}', slide {n}: viewnaam '{ref}' is "
-                         f"niet uniek in het model; gebruik het view-id")
-    names = ", ".join(sorted(d.get("name") or d.get("id")
-                             for d in diagrams)) or "(geen)"
-    raise ModelError(f"Deck '{source}', slide {n}: view '{ref}' bestaat "
-                     f"niet in het model. Beschikbare views: {names}")
+        raise ModelError(
+            f"Deck '{source}', slide {n}: viewnaam '{ref}' is "
+            f"niet uniek in het model; gebruik het view-id"
+        )
+    names = (
+        ", ".join(sorted(d.get("name") or d.get("id") for d in diagrams)) or "(geen)"
+    )
+    raise ModelError(
+        f"Deck '{source}', slide {n}: view '{ref}' bestaat "
+        f"niet in het model. Beschikbare views: {names}"
+    )
 
 
 def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
     """Normalize a raw deck dict; raise ModelError (Dutch) on any problem."""
     unknown = sorted(set(deck) - DECK_KEYS)
     if unknown:
-        raise ModelError(f"Deck '{source}': onbekende sleutel "
-                         f"'{unknown[0]}'. Toegestaan: "
-                         + ", ".join(sorted(DECK_KEYS)))
+        raise ModelError(
+            f"Deck '{source}': onbekende sleutel "
+            f"'{unknown[0]}'. Toegestaan: " + ", ".join(sorted(DECK_KEYS))
+        )
     if "title" not in deck:
         raise ModelError(f"Deck '{source}': verplicht veld 'title' ontbreekt")
     title = _check_str(deck["title"], source, "", "title")
@@ -356,33 +371,39 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
 
     raw_slides = deck.get("slides")
     if not isinstance(raw_slides, list) or not raw_slides:
-        raise ModelError(f"Deck '{source}': 'slides' moet een niet-lege "
-                         f"lijst van [[slides]]-tabellen zijn")
+        raise ModelError(
+            f"Deck '{source}': 'slides' moet een niet-lege "
+            f"lijst van [[slides]]-tabellen zijn"
+        )
 
     slides = []
     for n, raw in enumerate(raw_slides, start=1):
         where = f", slide {n}"
         if not isinstance(raw, dict):
-            raise ModelError(f"Deck '{source}'{where}: elke slide moet een "
-                             f"[[slides]]-tabel zijn")
+            raise ModelError(
+                f"Deck '{source}'{where}: elke slide moet een [[slides]]-tabel zijn"
+            )
         kind = raw.get("type")
         if kind not in SLIDE_KEYS:
-            raise ModelError(f"Deck '{source}'{where}: onbekend type "
-                             f"'{kind}'. Toegestaan: "
-                             + ", ".join(sorted(SLIDE_KEYS)))
+            raise ModelError(
+                f"Deck '{source}'{where}: onbekend type "
+                f"'{kind}'. Toegestaan: " + ", ".join(sorted(SLIDE_KEYS))
+            )
         unknown = sorted(set(raw) - SLIDE_KEYS[kind])
         if unknown:
-            raise ModelError(f"Deck '{source}'{where}: onbekende sleutel "
-                             f"'{unknown[0]}'. Toegestaan voor type "
-                             f"'{kind}': "
-                             + ", ".join(sorted(SLIDE_KEYS[kind])))
+            raise ModelError(
+                f"Deck '{source}'{where}: onbekende sleutel "
+                f"'{unknown[0]}'. Toegestaan voor type "
+                f"'{kind}': " + ", ".join(sorted(SLIDE_KEYS[kind]))
+            )
         for key in REQUIRED_SLIDE_KEYS.get(kind, ()):
             if key not in raw:
-                raise ModelError(f"Deck '{source}'{where}: verplicht veld "
-                                 f"'{key}' ontbreekt voor type '{kind}'")
+                raise ModelError(
+                    f"Deck '{source}'{where}: verplicht veld "
+                    f"'{key}' ontbreekt voor type '{kind}'"
+                )
         slide = dict(raw)
-        for key in ("title", "lead", "intro", "notes", "gov", "body",
-                    "focus"):
+        for key in ("title", "lead", "intro", "notes", "gov", "body", "focus"):
             if key in slide:
                 _check_str(slide[key], source, where, key)
         if kind == "view":
@@ -390,29 +411,42 @@ def validate_deck(deck: dict, model, source: str, default_slug: str) -> dict:
             slide["diagram"] = _resolve_view(model, ref, source, n)
         if kind == "bullets":
             bullets = slide["bullets"]
-            if (not isinstance(bullets, list) or not bullets
-                    or not all(isinstance(b, str) and b.strip()
-                               for b in bullets)):
-                raise ModelError(f"Deck '{source}'{where}: 'bullets' moet "
-                                 f"een niet-lege lijst van teksten zijn")
+            if (
+                not isinstance(bullets, list)
+                or not bullets
+                or not all(isinstance(b, str) and b.strip() for b in bullets)
+            ):
+                raise ModelError(
+                    f"Deck '{source}'{where}: 'bullets' moet "
+                    f"een niet-lege lijst van teksten zijn"
+                )
         if kind == "closing" and "link" in slide:
             link = slide["link"]
             if isinstance(link, str):
                 slide["link"] = {"href": link, "label": link}
             elif isinstance(link, dict) and isinstance(link.get("href"), str):
-                slide["link"] = {"href": link["href"],
-                                 "label": link.get("label") or link["href"]}
+                slide["link"] = {
+                    "href": link["href"],
+                    "label": link.get("label") or link["href"],
+                }
             else:
-                raise ModelError(f"Deck '{source}'{where}: 'link' moet een "
-                                 f"tekst of een tabel met 'href' (en "
-                                 f"optioneel 'label') zijn")
+                raise ModelError(
+                    f"Deck '{source}'{where}: 'link' moet een "
+                    f"tekst of een tabel met 'href' (en "
+                    f"optioneel 'label') zijn"
+                )
         slides.append(slide)
 
-    return {"title": title, "slug": slug, "source": source,
-            "speaker": deck.get("speaker"),
-            "affiliation": deck.get("affiliation"),
-            "date": deck.get("date"),
-            "lead": deck.get("lead"), "slides": slides}
+    return {
+        "title": title,
+        "slug": slug,
+        "source": source,
+        "speaker": deck.get("speaker"),
+        "affiliation": deck.get("affiliation"),
+        "date": deck.get("date"),
+        "lead": deck.get("lead"),
+        "slides": slides,
+    }
 
 
 def _notes_html(slide: dict) -> str:
@@ -430,21 +464,18 @@ def _slide_title(deck: dict, slide: dict) -> str:
         parts.append(f'<p class="lead">{html.escape(lead)}</p>')
     byline = []
     if deck.get("speaker"):
-        byline.append(f'<span class="speaker">'
-                      f'{html.escape(deck["speaker"])}</span>')
+        byline.append(f'<span class="speaker">{html.escape(deck["speaker"])}</span>')
     if deck.get("affiliation"):
         byline.append(f"<span>{html.escape(deck['affiliation'])}</span>")
     if deck.get("date"):
         byline.append(f"<span>{html.escape(deck['date'])}</span>")
     if byline:
-        parts.append('<footer class="byline">' + "".join(byline)
-                     + "</footer>")
+        parts.append('<footer class="byline">' + "".join(byline) + "</footer>")
     return "".join(parts)
 
 
 def _slide_section(slide: dict) -> str:
-    parts = ['<div class="accent"></div>',
-             f"<h2>{html.escape(slide['title'])}</h2>"]
+    parts = ['<div class="accent"></div>', f"<h2>{html.escape(slide['title'])}</h2>"]
     if slide.get("lead"):
         parts.append(f'<p class="lead">{html.escape(slide["lead"])}</p>')
     return "".join(parts)
@@ -454,23 +485,33 @@ def _resolve_focus(model, diagram, ref: str, source: str, n: int):
     """The focused element's box subtree in this view: (element, rect,
     ids of everything outside the subtree)."""
     boxes = absolute_boxes(diagram, model.id_index())
-    matches = [b for b in boxes if b["kind"] == "element"
-               and (b["element"].get("id") == ref
-                    or (b["element"].get("name") or "") == ref)]
+    matches = [
+        b
+        for b in boxes
+        if b["kind"] == "element"
+        and (b["element"].get("id") == ref or (b["element"].get("name") or "") == ref)
+    ]
     if len(matches) > 1:
-        raise ModelError(f"Deck '{source}', slide {n}: focus '{ref}' staat "
-                         f"meer dan één keer in de view; gebruik het id")
+        raise ModelError(
+            f"Deck '{source}', slide {n}: focus '{ref}' staat "
+            f"meer dan één keer in de view; gebruik het id"
+        )
     if not matches:
-        containers = sorted((b["element"].get("name") or "?")
-                            for b in boxes
-                            if b["kind"] == "element" and b["container"])
-        hint = (f" Containers in deze view: {', '.join(containers)}"
-                if containers else "")
-        raise ModelError(f"Deck '{source}', slide {n}: focus '{ref}' niet "
-                         f"gevonden in de view.{hint}")
+        containers = sorted(
+            (b["element"].get("name") or "?")
+            for b in boxes
+            if b["kind"] == "element" and b["container"]
+        )
+        hint = (
+            f" Containers in deze view: {', '.join(containers)}" if containers else ""
+        )
+        raise ModelError(
+            f"Deck '{source}', slide {n}: focus '{ref}' niet gevonden in de view.{hint}"
+        )
     focus = matches[0]
-    subtree = {b["id"] for b in boxes
-               if b is focus or is_descendant(b["node"], focus["node"])}
+    subtree = {
+        b["id"] for b in boxes if b is focus or is_descendant(b["node"], focus["node"])
+    }
     members = [b for b in boxes if b["id"] in subtree]
     x = max(0, min(b["x"] for b in members) - FOCUS_MARGIN)
     y = max(0, min(b["y"] for b in members) - FOCUS_MARGIN)
@@ -480,33 +521,44 @@ def _resolve_focus(model, diagram, ref: str, source: str, n: int):
     return focus["element"], (x, y, w, h), dim_ids
 
 
-def _slide_view(model, slide: dict, n: int, source: str,
-                links: dict | None = None) -> str:
+def _slide_view(
+    model, slide: dict, n: int, source: str, links: dict | None = None
+) -> str:
     diagram = slide["diagram"]
     name = diagram.get("name") or "(naamloze view)"
     focus_el, rect, dim_ids = None, None, None
     if slide.get("focus"):
         focus_el, rect, dim_ids = _resolve_focus(
-            model, diagram, slide["focus"], source, n)
+            model, diagram, slide["focus"], source, n
+        )
     if focus_el is not None:
         title = slide.get("title") or focus_el.get("name") or name
-        intro = (slide.get("intro")
-                 or model.documentation(focus_el)
-                 or model.properties(focus_el).get("Omschrijving", ""))
+        intro = (
+            slide.get("intro")
+            or model.documentation(focus_el)
+            or model.properties(focus_el).get("Omschrijving", "")
+        )
     else:
         title = slide.get("title") or name
         intro = slide.get("intro") or model.documentation(diagram)
     stem = view_stems(model)[diagram.get("id")]
     # the deck lives one directory below the views, hence the "../" base
     view_links = links_for(links or {}, stem, base="../")
-    canvas = diagram_canvas(model, diagram, marker_prefix=f"s{n}-",
-                            ref_base="../", dim_ids=dim_ids,
-                            links=view_links)
-    intro_html = (f'<p class="intro">{html.escape(intro)}</p>'
-                  if intro else "")
-    focus_attrs = (f' data-fx="{rect[0]}" data-fy="{rect[1]}"'
-                   f' data-fw="{rect[2]}" data-fh="{rect[3]}"'
-                   if rect else "")
+    canvas = diagram_canvas(
+        model,
+        diagram,
+        marker_prefix=f"s{n}-",
+        ref_base="../",
+        dim_ids=dim_ids,
+        links=view_links,
+    )
+    intro_html = f'<p class="intro">{html.escape(intro)}</p>' if intro else ""
+    focus_attrs = (
+        f' data-fx="{rect[0]}" data-fy="{rect[1]}"'
+        f' data-fw="{rect[2]}" data-fh="{rect[3]}"'
+        if rect
+        else ""
+    )
     return (
         f'<header class="view-head"><h2>{html.escape(title)}</h2>'
         f"{intro_html}</header>"
@@ -516,23 +568,22 @@ def _slide_view(model, slide: dict, n: int, source: str,
         f'<div class="diagram" style="width:{canvas["width"]}px;'
         f'height:{canvas["height"]}px">{canvas["svg"]}{canvas["divs"]}'
         f"</div></div>"
-        f'{legend_html(canvas["boxes"], canvas["edges"])}'
+        f"{legend_html(canvas['boxes'], canvas['edges'])}"
         f"</div>"
         f'<footer class="view-foot">'
         f'<a class="view-open" href="../{stem}.html">'
-        f"open als losse pagina</a></footer>")
+        f"open als losse pagina</a></footer>"
+    )
 
 
 def _slide_bullets(slide: dict) -> str:
-    parts = ['<div class="accent"></div>',
-             f"<h2>{html.escape(slide['title'])}</h2>"]
+    parts = ['<div class="accent"></div>', f"<h2>{html.escape(slide['title'])}</h2>"]
     if slide.get("lead"):
         parts.append(f'<p class="lead">{html.escape(slide["lead"])}</p>')
     items = "".join(f"<li>{html.escape(b)}</li>" for b in slide["bullets"])
     parts.append(f'<ul class="bullets">{items}</ul>')
     if slide.get("gov"):
-        parts.append('<span class="gov-pill">Specifiek voor de '
-                     "overheid</span>")
+        parts.append('<span class="gov-pill">Specifiek voor de overheid</span>')
         parts.append(f'<p class="gov-note">{html.escape(slide["gov"])}</p>')
     return "".join(parts)
 
@@ -545,42 +596,47 @@ def _slide_text(slide: dict) -> str:
         parts.append(f'<p class="lead">{html.escape(slide["lead"])}</p>')
     paragraphs = "".join(
         f"<p>{html.escape(p.strip())}</p>"
-        for p in slide["body"].split("\n\n") if p.strip())
+        for p in slide["body"].split("\n\n")
+        if p.strip()
+    )
     parts.append(f'<div class="prose">{paragraphs}</div>')
     return "".join(parts)
 
 
 def _slide_closing(slide: dict) -> str:
-    parts = ['<div class="accent"></div>',
-             f"<h2>{html.escape(slide['title'])}</h2>"]
+    parts = ['<div class="accent"></div>', f"<h2>{html.escape(slide['title'])}</h2>"]
     if slide.get("lead"):
         parts.append(f'<p class="lead">{html.escape(slide["lead"])}</p>')
     link = slide.get("link")
     if link:
-        parts.append(f'<p class="closing-link">'
-                     f'<a href="{html.escape(link["href"])}">'
-                     f'{html.escape(link["label"])}</a></p>')
+        parts.append(
+            f'<p class="closing-link">'
+            f'<a href="{html.escape(link["href"])}">'
+            f"{html.escape(link['label'])}</a></p>"
+        )
     return "".join(parts)
 
 
-def render_slide_html(model, deck: dict, slide: dict, n: int,
-                      links: dict | None = None) -> str:
+def render_slide_html(
+    model, deck: dict, slide: dict, n: int, links: dict | None = None
+) -> str:
     kind = slide["type"]
     if kind == "title":
         inner = _slide_title(deck, slide)
     elif kind == "section":
         inner = _slide_section(slide)
     elif kind == "view":
-        inner = _slide_view(model, slide, n, deck.get("source", ""),
-                            links=links)
+        inner = _slide_view(model, slide, n, deck.get("source", ""), links=links)
     elif kind == "text":
         inner = _slide_text(slide)
     elif kind == "bullets":
         inner = _slide_bullets(slide)
     else:
         inner = _slide_closing(slide)
-    return (f'<section class="slide slide-{kind}" id="s{n}">'
-            f"{inner}{_notes_html(slide)}</section>")
+    return (
+        f'<section class="slide slide-{kind}" id="s{n}">'
+        f"{inner}{_notes_html(slide)}</section>"
+    )
 
 
 def render_deck_html(model, deck: dict, links: dict | None = None) -> str:
@@ -589,7 +645,8 @@ def render_deck_html(model, deck: dict, links: dict | None = None) -> str:
     total = len(deck["slides"])
     slides_html = "\n".join(
         render_slide_html(model, deck, slide, n, links=links)
-        for n, slide in enumerate(deck["slides"], start=1))
+        for n, slide in enumerate(deck["slides"], start=1)
+    )
     return f"""{MARKER}
 <!doctype html>
 <html lang="nl">
@@ -624,23 +681,25 @@ n notities &middot; a autoplay</div>
 """
 
 
-def render_all_slides(model, decks_dir, out_dir,
-                      links: dict | None = None) -> tuple[list, list]:
+def render_all_slides(
+    model, decks_dir, out_dir, links: dict | None = None
+) -> tuple[list, list]:
     """Render every decks/*.toml; returns (written, removed) path lists.
     A missing or empty decks dir is not an error: nothing is rendered and
     stale generated decks are cleaned up."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    decks = [load_deck(path, model)
-             for path in sorted(Path(decks_dir).glob("*.toml"))]
+    decks = [load_deck(path, model) for path in sorted(Path(decks_dir).glob("*.toml"))]
 
     slugs = set()
     for deck in decks:
         if deck["slug"] in slugs:
-            raise ModelError(f"Meerdere decks renderen naar "
-                             f"'{deck['slug']}.html'; geef een deck een "
-                             f"uniek 'slug'-veld")
+            raise ModelError(
+                f"Meerdere decks renderen naar "
+                f"'{deck['slug']}.html'; geef een deck een "
+                f"uniek 'slug'-veld"
+            )
         slugs.add(deck["slug"])
 
     written, produced = [], set()

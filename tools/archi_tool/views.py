@@ -10,6 +10,7 @@ Two layout strategies:
 
 All selected relations between selected elements are drawn as connections.
 """
+
 from __future__ import annotations
 
 import math
@@ -21,11 +22,11 @@ from .model import XSI_TYPE, ModelError, is_element, new_id, xsi_type
 NODE_W = 220
 NODE_H = 70
 NODE_GAP = 12
-CLUSTER_COLS = 3        # clusters per canvas row
-CHILD_COLS = 2          # children per row inside a cluster
-CLUSTER_VGAP = 60       # space between cluster head and its child grid
+CLUSTER_COLS = 3  # clusters per canvas row
+CHILD_COLS = 2  # children per row inside a cluster
+CLUSTER_VGAP = 60  # space between cluster head and its child grid
 MARGIN = 60
-GRID_COLS = 5           # columns for the plain grid layout
+GRID_COLS = 5  # columns for the plain grid layout
 
 CLUSTER_RELATION_TYPES = {"Aggregation", "Composition"}
 
@@ -41,10 +42,11 @@ def containment_closure(model, root_ref) -> set:
     while frontier:
         current = frontier.pop(0)
         for rel in model.relationships():
-            if (xsi_type(rel).removesuffix("Relationship")
-                    in CLUSTER_RELATION_TYPES
-                    and rel.get("source") == current
-                    and rel.get("target") not in selected):
+            if (
+                xsi_type(rel).removesuffix("Relationship") in CLUSTER_RELATION_TYPES
+                and rel.get("source") == current
+                and rel.get("target") not in selected
+            ):
                 selected.add(rel.get("target"))
                 frontier.append(rel.get("target"))
     return selected
@@ -64,8 +66,15 @@ def related_ids(model, ids) -> set:
     return extra
 
 
-def select(model, element_types=None, relation_types=None, prop=None,
-           root=None, related=False, extra_elements=None):
+def select(
+    model,
+    element_types=None,
+    relation_types=None,
+    prop=None,
+    root=None,
+    related=False,
+    extra_elements=None,
+):
     if root:
         ids = containment_closure(model, root)
         if related:
@@ -80,19 +89,22 @@ def select(model, element_types=None, relation_types=None, prop=None,
         elements = [e for e in elements if xsi_type(e) in element_types]
     if prop:
         key, _, value = prop.partition("=")
-        elements = [e for e in elements
-                    if model.properties(e).get(key) == value]
+        elements = [e for e in elements if model.properties(e).get(key) == value]
     if extra_elements:
         seen = {e.get("id") for e in elements}
-        elements = elements + [e for e in extra_elements
-                               if e.get("id") not in seen]
+        elements = elements + [e for e in extra_elements if e.get("id") not in seen]
     ids = {e.get("id") for e in elements}
-    relations = [r for r in model.relationships()
-                 if r.get("source") in ids and r.get("target") in ids]
+    relations = [
+        r
+        for r in model.relationships()
+        if r.get("source") in ids and r.get("target") in ids
+    ]
     if relation_types:
-        relations = [r for r in relations
-                     if xsi_type(r).removesuffix("Relationship")
-                     in relation_types]
+        relations = [
+            r
+            for r in relations
+            if xsi_type(r).removesuffix("Relationship") in relation_types
+        ]
     return elements, relations
 
 
@@ -102,7 +114,8 @@ def grid_positions(elements):
         col, row = i % GRID_COLS, i // GRID_COLS
         positions[el.get("id")] = (
             MARGIN + col * (NODE_W + 2 * NODE_GAP),
-            MARGIN + row * (NODE_H + 2 * NODE_GAP))
+            MARGIN + row * (NODE_H + 2 * NODE_GAP),
+        )
     return positions
 
 
@@ -117,13 +130,16 @@ def cluster_positions(elements, relations):
                 children.setdefault(src, []).append(tgt)
                 childless.add(tgt)
 
-    heads = [e for e in elements
-             if e.get("id") in children and e.get("id") not in childless]
+    heads = [
+        e for e in elements if e.get("id") in children and e.get("id") not in childless
+    ]
     placed = {h.get("id") for h in heads} | {
-        c for kids in (children[h.get("id")] for h in heads) for c in kids}
+        c for kids in (children[h.get("id")] for h in heads) for c in kids
+    }
     loose = [e for e in elements if e.get("id") not in placed]
-    clusters = ([(h.get("id"), children[h.get("id")]) for h in heads]
-                + [(e.get("id"), []) for e in loose])
+    clusters = [(h.get("id"), children[h.get("id")]) for h in heads] + [
+        (e.get("id"), []) for e in loose
+    ]
 
     # wide canvases beat tall ones on screens and slides: grow the column
     # count with the number of clusters instead of stacking them deep
@@ -136,8 +152,9 @@ def cluster_positions(elements, relations):
         rows = (n + cols - 1) // cols if n else 0
         grid_w = cols * NODE_W + max(0, cols - 1) * NODE_GAP
         width = max(NODE_W, grid_w)
-        height = NODE_H + (CLUSTER_VGAP + rows * NODE_H +
-                           (rows - 1) * NODE_GAP if n else 0)
+        height = NODE_H + (
+            CLUSTER_VGAP + rows * NODE_H + (rows - 1) * NODE_GAP if n else 0
+        )
         sizes.append((width, height, cols, grid_w))
 
     n_rows = (len(clusters) + n_cols - 1) // n_cols
@@ -163,16 +180,31 @@ def cluster_positions(elements, relations):
         for j, kid_id in enumerate(kids):
             positions[kid_id] = (
                 kid_x0 + (j % cols) * (NODE_W + NODE_GAP),
-                y0 + NODE_H + CLUSTER_VGAP + (j // cols) * (NODE_H + NODE_GAP))
+                y0 + NODE_H + CLUSTER_VGAP + (j // cols) * (NODE_H + NODE_GAP),
+            )
     return positions
 
 
-def add_view(model, name, layout="grid", element_types=None,
-             relation_types=None, prop=None, root=None, related=False,
-             extra_elements=None):
-    elements, relations = select(model, element_types, relation_types, prop,
-                                 root=root, related=related,
-                                 extra_elements=extra_elements)
+def add_view(
+    model,
+    name,
+    layout="grid",
+    element_types=None,
+    relation_types=None,
+    prop=None,
+    root=None,
+    related=False,
+    extra_elements=None,
+):
+    elements, relations = select(
+        model,
+        element_types,
+        relation_types,
+        prop,
+        root=root,
+        related=related,
+        extra_elements=extra_elements,
+    )
     if not elements:
         raise ModelError("Selectie is leeg; geen view aangemaakt")
 
@@ -183,32 +215,50 @@ def add_view(model, name, layout="grid", element_types=None,
     else:
         raise ModelError(f"Onbekende layout '{layout}' (grid of cluster)")
 
-    diagram = etree.SubElement(model.folder("diagrams"), "element", {
-        XSI_TYPE: "archimate:ArchimateDiagramModel",
-        "name": name, "id": new_id()})
+    diagram = etree.SubElement(
+        model.folder("diagrams"),
+        "element",
+        {XSI_TYPE: "archimate:ArchimateDiagramModel", "name": name, "id": new_id()},
+    )
 
     objects = {}
     for el in elements:
         el_id = el.get("id")
-        obj = etree.SubElement(diagram, "child", {
-            XSI_TYPE: "archimate:DiagramObject",
-            "id": new_id(), "archimateElement": el_id})
+        obj = etree.SubElement(
+            diagram,
+            "child",
+            {
+                XSI_TYPE: "archimate:DiagramObject",
+                "id": new_id(),
+                "archimateElement": el_id,
+            },
+        )
         x, y = positions[el_id]
-        etree.SubElement(obj, "bounds", {
-            "x": str(x), "y": str(y),
-            "width": str(NODE_W), "height": str(NODE_H)})
+        etree.SubElement(
+            obj,
+            "bounds",
+            {"x": str(x), "y": str(y), "width": str(NODE_W), "height": str(NODE_H)},
+        )
         objects[el_id] = obj
 
     for rel in relations:
         source_obj = objects[rel.get("source")]
         target_obj = objects[rel.get("target")]
         conn_id = new_id()
-        etree.SubElement(source_obj, "sourceConnection", {
-            XSI_TYPE: "archimate:Connection", "id": conn_id,
-            "source": source_obj.get("id"), "target": target_obj.get("id"),
-            "archimateRelationship": rel.get("id")})
+        etree.SubElement(
+            source_obj,
+            "sourceConnection",
+            {
+                XSI_TYPE: "archimate:Connection",
+                "id": conn_id,
+                "source": source_obj.get("id"),
+                "target": target_obj.get("id"),
+                "archimateRelationship": rel.get("id"),
+            },
+        )
         existing = target_obj.get("targetConnections")
-        target_obj.set("targetConnections",
-                       f"{existing} {conn_id}" if existing else conn_id)
+        target_obj.set(
+            "targetConnections", f"{existing} {conn_id}" if existing else conn_id
+        )
 
     return diagram

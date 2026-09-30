@@ -5,6 +5,7 @@ Mutating subcommands validate the model in memory and refuse to save when
 validation errors are found. Run `archi normalize` before committing so the
 serialization stays Archi-canonical.
 """
+
 from __future__ import annotations
 
 import sys
@@ -42,7 +43,8 @@ def report_validation(model, model_path) -> bool:
     # anchor conventions discovery at the model, not the working directory, so
     # validating a model from another project uses that project's conventions
     allowed_keys, _ = discover_conventions(
-        model_path, start=Path(model_path).resolve().parent)
+        model_path, start=Path(model_path).resolve().parent
+    )
     # validation runs after every mutation: a broken links file must not
     # block modelling (ADR 0010), so here it degrades to a warning; render
     # and slides, which actually use the links, still fail on it
@@ -74,6 +76,7 @@ def describe(model, node) -> str:
 
 
 # --- subcommand implementations ---------------------------------------------
+
 
 def cmd_stats(model, args):
     print(f"Model: {model.name}")
@@ -115,8 +118,9 @@ def cmd_show(model, args):
     node_id = node.get("id")
     index = model.id_index()
     for rel in model.relations_of(node_id):
-        other_id = (rel.get("target") if rel.get("source") == node_id
-                    else rel.get("source"))
+        other_id = (
+            rel.get("target") if rel.get("source") == node_id else rel.get("source")
+        )
         other = index.get(other_id)
         direction = "->" if rel.get("source") == node_id else "<-"
         other_name = other.get("name") if other is not None else other_id
@@ -129,8 +133,11 @@ def cmd_tree(model, args):
         children = folder.findall("element")
         indent = "  " * depth
         folder_type = folder.get("type")
-        label = (f"{folder.get('name')} ({folder_type})" if folder_type
-                 else folder.get("name"))
+        label = (
+            f"{folder.get('name')} ({folder_type})"
+            if folder_type
+            else folder.get("name")
+        )
         print(f"{indent}{label}: {len(children)} item(s)")
         for el in children:
             if is_element(el) or el.get("name"):
@@ -151,11 +158,15 @@ def cmd_validate(model, args):
 
 
 def cmd_add_element(model, args):
-    el = model.add_element(args.type, args.name, folder_type=args.folder,
-                           properties=parse_properties(args.property),
-                           documentation=args.documentation,
-                           subfolder=args.subfolder,
-                           create_subfolder=args.create_subfolder)
+    el = model.add_element(
+        args.type,
+        args.name,
+        folder_type=args.folder,
+        properties=parse_properties(args.property),
+        documentation=args.documentation,
+        subfolder=args.subfolder,
+        create_subfolder=args.create_subfolder,
+    )
     status = save_validated(model, args)
     if status == 0:
         print(f"Toegevoegd: {describe(model, el)}")
@@ -163,13 +174,20 @@ def cmd_add_element(model, args):
 
 
 def cmd_add_relation(model, args):
-    rel = model.add_relation(args.type, args.source, args.target,
-                             name=args.name, subfolder=args.subfolder,
-                             create_subfolder=args.create_subfolder)
+    rel = model.add_relation(
+        args.type,
+        args.source,
+        args.target,
+        name=args.name,
+        subfolder=args.subfolder,
+        create_subfolder=args.create_subfolder,
+    )
     status = save_validated(model, args)
     if status == 0:
-        print(f"Toegevoegd: {rel.get('id')} [{xsi_type(rel)}] "
-              f"{args.source} -> {args.target}")
+        print(
+            f"Toegevoegd: {rel.get('id')} [{xsi_type(rel)}] "
+            f"{args.source} -> {args.target}"
+        )
     return status
 
 
@@ -185,8 +203,9 @@ def cmd_set_property(model, args):
 
 
 def cmd_move(model, args):
-    target = model.move(args.ref, args.subfolder,
-                        create_subfolder=args.create_subfolder)
+    target = model.move(
+        args.ref, args.subfolder, create_subfolder=args.create_subfolder
+    )
     status = save_validated(model, args)
     if status == 0:
         print(f"Verplaatst: '{args.ref}' naar folder '{target.get('name')}'")
@@ -237,21 +256,26 @@ def cmd_add_view(model, args):
     extra = [model.resolve(ref) for ref in (args.element or [])]
     for node in extra:
         if not is_element(node):
-            raise ModelError(
-                f"'{node.get('name') or node.get('id')}' is geen element")
-    diagram = add_view(model, args.name, layout=args.layout,
-                       element_types=set(args.type) if args.type else None,
-                       relation_types=(set(args.relation)
-                                       if args.relation else None),
-                       prop=args.property, root=args.root,
-                       related=args.related,
-                       extra_elements=extra or None)
+            raise ModelError(f"'{node.get('name') or node.get('id')}' is geen element")
+    diagram = add_view(
+        model,
+        args.name,
+        layout=args.layout,
+        element_types=set(args.type) if args.type else None,
+        relation_types=(set(args.relation) if args.relation else None),
+        prop=args.property,
+        root=args.root,
+        related=args.related,
+        extra_elements=extra or None,
+    )
     status = save_validated(model, args)
     if status == 0:
         objects = len(diagram.findall("child"))
         connections = len(list(diagram.iter("sourceConnection")))
-        print(f"View '{args.name}' aangemaakt: {objects} objecten, "
-              f"{connections} verbindingen")
+        print(
+            f"View '{args.name}' aangemaakt: {objects} objecten, "
+            f"{connections} verbindingen"
+        )
     return status
 
 
@@ -263,6 +287,7 @@ def cmd_normalize(model, args):
 
 def cmd_setup(model, args):
     from .engine import download_engine, find_or_none
+
     existing = find_or_none()
     if existing:
         print(f"Archi al beschikbaar: {existing}")
@@ -278,15 +303,22 @@ def cmd_render(model, args):
     html_dir = Path(args.out) / "html"
     html_written, html_removed = render_all_html(model, html_dir, links=links)
     deck_written, deck_removed = render_all_slides(
-        model, Path(args.decks), html_dir / "slides", links=links)
+        model, Path(args.decks), html_dir / "slides", links=links
+    )
     for path in written + html_written + deck_written:
         print(f"Geschreven: {path}")
     for path in removed + html_removed:
         print(f"Verwijderd (view bestaat niet meer): {path}")
     for path in deck_removed:
         print(f"Verwijderd (deck bestaat niet meer): {path}")
-    if not (written or removed or html_written or html_removed
-            or deck_written or deck_removed):
+    if not (
+        written
+        or removed
+        or html_written
+        or html_removed
+        or deck_written
+        or deck_removed
+    ):
         print("Views zijn al actueel.")
     view_files = set(view_stems(model).values())
     for warning in check_link_files(links, args.out, html_dir, view_files):
@@ -302,13 +334,13 @@ def cmd_slides(model, args):
             deck = load_deck(Path(deck_path), model)
             path = Path(args.out) / f"{deck['slug']}.html"
             path.parent.mkdir(parents=True, exist_ok=True)
-            if write_if_changed(path, render_deck_html(model, deck,
-                                                       links=links)):
+            if write_if_changed(path, render_deck_html(model, deck, links=links)):
                 written.append(path)
         removed = []
     else:
         written, removed = render_all_slides(
-            model, Path(args.decks), Path(args.out), links=links)
+            model, Path(args.decks), Path(args.out), links=links
+        )
     for path in written:
         print(f"Geschreven: {path}")
     for path in removed:
@@ -333,16 +365,21 @@ de serialisatie Archi-canoniek blijft.
 """
 
 app = typer.Typer(
-    help=HELP, no_args_is_help=True, add_completion=True,
-    context_settings={"help_option_names": ["-h", "--help"]})
+    help=HELP,
+    no_args_is_help=True,
+    add_completion=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 # the global --model, shared by every command through the app callback
 _state = SimpleNamespace(model=None)
 
 ModelOption = typer.Option(
-    None, "--model",
+    None,
+    "--model",
     help="pad naar het .archimate-bestand; standaard gevonden via archi.toml "
-         "of het enige .archimate-bestand in de huidige map")
+    "of het enige .archimate-bestand in de huidige map",
+)
 
 
 @app.callback()
@@ -375,7 +412,8 @@ def _run(command_fn, *, load_model=True, need_model=True, **fields) -> None:
 
 # Repeated options declared once; Typer reads the default value + help here.
 PropertyFilter = typer.Option(
-    None, "--property", help="filter op property, key=value (herhaalbaar)")
+    None, "--property", help="filter op property, key=value (herhaalbaar)"
+)
 
 
 @app.command(help="aantallen per type, relaties en views")
@@ -386,7 +424,8 @@ def stats():
 @app.command("list", help="elementen tonen, optioneel gefilterd")
 def list_elements(
     type: Optional[str] = typer.Option(
-        None, help="filter op elementtype (bv. Capability)"),
+        None, help="filter op elementtype (bv. Capability)"
+    ),
     property: Optional[list[str]] = PropertyFilter,
 ):
     _run(cmd_list, type=type, property=property)
@@ -410,9 +449,11 @@ def validate_command():
 @app.command("normalize", help="serialisatie canoniek maken via de Archi CLI")
 def normalize_command(
     no_download: bool = typer.Option(
-        False, "--no-download",
+        False,
+        "--no-download",
         help="haal de Archi-engine niet automatisch op; faal als hij "
-             "ontbreekt (voor CI en luchtdichte omgevingen)"),
+        "ontbreekt (voor CI en luchtdichte omgevingen)",
+    ),
 ):
     _run(cmd_normalize, load_model=False, no_download=no_download)
 
@@ -427,51 +468,68 @@ def add_element(
     type: str = typer.Option(..., help="elementtype (bv. Capability)"),
     name: str = typer.Option(..., help="naam van het element"),
     folder: Optional[str] = typer.Option(
-        None, help="folder-type; default volgt uit het type"),
+        None, help="folder-type; default volgt uit het type"
+    ),
     property: Optional[list[str]] = typer.Option(
-        None, "--property", help="key=value (herhaalbaar)"),
+        None, "--property", help="key=value (herhaalbaar)"
+    ),
     documentation: Optional[str] = typer.Option(None),
     subfolder: Optional[str] = typer.Option(
-        None, help="submap binnen de laagfolder, geneste mappen met '/'"),
+        None, help="submap binnen de laagfolder, geneste mappen met '/'"
+    ),
     create_subfolder: bool = typer.Option(
-        False, "--create-subfolder",
-        help="ontbrekende submap aanmaken (anders: fout)"),
+        False, "--create-subfolder", help="ontbrekende submap aanmaken (anders: fout)"
+    ),
 ):
-    _run(cmd_add_element, type=type, name=name, folder=folder,
-         property=property, documentation=documentation,
-         subfolder=subfolder, create_subfolder=create_subfolder)
+    _run(
+        cmd_add_element,
+        type=type,
+        name=name,
+        folder=folder,
+        property=property,
+        documentation=documentation,
+        subfolder=subfolder,
+        create_subfolder=create_subfolder,
+    )
 
 
 @app.command("add-relation", help="relatie toevoegen")
 def add_relation(
-    type: str = typer.Option(
-        ..., help="bv. Aggregation of AggregationRelationship"),
+    type: str = typer.Option(..., help="bv. Aggregation of AggregationRelationship"),
     source: str = typer.Option(..., help="id of unieke naam"),
     target: str = typer.Option(..., help="id of unieke naam"),
     name: Optional[str] = typer.Option(None, help="NL-label op de relatie"),
     subfolder: Optional[str] = typer.Option(
-        None, help="submap binnen Relations, geneste mappen met '/'"),
+        None, help="submap binnen Relations, geneste mappen met '/'"
+    ),
     create_subfolder: bool = typer.Option(
-        False, "--create-subfolder",
-        help="ontbrekende submap aanmaken (anders: fout)"),
+        False, "--create-subfolder", help="ontbrekende submap aanmaken (anders: fout)"
+    ),
 ):
-    _run(cmd_add_relation, type=type, source=source,
-         target=target, name=name, subfolder=subfolder,
-         create_subfolder=create_subfolder)
+    _run(
+        cmd_add_relation,
+        type=type,
+        source=source,
+        target=target,
+        name=name,
+        subfolder=subfolder,
+        create_subfolder=create_subfolder,
+    )
 
 
 @app.command(help="element, relatie of view naar een submap verplaatsen")
 def move(
     ref: str = typer.Argument(help="id of (unieke) naam"),
     subfolder: str = typer.Option(
-        ..., help="submap binnen de huidige laagfolder, geneste mappen met "
-                  "'/'; leeg ('') = terug naar de laagfolder zelf"),
+        ...,
+        help="submap binnen de huidige laagfolder, geneste mappen met "
+        "'/'; leeg ('') = terug naar de laagfolder zelf",
+    ),
     create_subfolder: bool = typer.Option(
-        False, "--create-subfolder",
-        help="ontbrekende submap aanmaken (anders: fout)"),
+        False, "--create-subfolder", help="ontbrekende submap aanmaken (anders: fout)"
+    ),
 ):
-    _run(cmd_move, ref=ref, subfolder=subfolder,
-         create_subfolder=create_subfolder)
+    _run(cmd_move, ref=ref, subfolder=subfolder, create_subfolder=create_subfolder)
 
 
 @app.command("set-property", help="property zetten of bijwerken")
@@ -510,8 +568,8 @@ def set_documentation(
 def remove(
     ref: str = typer.Argument(help="id of (unieke) naam"),
     cascade: bool = typer.Option(
-        False, help="verwijder ook relaties en view-objecten die ernaar "
-                    "verwijzen"),
+        False, help="verwijder ook relaties en view-objecten die ernaar verwijzen"
+    ),
 ):
     _run(cmd_remove, ref=ref, cascade=cascade)
 
@@ -524,9 +582,11 @@ def set_model_name(name: str = typer.Argument(help="nieuwe modelnaam")):
 @app.command(help="views renderen naar Mermaid, NLDD-HTML en slidedecks")
 def render(
     out: str = typer.Option(
-        "views", help="doelmap voor de markdown-bestanden (default: views)"),
+        "views", help="doelmap voor de markdown-bestanden (default: views)"
+    ),
     decks: str = typer.Option(
-        "decks", help="map met deckdefinities in TOML (default: decks)"),
+        "decks", help="map met deckdefinities in TOML (default: decks)"
+    ),
 ):
     _run(cmd_render, out=out, decks=decks)
 
@@ -534,12 +594,15 @@ def render(
 @app.command(help="slidedecks renderen naar zelfstandige HTML")
 def slides(
     deck: Optional[list[str]] = typer.Option(
-        None, "--deck", help="specifiek deckbestand (.toml); herhaalbaar; "
-                             "default: alle decks in de decks-map"),
+        None,
+        "--deck",
+        help="specifiek deckbestand (.toml); herhaalbaar; "
+        "default: alle decks in de decks-map",
+    ),
     decks: str = typer.Option(
-        "decks", help="map met deckdefinities in TOML (default: decks)"),
-    out: str = typer.Option(
-        "views/html/slides", help="doelmap voor de HTML-bestanden"),
+        "decks", help="map met deckdefinities in TOML (default: decks)"
+    ),
+    out: str = typer.Option("views/html/slides", help="doelmap voor de HTML-bestanden"),
 ):
     _run(cmd_slides, deck=deck, decks=decks, out=out)
 
@@ -549,27 +612,44 @@ def add_view_command(
     name: str = typer.Option(..., help="naam van de nieuwe view"),
     layout: str = typer.Option("grid", help="grid of cluster"),
     type: Optional[list[str]] = typer.Option(
-        None, help="elementtype in de selectie (herhaalbaar)"),
+        None, help="elementtype in de selectie (herhaalbaar)"
+    ),
     relation: Optional[list[str]] = typer.Option(
-        None, help="relatietype in de selectie (herhaalbaar)"),
+        None, help="relatietype in de selectie (herhaalbaar)"
+    ),
     property: Optional[str] = typer.Option(
-        None, "--property", help="selectiefilter, key=value"),
+        None, "--property", help="selectiefilter, key=value"
+    ),
     root: Optional[str] = typer.Option(
-        None, help="element (id of naam): dit element plus alles wat het "
-                   "aggregeert of composeert"),
+        None,
+        help="element (id of naam): dit element plus alles wat het "
+        "aggregeert of composeert",
+    ),
     related: bool = typer.Option(
-        False, help="voeg ook direct gerelateerde elementen toe (één stap, "
-                    "alleen samen met --root zinvol)"),
+        False,
+        help="voeg ook direct gerelateerde elementen toe (één stap, "
+        "alleen samen met --root zinvol)",
+    ),
     element: Optional[list[str]] = typer.Option(
-        None, "--element", help="element (id of unieke naam) toevoegen aan de "
-                                "selectie (herhaalbaar)"),
+        None,
+        "--element",
+        help="element (id of unieke naam) toevoegen aan de selectie (herhaalbaar)",
+    ),
 ):
     if layout not in ("grid", "cluster"):
         typer.echo("FOUT: --layout moet grid of cluster zijn", err=True)
         raise typer.Exit(1)
-    _run(cmd_add_view, name=name, layout=layout, type=type,
-         relation=relation, property=property, root=root, related=related,
-         element=element)
+    _run(
+        cmd_add_view,
+        name=name,
+        layout=layout,
+        type=type,
+        relation=relation,
+        property=property,
+        root=root,
+        related=related,
+        element=element,
+    )
 
 
 def main(argv=None) -> int:

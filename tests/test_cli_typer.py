@@ -1,9 +1,9 @@
 """Typer-level tests via CliRunner: help output, completion wiring, exit
 codes and the global --model option. Complements test_cli.py, which drives
 main() directly."""
-from typer.testing import CliRunner
 
 from archi_tool.cli import app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 
@@ -11,11 +11,26 @@ runner = CliRunner()
 def test_help_lists_all_commands():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    for command in ("stats", "list", "show", "tree", "validate", "normalize",
-                    "add-element", "add-relation", "set-property",
-                    "remove-property", "move", "rename",
-                    "set-documentation", "remove", "set-model-name", "render",
-                    "slides", "add-view"):
+    for command in (
+        "stats",
+        "list",
+        "show",
+        "tree",
+        "validate",
+        "normalize",
+        "add-element",
+        "add-relation",
+        "set-property",
+        "remove-property",
+        "move",
+        "rename",
+        "set-documentation",
+        "remove",
+        "set-model-name",
+        "render",
+        "slides",
+        "add-view",
+    ):
         assert command in result.output
 
 
@@ -26,8 +41,7 @@ def test_completion_option_present():
     import typer
 
     command = typer.main.get_command(app)
-    option_names = {
-        name for param in command.params for name in param.opts}
+    option_names = {name for param in command.params for name in param.opts}
     assert "--install-completion" in option_names
     assert "--show-completion" in option_names
 
@@ -51,6 +65,7 @@ def test_global_model_option_before_subcommand(model_path):
 
 def test_missing_model_exit_code_one(tmp_path):
     result = runner.invoke(
-        app, ["--model", str(tmp_path / "weg.archimate"), "validate"])
+        app, ["--model", str(tmp_path / "weg.archimate"), "validate"]
+    )
     assert result.exit_code == 1
     assert "Modelbestand niet gevonden" in result.output

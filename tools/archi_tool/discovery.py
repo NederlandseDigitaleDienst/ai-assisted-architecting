@@ -17,6 +17,7 @@ Resolution order for the conventions list:
   3. the built-in default set, so the property-key check stays meaningful even
      without a project list
 """
+
 from __future__ import annotations
 
 import tomllib
@@ -78,8 +79,7 @@ def discover_model(explicit=None, start=None):
         # a relative path in config is relative to the config file's directory
         path = (config_path.parent / table["model"]).resolve()
         if not path.exists():
-            raise ModelError(
-                f"Modelpad uit {config_path.name} bestaat niet: {path}")
+            raise ModelError(f"Modelpad uit {config_path.name} bestaat niet: {path}")
         return path
 
     candidates = sorted(start.glob("*.archimate"))
@@ -88,12 +88,14 @@ def discover_model(explicit=None, start=None):
     if not candidates:
         raise ModelError(
             "Geen modelbestand gevonden. Geef --model <pad>, of zet "
-            "`[tool.archi] model = \"...\"` in archi.toml, of draai in een map "
-            "met precies één .archimate-bestand.")
+            '`[tool.archi] model = "..."` in archi.toml, of draai in een map '
+            "met precies één .archimate-bestand."
+        )
     names = ", ".join(c.name for c in candidates)
     raise ModelError(
         f"Meerdere .archimate-bestanden gevonden ({names}). Kies er één met "
-        "--model <pad> of leg het vast in archi.toml.")
+        "--model <pad> of leg het vast in archi.toml."
+    )
 
 
 def discover_links(model_path, start=None):
@@ -109,8 +111,7 @@ def discover_links(model_path, start=None):
         return None
     path = (config_path.parent / table["links"]).resolve()
     if not path.exists():
-        raise ModelError(
-            f"Linkspad uit {config_path.name} bestaat niet: {path}")
+        raise ModelError(f"Linkspad uit {config_path.name} bestaat niet: {path}")
     return path
 
 
@@ -131,11 +132,13 @@ def discover_conventions(model_path, start=None):
         path = (config_path.parent / table["conventions"]).resolve()
         if not path.exists():
             raise ModelError(
-                f"Conventiepad uit {config_path.name} bestaat niet: {path}")
+                f"Conventiepad uit {config_path.name} bestaat niet: {path}"
+            )
         keys = allowed_property_keys(path)
         if not keys:
             raise ModelError(
-                f"Conventiebestand {path} bevat geen Property-keys-sectie.")
+                f"Conventiebestand {path} bevat geen Property-keys-sectie."
+            )
         return keys, str(path)
 
     model_dir = Path(model_path).resolve().parent

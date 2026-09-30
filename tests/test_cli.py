@@ -1,4 +1,5 @@
 """End-to-end tests for the CLI: exit codes, Dutch messages, error paths."""
+
 from archi_tool.cli import main
 
 
@@ -37,81 +38,138 @@ def test_normalize_skips_lxml_parse(tmp_path, capsys, monkeypatch):
     monkeypatch.setenv("ARCHI_CACHE", str(tmp_path / "leeg-cache"))
     corrupt = tmp_path / "kapot.archimate"
     corrupt.write_text('<?xml version="1.0"?><kapot', encoding="utf-8")
-    status, output = run(capsys, "--model", str(corrupt), "normalize",
-                         "--no-download")
+    status, output = run(capsys, "--model", str(corrupt), "normalize", "--no-download")
     assert status == 1
     assert "Archi niet gevonden" in output
 
 
 def test_mutation_refuses_invalid_and_reports(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "add-relation",
-                         "--type", "Influence",
-                         "--source", "Testview", "--target", "Doel Gamma")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "add-relation",
+        "--type",
+        "Influence",
+        "--source",
+        "Testview",
+        "--target",
+        "Doel Gamma",
+    )
     assert status == 1
     assert "is een view" in output
 
 
 def test_set_property_confirms(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "set-property",
-                         "id-el-alfa", "Bron=test")
+    status, output = run(
+        capsys, "--model", str(model_path), "set-property", "id-el-alfa", "Bron=test"
+    )
     assert status == 0
     assert "Property gezet op 'id-el-alfa': Bron = test" in output
 
 
 def test_remove_property_confirms(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "remove-property",
-                         "id-el-alfa", "Capability-niveau")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "remove-property",
+        "id-el-alfa",
+        "Capability-niveau",
+    )
     assert status == 0
     assert "Property verwijderd van 'id-el-alfa': Capability-niveau" in output
 
 
 def test_remove_property_missing_key_fails(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "remove-property",
-                         "id-el-alfa", "Bestaat-niet")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "remove-property",
+        "id-el-alfa",
+        "Bestaat-niet",
+    )
     assert status == 1
     assert "Property 'Bestaat-niet' niet gevonden" in output
 
 
 def test_move_confirms_and_missing_subfolder_fails(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "move",
-                         "id-el-gamma", "--subfolder", "Gebied X")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "move",
+        "id-el-gamma",
+        "--subfolder",
+        "Gebied X",
+    )
     assert status == 1
     assert "Submap 'Gebied X' niet gevonden" in output
-    status, output = run(capsys, "--model", str(model_path), "move",
-                         "id-el-gamma", "--subfolder", "Gebied X",
-                         "--create-subfolder")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "move",
+        "id-el-gamma",
+        "--subfolder",
+        "Gebied X",
+        "--create-subfolder",
+    )
     assert status == 0
     assert "Verplaatst: 'id-el-gamma' naar folder 'Gebied X'" in output
 
 
 def test_move_back_to_layer_folder_with_empty_subfolder(model_path, capsys):
-    run(capsys, "--model", str(model_path), "move", "id-el-gamma",
-        "--subfolder", "Gebied X", "--create-subfolder")
-    status, output = run(capsys, "--model", str(model_path), "move",
-                         "id-el-gamma", "--subfolder", "")
+    run(
+        capsys,
+        "--model",
+        str(model_path),
+        "move",
+        "id-el-gamma",
+        "--subfolder",
+        "Gebied X",
+        "--create-subfolder",
+    )
+    status, output = run(
+        capsys, "--model", str(model_path), "move", "id-el-gamma", "--subfolder", ""
+    )
     assert status == 0
     assert "Verplaatst: 'id-el-gamma' naar folder 'Motivation'" in output
 
 
 def test_move_refuses_view_object(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "move",
-                         "id-obj-alfa", "--subfolder", "")
+    status, output = run(
+        capsys, "--model", str(model_path), "move", "id-obj-alfa", "--subfolder", ""
+    )
     assert status == 1
     assert "geen element, relatie of view" in output
 
 
 def test_add_element_with_subfolder(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "add-element",
-                         "--type", "BusinessService", "--name", "Dienst",
-                         "--subfolder", "Gebied X", "--create-subfolder",
-                         "--documentation", "Omschrijving in documentatie")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "add-element",
+        "--type",
+        "BusinessService",
+        "--name",
+        "Dienst",
+        "--subfolder",
+        "Gebied X",
+        "--create-subfolder",
+        "--documentation",
+        "Omschrijving in documentatie",
+    )
     assert status == 0
     assert "Toegevoegd:" in output
 
 
 def test_rename_confirms(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "rename",
-                         "id-el-beta", "Bouwblok Beta 2")
+    status, output = run(
+        capsys, "--model", str(model_path), "rename", "id-el-beta", "Bouwblok Beta 2"
+    )
     assert status == 0
     assert "heet nu 'Bouwblok Beta 2'" in output
 
@@ -123,13 +181,14 @@ def test_unknown_property_key_warns(model_path, capsys, tmp_path):
     (repo / "models").mkdir(parents=True)
     (repo / "docs").mkdir()
     (repo / "docs" / "conventies.md").write_text(
-        "## 3. Property-keys\n\n- `Bron` — bronverwijzing\n",
-        encoding="utf-8")
+        "## 3. Property-keys\n\n- `Bron` — bronverwijzing\n", encoding="utf-8"
+    )
     nested = repo / "models" / "model.archimate"
     nested.write_bytes(model_path.read_bytes())
 
-    status, output = run(capsys, "--model", str(nested), "set-property",
-                         "id-el-alfa", "Vrije-key=x")
+    status, output = run(
+        capsys, "--model", str(nested), "set-property", "id-el-alfa", "Vrije-key=x"
+    )
     assert status == 0
     assert "WAARSCHUWING: Property-key 'Vrije-key'" in output
 
@@ -141,8 +200,9 @@ def test_tree_shows_nested_folders(model_path, capsys):
 
     tree = etree.parse(str(model_path))
     strategy = tree.getroot().find("folder[@name='Strategy']")
-    sub = etree.SubElement(strategy, "folder", {
-        "name": "Thema X", "id": "id-folder-thema-x"})
+    sub = etree.SubElement(
+        strategy, "folder", {"name": "Thema X", "id": "id-folder-thema-x"}
+    )
     beta = strategy.find("element[@name='Bouwblok Beta']")
     strategy.remove(beta)
     sub.append(beta)
@@ -156,16 +216,34 @@ def test_tree_shows_nested_folders(model_path, capsys):
 
 
 def test_add_view_with_explicit_elements(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "add-view",
-                         "--name", "Selectie", "--layout", "grid",
-                         "--element", "Gebied Alfa",
-                         "--element", "id-el-gamma")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "add-view",
+        "--name",
+        "Selectie",
+        "--layout",
+        "grid",
+        "--element",
+        "Gebied Alfa",
+        "--element",
+        "id-el-gamma",
+    )
     assert status == 0
     assert "View 'Selectie' aangemaakt: 2 objecten" in output
 
 
 def test_add_view_with_unknown_element_fails(model_path, capsys):
-    status, output = run(capsys, "--model", str(model_path), "add-view",
-                         "--name", "Selectie", "--element", "Bestaat Niet")
+    status, output = run(
+        capsys,
+        "--model",
+        str(model_path),
+        "add-view",
+        "--name",
+        "Selectie",
+        "--element",
+        "Bestaat Niet",
+    )
     assert status == 1
     assert "Niet gevonden" in output

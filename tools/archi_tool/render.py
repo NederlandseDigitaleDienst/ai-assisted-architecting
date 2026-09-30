@@ -6,6 +6,7 @@ Nested diagram objects become subgraphs; connection line styles follow the
 relation type. Output files carry a marker comment so stale files can be
 cleaned up safely.
 """
+
 from __future__ import annotations
 
 import re
@@ -31,6 +32,7 @@ def display_model_path(model) -> str:
         # outside the working directory: the bare name keeps it deterministic
         return path.name
 
+
 # (fill, stroke, text) per ArchiMate layer, matching Archi's own layer
 # diagram conventions (Strategy amber, Motivation purple, Business lemon)
 LAYER_PALETTE = {
@@ -52,8 +54,10 @@ LAYER_STYLES = {
 CONTAINMENT_TYPES = {"AggregationRelationship", "CompositionRelationship"}
 DOTTED_TYPES = {"InfluenceRelationship", "RealizationRelationship"}
 
-EDGE_LEGEND = ("pijlstijlen: `--o` bevat (aggregatie/compositie), "
-               "`-.->` gestippeld (beïnvloedt/realiseert), `-->` overig")
+EDGE_LEGEND = (
+    "pijlstijlen: `--o` bevat (aggregatie/compositie), "
+    "`-.->` gestippeld (beïnvloedt/realiseert), `-->` overig"
+)
 
 
 def slugify(name: str) -> str:
@@ -73,13 +77,15 @@ def view_stems(model) -> dict:
     suffix ("-2") is avoided on purpose: it could collide with a view that
     is really called "Overzicht 2".
     """
-    bases = {d.get("id"): slugify(d.get("name") or d.get("id"))
-             for d in model.diagrams()}
+    bases = {
+        d.get("id"): slugify(d.get("name") or d.get("id")) for d in model.diagrams()
+    }
     base_counts = Counter(bases.values())
     unique = {b for b, n in base_counts.items() if n == 1}
     id_slugs = {v: slugify(v.removeprefix("id-")) for v in bases}
-    short = {v: f"{b}-{id_slugs[v][:8]}"
-             for v, b in bases.items() if base_counts[b] > 1}
+    short = {
+        v: f"{b}-{id_slugs[v][:8]}" for v, b in bases.items() if base_counts[b] > 1
+    }
     short_counts = Counter(short.values())
     stems = {}
     for view_id, base in bases.items():
@@ -171,8 +177,11 @@ def render_view(model, diagram) -> str:
         target_obj = index.get(conn.get("target"))
         rel = index.get(conn.get("archimateRelationship") or "")
         # nesting already expresses containment; skip the redundant arrow
-        if (rel is not None and xsi_type(rel) in CONTAINMENT_TYPES
-                and is_descendant(target_obj, source_obj)):
+        if (
+            rel is not None
+            and xsi_type(rel) in CONTAINMENT_TYPES
+            and is_descendant(target_obj, source_obj)
+        ):
             continue
         lines.append(f"  {source_id} {edge_syntax(rel)} {target_id}")
 
@@ -184,17 +193,28 @@ def render_view(model, diagram) -> str:
     documentation = model.documentation(diagram)
     if documentation:
         parts += [documentation, ""]
-    parts += ["```mermaid", *lines, "```", "",
-              f"*Gegenereerd uit `{display_model_path(model)}` — "
-              f"{EDGE_LEGEND}.*", ""]
+    parts += [
+        "```mermaid",
+        *lines,
+        "```",
+        "",
+        f"*Gegenereerd uit `{display_model_path(model)}` — {EDGE_LEGEND}.*",
+        "",
+    ]
     return "\n".join(parts)
 
 
 def render_index(model, entries) -> str:
-    rows = [MARKER, "", "# Views", "",
-            f"Gerenderde views uit `{display_model_path(model)}`. "
-            "Deze bestanden worden gegenereerd door `archi render`; "
-            "bewerk ze niet handmatig.", ""]
+    rows = [
+        MARKER,
+        "",
+        "# Views",
+        "",
+        f"Gerenderde views uit `{display_model_path(model)}`. "
+        "Deze bestanden worden gegenereerd door `archi render`; "
+        "bewerk ze niet handmatig.",
+        "",
+    ]
     for name, filename in entries:
         rows.append(f"- [{name}]({filename})")
     rows.append("")

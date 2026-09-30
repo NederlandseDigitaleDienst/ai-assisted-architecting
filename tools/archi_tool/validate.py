@@ -3,18 +3,25 @@
 Returns (errors, warnings). Errors mean the model is corrupt or will not
 load correctly in Archi; warnings flag convention deviations.
 """
+
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-from .model import (FOLDER_BY_ELEMENT_TYPE, is_diagram, is_element,
-                    is_relationship, xsi_type)
+from .model import (
+    FOLDER_BY_ELEMENT_TYPE,
+    is_diagram,
+    is_element,
+    is_relationship,
+    xsi_type,
+)
 from .render import slugify, view_stems
 
 # tolerate an optional section number ("## Property-keys", "## 3. Property-keys")
 PROPERTY_KEYS_HEADING = re.compile(
-    r"^##\s*(?:\d+\.\s*)?Property-keys\s*$", re.MULTILINE)
+    r"^##\s*(?:\d+\.\s*)?Property-keys\s*$", re.MULTILINE
+)
 
 
 def allowed_property_keys(conventions_path) -> set:
@@ -27,7 +34,7 @@ def allowed_property_keys(conventions_path) -> set:
     match = PROPERTY_KEYS_HEADING.search(text)
     if not match:
         return set()
-    section = re.split(r"\n## ", text[match.end():], maxsplit=1)[0]
+    section = re.split(r"\n## ", text[match.end() :], maxsplit=1)[0]
     return set(re.findall(r"^- `([^`\n]+)`", section, flags=re.MULTILINE))
 
 
@@ -41,8 +48,9 @@ def top_folder_of(model, node):
     return top
 
 
-def validate(model, conventions_path=None, allowed_keys=None,
-             links=None) -> tuple[list, list]:
+def validate(
+    model, conventions_path=None, allowed_keys=None, links=None
+) -> tuple[list, list]:
     """Run integrity checks; return (errors, warnings).
 
     Property-key checking uses ``allowed_keys`` when given (a set resolved by
@@ -70,19 +78,21 @@ def validate(model, conventions_path=None, allowed_keys=None,
             if node is None:
                 errors.append(
                     f"Relatie {rel.get('id')} ({xsi_type(rel)}): {attr} "
-                    f"verwijst naar onbekend id {ref}")
+                    f"verwijst naar onbekend id {ref}"
+                )
             elif is_diagram(node):
                 errors.append(
                     f"Relatie {rel.get('id')} ({xsi_type(rel)}): {attr} "
                     f"verwijst naar view {ref}; relaties kunnen geen views "
-                    "verbinden")
-            elif (is_relationship(node)
-                    and xsi_type(rel) != "AssociationRelationship"):
+                    "verbinden"
+                )
+            elif is_relationship(node) and xsi_type(rel) != "AssociationRelationship":
                 errors.append(
                     f"Relatie {rel.get('id')} ({xsi_type(rel)}): {attr} "
                     f"verwijst naar relatie {ref}; alleen een "
                     "AssociationRelationship mag een relatie als eindpunt "
-                    "hebben")
+                    "hebben"
+                )
 
     # 3. folder placement
     for node in model.root.iter("element"):
@@ -91,18 +101,21 @@ def validate(model, conventions_path=None, allowed_keys=None,
         if is_relationship(node) and folder_type != "relations":
             errors.append(
                 f"Relatie {node.get('id')} staat in folder '{folder_type}' "
-                "in plaats van 'relations'")
+                "in plaats van 'relations'"
+            )
         elif is_diagram(node) and folder_type != "diagrams":
             errors.append(
                 f"View {node.get('id')} staat in folder '{folder_type}' "
-                "in plaats van 'diagrams'")
+                "in plaats van 'diagrams'"
+            )
         elif is_element(node):
             expected = FOLDER_BY_ELEMENT_TYPE.get(xsi_type(node))
             if expected and folder_type != expected:
                 warnings.append(
                     f"Element {node.get('id')} ({xsi_type(node)}, "
                     f"'{node.get('name')}') staat in folder '{folder_type}', "
-                    f"verwacht '{expected}'")
+                    f"verwacht '{expected}'"
+                )
 
     # 3b. diagram parts belong inside a view; a view object or connection
     # directly in a folder means it was torn out of its view (Archi still
@@ -112,7 +125,8 @@ def validate(model, conventions_path=None, allowed_keys=None,
         if parent is not None and parent.tag == "folder":
             errors.append(
                 f"View-onderdeel {node.get('id')} ({node.tag}) staat los in "
-                f"folder '{parent.get('name')}' in plaats van in een view")
+                f"folder '{parent.get('name')}' in plaats van in een view"
+            )
 
     # 4. view integrity
     for diagram in model.diagrams():
@@ -122,24 +136,28 @@ def validate(model, conventions_path=None, allowed_keys=None,
             if element_ref and element_ref not in index:
                 errors.append(
                     f"View-object {obj.get('id')} verwijst naar onbekend "
-                    f"element {element_ref}")
+                    f"element {element_ref}"
+                )
             for conn_id in (obj.get("targetConnections") or "").split():
                 if conn_id not in index:
                     errors.append(
                         f"View-object {obj.get('id')}: targetConnections "
-                        f"bevat onbekend id {conn_id}")
+                        f"bevat onbekend id {conn_id}"
+                    )
         for conn in diagram.iter("sourceConnection"):
             rel_ref = conn.get("archimateRelationship")
             if rel_ref and rel_ref not in index:
                 errors.append(
                     f"Verbinding {conn.get('id')} verwijst naar onbekende "
-                    f"relatie {rel_ref}")
+                    f"relatie {rel_ref}"
+                )
             for attr in ("source", "target"):
                 ref = conn.get(attr)
                 if ref not in object_ids:
                     errors.append(
                         f"Verbinding {conn.get('id')}: {attr} verwijst niet "
-                        f"naar een object in dezelfde view ({ref})")
+                        f"naar een object in dezelfde view ({ref})"
+                    )
 
     # 4b. view names that slugify alike would share an output file; render
     # gives each of them an id suffix, but nobody guesses that name from the
@@ -154,10 +172,12 @@ def validate(model, conventions_path=None, allowed_keys=None,
             names = ", ".join(
                 f"'{d.get('name') or '(naamloos)'}' ({d.get('id')}) → "
                 f"{stems[d.get('id')]}"
-                for d in diagrams)
+                for d in diagrams
+            )
             warnings.append(
                 f"Views met dezelfde bestandsnaam '{base}': {names}. "
-                "Hernoem er een voor een voorspelbare bestandsnaam")
+                "Hernoem er een voor een voorspelbare bestandsnaam"
+            )
 
     # 5. property keys against conventions (warning only)
     allowed = allowed_keys
@@ -169,14 +189,14 @@ def validate(model, conventions_path=None, allowed_keys=None,
             key = prop.get("key")
             if key and key not in allowed and key not in seen_unknown:
                 seen_unknown.add(key)
-                warnings.append(
-                    f"Property-key '{key}' staat niet in de conventielijst")
+                warnings.append(f"Property-key '{key}' staat niet in de conventielijst")
     elif conventions_path:
         # an empty list silently disables this check; say so loudly
         warnings.append(
             f"Geen property-keys gevonden in {conventions_path}: "
             "de conventiecheck op property-keys staat hierdoor uit "
-            "(ontbreekt de sectie 'Property-keys'?)")
+            "(ontbreekt de sectie 'Property-keys'?)"
+        )
 
     # 6. links file: every linked element name must exist where it is used
     # (warning only). A section named after a view must name elements drawn
@@ -189,19 +209,23 @@ def validate(model, conventions_path=None, allowed_keys=None,
         for source, mapping in links.items():
             diagram = views.get(source)
             if diagram is not None:
-                drawn = {index[c.get("archimateElement")].get("name")
-                         for c in diagram.iter("child")
-                         if c.get("archimateElement") in index}
+                drawn = {
+                    index[c.get("archimateElement")].get("name")
+                    for c in diagram.iter("child")
+                    if c.get("archimateElement") in index
+                }
                 for name in mapping:
                     if name not in drawn:
                         warnings.append(
                             f"Link in '{source}': element '{name}' staat "
-                            "niet in die view")
+                            "niet in die view"
+                        )
             else:
                 for name in mapping:
                     if name not in all_names:
                         warnings.append(
                             f"Link in '{source}': geen element met de naam "
-                            f"'{name}' in het model")
+                            f"'{name}' in het model"
+                        )
 
     return errors, warnings

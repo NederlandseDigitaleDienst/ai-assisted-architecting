@@ -15,6 +15,7 @@ click-through across both kinds of diagram, and can link between them.
 Whether an element is clickable is an editorial choice, not a model fact, so
 it lives in this sidecar and not in the model (ADR 0010).
 """
+
 from __future__ import annotations
 
 import os
@@ -37,15 +38,16 @@ def load_links(path) -> dict:
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
-        raise ModelError(
-            f"Links-bestand {path} is geen geldige TOML: {exc}") from exc
+        raise ModelError(f"Links-bestand {path} is geen geldige TOML: {exc}") from exc
     links = {}
     for source, table in data.items():
-        if not (isinstance(table, dict)
-                and all(isinstance(v, str) for v in table.values())):
+        if not (
+            isinstance(table, dict) and all(isinstance(v, str) for v in table.values())
+        ):
             raise ModelError(
                 f"Links-bestand {path}: sectie '{source}' moet regels van de "
-                "vorm \"elementnaam\" = \"pad\" bevatten")
+                'vorm "elementnaam" = "pad" bevatten'
+            )
         links[source] = dict(table)
     return links
 
@@ -60,8 +62,9 @@ def with_base(target: str, base: str) -> str:
 
 def links_for(links: dict, source: str, base: str = "") -> dict:
     """{element name: href} for one source diagram, prefixed with `base`."""
-    return {name: with_base(target, base)
-            for name, target in links.get(source, {}).items()}
+    return {
+        name: with_base(target, base) for name, target in links.get(source, {}).items()
+    }
 
 
 def check_link_files(links: dict, views_root, html_dir, view_files) -> list:
@@ -78,13 +81,17 @@ def check_link_files(links: dict, views_root, html_dir, view_files) -> list:
         if source in view_files:
             source_dir = html_dir
         else:
-            found = sorted(p for p in views_root.rglob(f"{source}.*")
-                           if p.suffix in (".svg", ".html"))
+            found = sorted(
+                p
+                for p in views_root.rglob(f"{source}.*")
+                if p.suffix in (".svg", ".html")
+            )
             if not found:
                 warnings.append(
                     f"Links: sectie '{source}' hoort bij geen view en bij geen "
                     f"bestand onder {views_root} (hernoemd of nog niet "
-                    "gegenereerd?)")
+                    "gegenereerd?)"
+                )
                 continue
             if len({p.parent for p in found}) > 1:
                 # targets are relative to the source's directory, which is
@@ -93,7 +100,8 @@ def check_link_files(links: dict, views_root, html_dir, view_files) -> list:
                 candidates = ", ".join(str(p) for p in found)
                 warnings.append(
                     f"Links: sectie '{source}' past bij meerdere bestanden "
-                    f"({candidates}); doelen niet gecontroleerd")
+                    f"({candidates}); doelen niet gecontroleerd"
+                )
                 continue
             source_dir = found[0].parent
         for name, target in mapping.items():
@@ -105,5 +113,6 @@ def check_link_files(links: dict, views_root, html_dir, view_files) -> list:
             if not Path(os.path.normpath(source_dir / target)).exists():
                 warnings.append(
                     f"Links: '{source}' → '{name}' verwijst naar "
-                    f"'{target}', dat niet bestaat")
+                    f"'{target}', dat niet bestaat"
+                )
     return warnings

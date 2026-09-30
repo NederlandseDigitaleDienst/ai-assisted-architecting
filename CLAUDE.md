@@ -112,7 +112,7 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
 - Nieuwe checks in `validate.py` krijgen een test. Structurele beslissingen
   krijgen een ADR in `adr/`.
 - Wijzigingen via branch → commit → PR. Semantische Nederlandstalige
-  commit-berichten. De pre-commit hooks draaien ruff, bestandscontroles,
+  commit-berichten. De pre-commit hooks draaien ruff (lint en format), bestandscontroles,
   zizmor, `uv lock` en pytest (`just lint` op alle bestanden). CI
   (`.github/workflows/ci.yml`) draait dezelfde hooks, de suite op Ubuntu en
   Windows, en een testbuild; `release.yml` draait de tests nogmaals vóór

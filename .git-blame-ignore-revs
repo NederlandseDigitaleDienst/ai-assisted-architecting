@@ -1,0 +1,6 @@
+# Puur mechanische commits die git blame overslaat. Lokaal inschakelen met:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# (GitHub doet dit automatisch.)
+
+# ruff format en importsortering
+cf2b7a2b55564061445129b5a1bfeaae4c611f76
