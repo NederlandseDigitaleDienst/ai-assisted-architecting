@@ -12,6 +12,7 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
+from .links import links_for
 from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
 from .render import (CONTAINMENT_TYPES, DOTTED_TYPES, LAYER_PALETTE, MARKER,
                      display_model_path, is_descendant, view_stems,
@@ -394,6 +395,12 @@ DIAGRAM_CSS = """\
       border: 1px solid; box-shadow: 0 1px 2px rgb(0 0 0 / 0.10);
       transition: box-shadow 0.15s ease; }
     .leaf:hover { box-shadow: 0 3px 10px rgb(0 0 0 / 0.20); }
+    .box-link { color: inherit; text-decoration: none; }
+    .box-link > .box { cursor: pointer; }
+    .box-link > .box::after { content: "↗"; position: absolute;
+      bottom: 2px; right: 5px; font-size: 11px; opacity: 0.6; }
+    .box-link:hover > .box, .box-link:focus-visible > .box {
+      outline: 2px solid #154273; outline-offset: 1px; }
     .container { border-radius: 10px; border: 1.5px solid;
       padding: 10px 14px; font-weight: 550; }
     .type-icon { position: absolute; top: 3px; right: 4px;
@@ -467,14 +474,17 @@ def page_shell(title: str, body: str) -> str:
 
 
 def diagram_canvas(model, diagram, marker_prefix: str = "",
-                   ref_base: str = "", dim_ids: set | None = None) -> dict:
+                   ref_base: str = "", dim_ids: set | None = None,
+                   links: dict | None = None) -> dict:
     """Edge SVG and positioned box divs for one diagram, plus metadata.
 
     marker_prefix keeps the SVG marker ids unique when several diagrams
     share one document (the slide decks embed many); ref_base prefixes the
     links of view-reference boxes so they resolve from other directories;
     dim_ids marks diagram objects (and edges touching them) with a "dim"
-    class so a slide can spotlight the rest.
+    class so a slide can spotlight the rest; links maps an element name to
+    the href its boxes should link to (from the links file, already
+    prefixed by the caller).
     """
     index = model.id_index()
     boxes = absolute_boxes(diagram, index)
@@ -530,10 +540,15 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
                 model.documentation(box["element"])
                 or model.properties(box["element"]).get("Omschrijving", ""))
             title_attr = f' title="{description}"' if description else ""
-            divs.append(
+            box_html = (
                 f'<div class="box {kind} {layer_of(box["element"])}{dim}" '
                 f'style="{style}"{title_attr}>'
                 f'{element_icon(box["element"])}{name}</div>')
+            href = (links or {}).get(box["element"].get("name") or "")
+            if href:
+                box_html = (f'<a class="box-link" href="{html.escape(href)}">'
+                            f'{box_html}</a>')
+            divs.append(box_html)
         elif box["kind"] == "note":
             content = box["node"].find("content")
             text = html.escape(
@@ -560,8 +575,8 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
             "boxes": boxes, "edges": edges}
 
 
-def render_view_html(model, diagram) -> str:
-    canvas = diagram_canvas(model, diagram)
+def render_view_html(model, diagram, links: dict | None = None) -> str:
+    canvas = diagram_canvas(model, diagram, links=links)
     name = diagram.get("name") or "(naamloze view)"
     documentation = model.documentation(diagram)
     doc_html = (f"      <p class=\"doc\">{html.escape(documentation)}</p>\n"
@@ -615,8 +630,11 @@ def render_index_html(model, entries) -> str:
     return page_shell(f"{model.name} · views", body)
 
 
-def render_all_html(model, out_dir) -> tuple[list, list]:
-    """Render every view to HTML; returns (written, removed) path lists."""
+def render_all_html(model, out_dir, links: dict | None = None) -> tuple[list, list]:
+    """Render every view to HTML; returns (written, removed) path lists.
+
+    links is the parsed links file ({source: {element name: target}}); a view
+    picks up the section keyed by its own file stem."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     written, produced, entries = [], set(), []
@@ -627,7 +645,9 @@ def render_all_html(model, out_dir) -> tuple[list, list]:
         name = diagram.get("name") or diagram.get("id")
         filename = stems[diagram.get("id")] + ".html"
         path = out / filename
-        if write_if_changed(path, render_view_html(model, diagram)):
+        view_links = links_for(links or {}, stems[diagram.get("id")])
+        if write_if_changed(path, render_view_html(model, diagram,
+                                                   links=view_links)):
             written.append(path)
         produced.add(path.name)
         boxes = absolute_boxes(diagram, index)

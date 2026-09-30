@@ -172,6 +172,11 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
   slide (markerprefix `s<n>-` tegen dubbele SVG-ids); een `focus`-veld zoomt de
   camera op één element en dimt de rest (rect server-side berekend, animatie
   client-side).
+- `links.py`: doorklik-links uit een links-bestand (`[tool.archi] links`):
+  per bronplaat (bestandsnaam zonder extensie) elementnaam → relatief pad.
+  Gebruikt door `render_html` (klikbare element-vakjes) en `render_slides`
+  (met `../`-correctie); `validate` controleert de elementnamen, `render` de
+  bestanden. Zie ADR 0010.
 - `cli.py`: Typer-subcommands (getypeerde functies, `--model` als globale
   optie); mutaties slaan alleen op bij schone validatie.
 

@@ -41,12 +41,14 @@ def top_folder_of(model, node):
     return top
 
 
-def validate(model, conventions_path=None, allowed_keys=None) -> tuple[list, list]:
+def validate(model, conventions_path=None, allowed_keys=None,
+             links=None) -> tuple[list, list]:
     """Run integrity checks; return (errors, warnings).
 
     Property-key checking uses ``allowed_keys`` when given (a set resolved by
     discovery), otherwise parses ``conventions_path``. Passing neither skips
-    the property-key check.
+    the property-key check. ``links`` is the parsed links file; its element
+    names are checked against the model (warning only).
     """
     errors, warnings = [], []
 
@@ -175,5 +177,31 @@ def validate(model, conventions_path=None, allowed_keys=None) -> tuple[list, lis
             f"Geen property-keys gevonden in {conventions_path}: "
             "de conventiecheck op property-keys staat hierdoor uit "
             "(ontbreekt de sectie 'Property-keys'?)")
+
+    # 6. links file: every linked element name must exist where it is used
+    # (warning only). A section named after a view must name elements drawn
+    # in that view; any other section (e.g. a script-generated diagram) must
+    # at least name an element in the model. File checks happen at render.
+    if links:
+        # sections are keyed by output file stem, as render names the files
+        views = {stems[d.get("id")]: d for d in model.diagrams()}
+        all_names = {e.get("name") for e in model.elements()}
+        for source, mapping in links.items():
+            diagram = views.get(source)
+            if diagram is not None:
+                drawn = {index[c.get("archimateElement")].get("name")
+                         for c in diagram.iter("child")
+                         if c.get("archimateElement") in index}
+                for name in mapping:
+                    if name not in drawn:
+                        warnings.append(
+                            f"Link in '{source}': element '{name}' staat "
+                            "niet in die view")
+            else:
+                for name in mapping:
+                    if name not in all_names:
+                        warnings.append(
+                            f"Link in '{source}': geen element met de naam "
+                            f"'{name}' in het model")
 
     return errors, warnings

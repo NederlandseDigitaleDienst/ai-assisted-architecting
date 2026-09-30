@@ -62,7 +62,13 @@ selectie geeft een foutmelding in plaats van een lege view.
 2. `archi normalize` vóór commit.
 3. `archi render`, zodat de nieuwe view ook als Mermaid en HTML op schijf
    staat als het project die committeert.
-4. Layout fijnslijpen kan daarna in de Archi-GUI. Het bestand is de bron,
+4. Moet een element in de nieuwe view doorklikken naar een andere view of
+   een ander bestand, zet dat dan in het links-bestand van het project
+   (`[tool.archi] links` in `archi.toml`), in de sectie met de bestandsnaam
+   van de view: `"Elementnaam" = "relatief/pad.html"`. Dat is geen modelfeit
+   en hoort dus niet in het model. Controle: `archi validate` en
+   `archi render` waarschuwen bij onbekende elementen of doelen.
+5. Layout fijnslijpen kan daarna in de Archi-GUI. Het bestand is de bron,
    dus zo'n aanpassing is een gewone modelwijziging: opnieuw normaliseren,
    renderen en committen.
 
