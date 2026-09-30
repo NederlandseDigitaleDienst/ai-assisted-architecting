@@ -1,10 +1,9 @@
 import re
 
 import pytest
-from lxml import etree
-
 from archi_tool.model import ArchiModel, ModelError, new_id, xsi_type
 from archi_tool.validate import validate
+from lxml import etree
 
 
 def assert_valid(model):
@@ -27,9 +26,12 @@ def test_resolve_by_id_and_name(model):
 
 
 def test_add_element_lands_in_layer_folder(model):
-    el = model.add_element("Driver", "Nieuwe ontwikkeling",
-                           properties={"Omschrijving": "test"},
-                           documentation="toelichting")
+    el = model.add_element(
+        "Driver",
+        "Nieuwe ontwikkeling",
+        properties={"Omschrijving": "test"},
+        documentation="toelichting",
+    )
     folder = el.getparent()
     assert folder.get("type") == "motivation"
     assert model.properties(el) == {"Omschrijving": "test"}
@@ -97,16 +99,22 @@ def test_add_element_in_subfolder_refuses_missing_without_create(model):
 
 
 def test_add_element_and_relation_in_created_subfolder(model):
-    el = model.add_element("BusinessService", "Dienst",
-                           subfolder="Gebied X/Sub", create_subfolder=True)
+    el = model.add_element(
+        "BusinessService", "Dienst", subfolder="Gebied X/Sub", create_subfolder=True
+    )
     assert el.getparent().get("name") == "Sub"
     assert el.getparent().getparent().get("name") == "Gebied X"
     assert model.top_folder(el).get("type") == "business"
     # tweede keer: de submap bestaat nu, geen create nodig en geen duplicaat
     el2 = model.add_element("BusinessService", "Dienst 2", subfolder="Gebied X/Sub")
     assert el2.getparent() is el.getparent()
-    rel = model.add_relation("Realization", el.get("id"), "id-el-beta",
-                             subfolder="Gebied X", create_subfolder=True)
+    rel = model.add_relation(
+        "Realization",
+        el.get("id"),
+        "id-el-beta",
+        subfolder="Gebied X",
+        create_subfolder=True,
+    )
     assert rel.getparent().get("name") == "Gebied X"
     assert model.top_folder(rel).get("type") == "relations"
     assert_valid(model)
@@ -124,12 +132,15 @@ def test_move_within_layer_and_back(model):
     assert_valid(model)
 
 
-@pytest.mark.parametrize("ref, message", [
-    ("id-obj-alfa", "geen element, relatie of view (maar een 'child')"),
-    ("id-conn-1", "geen element, relatie of view (maar een 'sourceConnection')"),
-    ("id-model-1", "geen element, relatie of view (maar een 'model')"),
-    ("id-folder-motivation", "is een map"),
-])
+@pytest.mark.parametrize(
+    "ref, message",
+    [
+        ("id-obj-alfa", "geen element, relatie of view (maar een 'child')"),
+        ("id-conn-1", "geen element, relatie of view (maar een 'sourceConnection')"),
+        ("id-model-1", "geen element, relatie of view (maar een 'model')"),
+        ("id-folder-motivation", "is een map"),
+    ],
+)
 def test_move_refuses_non_concepts(model, ref, message):
     with pytest.raises(ModelError, match=re.escape(message)):
         model.move(ref, "", create_subfolder=True)

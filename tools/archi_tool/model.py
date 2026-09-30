@@ -7,6 +7,7 @@ xsi:type attribute such as "archimate:Capability"; relationship types end in
 "Relationship" (American spelling: RealizationRelationship). Folders per
 ArchiMate layer are fixed by Archi and identified by their type attribute.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -23,30 +24,68 @@ DIAGRAM_TYPE = "ArchimateDiagramModel"
 ELEMENT_LAYERS = {
     "strategy": {"Resource", "Capability", "CourseOfAction", "ValueStream"},
     "business": {
-        "BusinessActor", "BusinessRole", "BusinessCollaboration",
-        "BusinessInterface", "BusinessProcess", "BusinessFunction",
-        "BusinessInteraction", "BusinessEvent", "BusinessService",
-        "BusinessObject", "Contract", "Representation", "Product",
+        "BusinessActor",
+        "BusinessRole",
+        "BusinessCollaboration",
+        "BusinessInterface",
+        "BusinessProcess",
+        "BusinessFunction",
+        "BusinessInteraction",
+        "BusinessEvent",
+        "BusinessService",
+        "BusinessObject",
+        "Contract",
+        "Representation",
+        "Product",
     },
     "application": {
-        "ApplicationComponent", "ApplicationCollaboration",
-        "ApplicationInterface", "ApplicationFunction", "ApplicationInteraction",
-        "ApplicationProcess", "ApplicationEvent", "ApplicationService",
+        "ApplicationComponent",
+        "ApplicationCollaboration",
+        "ApplicationInterface",
+        "ApplicationFunction",
+        "ApplicationInteraction",
+        "ApplicationProcess",
+        "ApplicationEvent",
+        "ApplicationService",
         "DataObject",
     },
     "technology": {
-        "Node", "Device", "SystemSoftware", "TechnologyCollaboration",
-        "TechnologyInterface", "Path", "CommunicationNetwork",
-        "TechnologyFunction", "TechnologyProcess", "TechnologyInteraction",
-        "TechnologyEvent", "TechnologyService", "Artifact", "Material",
-        "Equipment", "Facility", "DistributionNetwork",
+        "Node",
+        "Device",
+        "SystemSoftware",
+        "TechnologyCollaboration",
+        "TechnologyInterface",
+        "Path",
+        "CommunicationNetwork",
+        "TechnologyFunction",
+        "TechnologyProcess",
+        "TechnologyInteraction",
+        "TechnologyEvent",
+        "TechnologyService",
+        "Artifact",
+        "Material",
+        "Equipment",
+        "Facility",
+        "DistributionNetwork",
     },
     "motivation": {
-        "Stakeholder", "Driver", "Assessment", "Goal", "Outcome",
-        "Principle", "Requirement", "Constraint", "Meaning", "Value",
+        "Stakeholder",
+        "Driver",
+        "Assessment",
+        "Goal",
+        "Outcome",
+        "Principle",
+        "Requirement",
+        "Constraint",
+        "Meaning",
+        "Value",
     },
     "implementation_migration": {
-        "WorkPackage", "Deliverable", "ImplementationEvent", "Plateau", "Gap",
+        "WorkPackage",
+        "Deliverable",
+        "ImplementationEvent",
+        "Plateau",
+        "Gap",
     },
     "other": {"Location", "Grouping", "Junction"},
 }
@@ -55,8 +94,16 @@ FOLDER_BY_ELEMENT_TYPE = {
 }
 
 RELATIONSHIP_TYPES = {
-    "Composition", "Aggregation", "Assignment", "Realization", "Serving",
-    "Access", "Influence", "Triggering", "Flow", "Specialization",
+    "Composition",
+    "Aggregation",
+    "Assignment",
+    "Realization",
+    "Serving",
+    "Access",
+    "Influence",
+    "Triggering",
+    "Flow",
+    "Specialization",
     "Association",
 }
 
@@ -84,8 +131,7 @@ def is_diagram(node) -> bool:
 
 
 def is_element(node) -> bool:
-    return (node.tag == "element"
-            and not is_relationship(node) and not is_diagram(node))
+    return node.tag == "element" and not is_relationship(node) and not is_diagram(node)
 
 
 def safe_parser() -> etree.XMLParser:
@@ -96,8 +142,7 @@ def safe_parser() -> etree.XMLParser:
     files or URLs into the model (and from there into rendered output), on
     any lxml version.
     """
-    return etree.XMLParser(resolve_entities=False, load_dtd=False,
-                           no_network=True)
+    return etree.XMLParser(resolve_entities=False, load_dtd=False, no_network=True)
 
 
 class ArchiModel:
@@ -106,8 +151,7 @@ class ArchiModel:
         self.tree = etree.parse(self.path, safe_parser())
         self.root = self.tree.getroot()
         if self.root.tag != MODEL_TAG:
-            raise ModelError(
-                f"Geen .archimate-model: rootelement is {self.root.tag}")
+            raise ModelError(f"Geen .archimate-model: rootelement is {self.root.tag}")
 
     # --- queries ---------------------------------------------------------
 
@@ -138,19 +182,24 @@ class ArchiModel:
             if len(matches) > 1:
                 raise ModelError(
                     f"Submap '{part}' komt {len(matches)}x voor in "
-                    f"'{current.get('name')}'; maak de mapnamen eerst uniek")
+                    f"'{current.get('name')}'; maak de mapnamen eerst uniek"
+                )
             if matches:
                 current = matches[0]
             elif create:
                 current = etree.SubElement(
-                    current, "folder", {"name": part, "id": new_id()})
+                    current, "folder", {"name": part, "id": new_id()}
+                )
             else:
-                available = ", ".join(
-                    f.get("name") for f in current.findall("folder")) or "(geen)"
+                available = (
+                    ", ".join(f.get("name") for f in current.findall("folder"))
+                    or "(geen)"
+                )
                 raise ModelError(
                     f"Submap '{part}' niet gevonden in '{current.get('name')}'. "
                     f"Beschikbaar: {available}. Gebruik --create-subfolder "
-                    "om hem aan te maken.")
+                    "om hem aan te maken."
+                )
         return current
 
     @staticmethod
@@ -193,29 +242,44 @@ class ArchiModel:
         ids = ", ".join(m.get("id") for m in matches)
         raise ModelError(
             f"Naam '{ref}' is niet uniek ({len(matches)}x); "
-            f"gebruik het id. Kandidaten: {ids}")
+            f"gebruik het id. Kandidaten: {ids}"
+        )
 
     def relations_of(self, concept_id: str) -> list:
-        return [r for r in self.relationships()
-                if concept_id in (r.get("source"), r.get("target"))]
+        return [
+            r
+            for r in self.relationships()
+            if concept_id in (r.get("source"), r.get("target"))
+        ]
 
     # --- mutations ---------------------------------------------------------
 
     def set_model_name(self, name: str):
         self.root.set("name", name)
 
-    def add_element(self, el_type: str, name: str, folder_type: str = None,
-                    properties: dict = None, documentation: str = None,
-                    subfolder: str = None, create_subfolder: bool = False):
+    def add_element(
+        self,
+        el_type: str,
+        name: str,
+        folder_type: str = None,
+        properties: dict = None,
+        documentation: str = None,
+        subfolder: str = None,
+        create_subfolder: bool = False,
+    ):
         if el_type not in FOLDER_BY_ELEMENT_TYPE:
             known = ", ".join(sorted(FOLDER_BY_ELEMENT_TYPE))
-            raise ModelError(
-                f"Onbekend elementtype '{el_type}'. Toegestaan: {known}")
+            raise ModelError(f"Onbekend elementtype '{el_type}'. Toegestaan: {known}")
         target = self.subfolder(
             self.folder(folder_type or FOLDER_BY_ELEMENT_TYPE[el_type]),
-            subfolder, create=create_subfolder)
-        el = etree.SubElement(target, "element", {
-            XSI_TYPE: f"archimate:{el_type}", "name": name, "id": new_id()})
+            subfolder,
+            create=create_subfolder,
+        )
+        el = etree.SubElement(
+            target,
+            "element",
+            {XSI_TYPE: f"archimate:{el_type}", "name": name, "id": new_id()},
+        )
         if documentation:
             doc = etree.SubElement(el, "documentation")
             doc.text = documentation
@@ -223,14 +287,19 @@ class ArchiModel:
             etree.SubElement(el, "property", {"key": key, "value": value})
         return el
 
-    def add_relation(self, rel_type: str, source: str, target: str,
-                     name: str = None, subfolder: str = None,
-                     create_subfolder: bool = False):
+    def add_relation(
+        self,
+        rel_type: str,
+        source: str,
+        target: str,
+        name: str = None,
+        subfolder: str = None,
+        create_subfolder: bool = False,
+    ):
         rel_type = rel_type.removesuffix("Relationship")
         if rel_type not in RELATIONSHIP_TYPES:
             known = ", ".join(sorted(RELATIONSHIP_TYPES))
-            raise ModelError(
-                f"Onbekend relatietype '{rel_type}'. Toegestaan: {known}")
+            raise ModelError(f"Onbekend relatietype '{rel_type}'. Toegestaan: {known}")
         src = self.resolve(source)
         tgt = self.resolve(target)
         # resolve() also matches views and relations by name; only elements
@@ -240,19 +309,25 @@ class ArchiModel:
             if is_diagram(node):
                 raise ModelError(
                     f"{role} '{node.get('name')}' is een view; relaties "
-                    "kunnen geen views verbinden")
+                    "kunnen geen views verbinden"
+                )
             if is_relationship(node) and rel_type != "Association":
                 raise ModelError(
                     f"{role} '{node.get('name')}' is zelf een relatie; "
                     "alleen een AssociationRelationship mag een relatie "
-                    "als eindpunt hebben")
-        attrs = {XSI_TYPE: f"archimate:{rel_type}Relationship",
-                 "id": new_id(),
-                 "source": src.get("id"), "target": tgt.get("id")}
+                    "als eindpunt hebben"
+                )
+        attrs = {
+            XSI_TYPE: f"archimate:{rel_type}Relationship",
+            "id": new_id(),
+            "source": src.get("id"),
+            "target": tgt.get("id"),
+        }
         if name:
             attrs["name"] = name
-        folder = self.subfolder(self.folder("relations"), subfolder,
-                                create=create_subfolder)
+        folder = self.subfolder(
+            self.folder("relations"), subfolder, create=create_subfolder
+        )
         return etree.SubElement(folder, "element", attrs)
 
     def move(self, ref: str, subfolder: str, create_subfolder: bool = False):
@@ -266,11 +341,13 @@ class ArchiModel:
         if node.tag == "folder":
             raise ModelError(
                 f"'{ref}' is een map; mappen verplaatsen wordt niet "
-                "ondersteund, doe dat in Archi")
+                "ondersteund, doe dat in Archi"
+            )
         if not (is_element(node) or is_relationship(node) or is_diagram(node)):
             raise ModelError(
                 f"'{ref}' is geen element, relatie of view (maar een "
-                f"'{etree.QName(node).localname}') en kan niet verplaatst worden")
+                f"'{etree.QName(node).localname}') en kan niet verplaatst worden"
+            )
         top = self.top_folder(node)
         if top is None:
             raise ModelError(f"'{ref}' staat niet in een folder")
@@ -293,8 +370,7 @@ class ArchiModel:
         el = self.resolve(ref)
         matches = [p for p in el.findall("property") if p.get("key") == key]
         if not matches:
-            raise ModelError(
-                f"Property '{key}' niet gevonden op '{ref}'")
+            raise ModelError(f"Property '{key}' niet gevonden op '{ref}'")
         for p in matches:
             el.remove(p)
 
@@ -313,24 +389,30 @@ class ArchiModel:
         el = self.resolve(ref)
         el_id = el.get("id")
         if is_relationship(el):
-            connections = [c for c in self.root.iter("sourceConnection")
-                           if c.get("archimateRelationship") == el_id]
+            connections = [
+                c
+                for c in self.root.iter("sourceConnection")
+                if c.get("archimateRelationship") == el_id
+            ]
             if connections and not cascade:
                 raise ModelError(
                     f"Relatie {el_id} wordt gebruikt in {len(connections)} "
                     "view-verbinding(en); gebruik --cascade om die mee te "
-                    "verwijderen")
+                    "verwijderen"
+                )
             for c in connections:
                 self._remove_connection(c)
         else:
             relations = self.relations_of(el_id)
-            diagram_objects = [d for d in self.root.iter("child")
-                               if d.get("archimateElement") == el_id]
+            diagram_objects = [
+                d for d in self.root.iter("child") if d.get("archimateElement") == el_id
+            ]
             if (relations or diagram_objects) and not cascade:
                 raise ModelError(
                     f"Element {el_id} heeft {len(relations)} relatie(s) en "
                     f"{len(diagram_objects)} view-object(en); gebruik "
-                    "--cascade om die mee te verwijderen")
+                    "--cascade om die mee te verwijderen"
+                )
             for r in relations:
                 self.remove(r.get("id"), cascade=True)
             for d in diagram_objects:
@@ -355,8 +437,9 @@ class ArchiModel:
         for conn in list(obj.findall("sourceConnection")):
             self._remove_connection(conn)
         obj_id = obj.get("id")
-        incoming = [c for c in self.root.iter("sourceConnection")
-                    if c.get("target") == obj_id]
+        incoming = [
+            c for c in self.root.iter("sourceConnection") if c.get("target") == obj_id
+        ]
         for conn in incoming:
             self._remove_connection(conn)
         obj.getparent().remove(obj)

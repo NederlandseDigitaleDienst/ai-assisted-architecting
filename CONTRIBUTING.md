@@ -23,7 +23,7 @@ ontwikkelen.
 ## Werkwijze
 
 - Werk op een branch, open een pull request. Push niet naar `main`.
-- De pre-commit hooks draaien ruff, een paar bestandscontroles, zizmor (op de
+- De pre-commit hooks draaien ruff (lint en formatter), bestandscontroles, zizmor (op de
   workflows), `uv lock` en `pytest`. `just lint` draait ze allemaal op alle
   bestanden. CI draait dezelfde hooks, plus de tests op Ubuntu (Python 3.12 en
   3.14) en Windows, en een testbuild van het pakket.

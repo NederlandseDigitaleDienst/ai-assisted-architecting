@@ -1,5 +1,4 @@
 import pytest
-
 from archi_tool.model import ModelError
 from archi_tool.validate import validate
 from archi_tool.views import add_view
@@ -20,11 +19,14 @@ def test_grid_view(model):
 
 
 def test_cluster_view_places_head_above_children(model):
-    diagram = add_view(model, "Cluster", layout="cluster",
-                       element_types={"Capability"},
-                       relation_types={"Aggregation"})
-    objects = {obj.get("archimateElement"): obj
-               for obj in diagram.findall("child")}
+    diagram = add_view(
+        model,
+        "Cluster",
+        layout="cluster",
+        element_types={"Capability"},
+        relation_types={"Aggregation"},
+    )
+    objects = {obj.get("archimateElement"): obj for obj in diagram.findall("child")}
     assert set(objects) == {"id-el-alfa", "id-el-beta"}
     alfa_y = int(objects["id-el-alfa"].find("bounds").get("y"))
     beta_y = int(objects["id-el-beta"].find("bounds").get("y"))
@@ -39,8 +41,9 @@ def test_cluster_view_places_head_above_children(model):
 
 
 def test_property_filter_selection(model):
-    diagram = add_view(model, "Alleen gebieden", layout="grid",
-                       prop="Capability-niveau=gebied")
+    diagram = add_view(
+        model, "Alleen gebieden", layout="grid", prop="Capability-niveau=gebied"
+    )
     objects = diagram.findall("child")
     assert [o.get("archimateElement") for o in objects] == ["id-el-alfa"]
 
@@ -51,17 +54,21 @@ def test_empty_selection_raises(model):
 
 
 def test_explicit_elements_without_filters_select_only_those(model):
-    diagram = add_view(model, "Expliciet", layout="grid",
-                       extra_elements=[model.resolve("id-el-alfa")])
+    diagram = add_view(
+        model, "Expliciet", layout="grid", extra_elements=[model.resolve("id-el-alfa")]
+    )
     objects = diagram.findall("child")
     assert [o.get("archimateElement") for o in objects] == ["id-el-alfa"]
 
 
 def test_explicit_elements_extend_filtered_selection(model):
-    diagram = add_view(model, "Filter plus expliciet", layout="grid",
-                       element_types={"Goal"},
-                       extra_elements=[model.resolve("id-el-alfa"),
-                                       model.resolve("id-el-gamma")])
+    diagram = add_view(
+        model,
+        "Filter plus expliciet",
+        layout="grid",
+        element_types={"Goal"},
+        extra_elements=[model.resolve("id-el-alfa"), model.resolve("id-el-gamma")],
+    )
     objects = diagram.findall("child")
     ids = [o.get("archimateElement") for o in objects]
     assert set(ids) == {"id-el-alfa", "id-el-gamma"}

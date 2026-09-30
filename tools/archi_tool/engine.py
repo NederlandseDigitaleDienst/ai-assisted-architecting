@@ -13,6 +13,7 @@ though, so once Archi publishes a newer version the pinned one disappears. In
 that case we fall back to the latest release, with a warning, rather than
 leaving `normalize` broken until someone bumps the pin (ADR 0011).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -41,10 +42,11 @@ _PLATFORMS = {
     "windows": ("Archi-Win64-{version}.zip", "Archi/Archi.exe"),
     # macOS ships a .dmg; both Intel and Apple Silicon expose the same binary
     # path once the app bundle is copied out of the mounted image
-    "darwin-arm64": ("Archi-Mac-Silicon-{version}.dmg",
-                     "Archi.app/Contents/MacOS/Archi"),
-    "darwin-x86_64": ("Archi-Mac-{version}.dmg",
-                      "Archi.app/Contents/MacOS/Archi"),
+    "darwin-arm64": (
+        "Archi-Mac-Silicon-{version}.dmg",
+        "Archi.app/Contents/MacOS/Archi",
+    ),
+    "darwin-x86_64": ("Archi-Mac-{version}.dmg", "Archi.app/Contents/MacOS/Archi"),
 }
 
 
@@ -69,11 +71,13 @@ def _platform_key() -> str:
         if machine not in ("x86_64", "amd64"):
             raise ModelError(
                 f"Archi levert alleen een x86_64-build voor {system}, geen "
-                f"'{machine}'. Installeer Archi handmatig en zet ARCHI_APP.")
+                f"'{machine}'. Installeer Archi handmatig en zet ARCHI_APP."
+            )
         return system
     raise ModelError(
         f"Geen Archi-download bekend voor platform '{system}'. Installeer "
-        "Archi handmatig en zet ARCHI_APP.")
+        "Archi handmatig en zet ARCHI_APP."
+    )
 
 
 def _version_key(version: str) -> tuple:
@@ -91,9 +95,11 @@ def cached_binary() -> Path | None:
         return pinned
     if not root.is_dir():
         return None
-    versions = [d.name for d in root.iterdir()
-                if d.is_dir() and (d / rel).exists()
-                and not d.name.endswith(".staging")]
+    versions = [
+        d.name
+        for d in root.iterdir()
+        if d.is_dir() and (d / rel).exists() and not d.name.endswith(".staging")
+    ]
     if not versions:
         return None
     return root / max(versions, key=_version_key) / rel
@@ -133,12 +139,10 @@ def _latest_tag() -> str:
         with urllib.request.urlopen(f"{RELEASES}/latest") as response:
             final_url = response.geturl()
     except OSError as exc:
-        raise ModelError(
-            f"Kon de nieuwste Archi-release niet bepalen: {exc}") from exc
+        raise ModelError(f"Kon de nieuwste Archi-release niet bepalen: {exc}") from exc
     tag = final_url.rstrip("/").rsplit("/", 1)[-1]
     if "/releases/tag/" not in final_url or not tag:
-        raise ModelError(
-            f"Kon de nieuwste Archi-release niet bepalen uit {final_url}")
+        raise ModelError(f"Kon de nieuwste Archi-release niet bepalen uit {final_url}")
     return tag
 
 
@@ -164,10 +168,14 @@ def resolve_release(*, quiet=False) -> tuple[str, str, str]:
         raise ModelError(
             f"Archi {ARCHI_VERSION} staat niet meer online en de nieuwste "
             f"release ({tag}) heeft geen checksumbestand. Installeer Archi "
-            "handmatig en zet ARCHI_APP.")
+            "handmatig en zet ARCHI_APP."
+        )
     if not quiet:
-        print(f"WAARSCHUWING: Archi {ARCHI_VERSION} staat niet meer online; "
-              f"de nieuwste versie {version} wordt gebruikt.", file=sys.stderr)
+        print(
+            f"WAARSCHUWING: Archi {ARCHI_VERSION} staat niet meer online; "
+            f"de nieuwste versie {version} wordt gebruikt.",
+            file=sys.stderr,
+        )
     return version, tag, sums
 
 
@@ -180,8 +188,8 @@ def _expected_sha1(asset: str, sums: str) -> str:
         if len(parts) == 2 and parts[1].lstrip("*") == asset:
             return parts[0].lower()
     raise ModelError(
-        f"Checksumbestand bevat geen hash voor {asset}; verificatie "
-        "afgebroken.")
+        f"Checksumbestand bevat geen hash voor {asset}; verificatie afgebroken."
+    )
 
 
 def _hash(path, algorithm: str) -> str:
@@ -201,8 +209,8 @@ def _github_sha256(tag: str, asset: str) -> str | None:
     from the releases API; None when the API is unreachable or rate limited.
     A token in GITHUB_TOKEN or GH_TOKEN (set in CI) raises the rate limit."""
     request = urllib.request.Request(
-        f"{RELEASES_API}/tags/{tag}",
-        headers={"Accept": "application/vnd.github+json"})
+        f"{RELEASES_API}/tags/{tag}", headers={"Accept": "application/vnd.github+json"}
+    )
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
@@ -218,8 +226,7 @@ def _github_sha256(tag: str, asset: str) -> str | None:
     return None
 
 
-def _verify(archive, asset: str, expected_sha1: str, tag: str,
-            *, quiet=False):
+def _verify(archive, asset: str, expected_sha1: str, tag: str, *, quiet=False):
     """Check the download against archi.io's SUMSSHA1 list. That list has
     been wrong before (5.10.0 lists a stale hash for the Windows zip), so a
     mismatch is checked against the digest GitHub itself recorded at upload
@@ -231,14 +238,17 @@ def _verify(archive, asset: str, expected_sha1: str, tag: str,
     github = _github_sha256(tag, asset)
     if github is not None and _hash(archive, "sha256") == github:
         if not quiet:
-            print(f"WAARSCHUWING: de checksumlijst van Archi noemt voor "
-                  f"{asset} een verouderde hash; de download is geverifieerd "
-                  "tegen de SHA-256 die GitHub bij de upload vastlegde.",
-                  file=sys.stderr)
+            print(
+                f"WAARSCHUWING: de checksumlijst van Archi noemt voor "
+                f"{asset} een verouderde hash; de download is geverifieerd "
+                "tegen de SHA-256 die GitHub bij de upload vastlegde.",
+                file=sys.stderr,
+            )
         return
     raise ModelError(
         f"Checksum van {asset} klopt niet (verwacht {expected_sha1}, "
-        f"kreeg {actual}); download afgebroken.")
+        f"kreeg {actual}); download afgebroken."
+    )
 
 
 def _extract(archive, key, target):
@@ -300,34 +310,42 @@ def _extract_dmg(archive, target):
     """Mount a .dmg, copy the Archi.app out, detach again. macOS only."""
     mount = subprocess.run(
         ["hdiutil", "attach", "-nobrowse", "-readonly", str(archive)],
-        capture_output=True, text=True)
+        capture_output=True,
+        text=True,
+    )
     if mount.returncode != 0:
         raise ModelError("Kon de Archi-.dmg niet mounten:\n" + mount.stderr)
     mount_point = _parse_mount_point(mount.stdout)
     if not mount_point:
         raise ModelError(
-            "Kon het mountpunt van de Archi-.dmg niet bepalen:\n"
-            + mount.stdout)
+            "Kon het mountpunt van de Archi-.dmg niet bepalen:\n" + mount.stdout
+        )
     try:
         source = Path(mount_point) / "Archi.app"
         if not source.exists():
             raise ModelError(
-                f"Archi.app niet gevonden in de gemounte image ({mount_point})")
+                f"Archi.app niet gevonden in de gemounte image ({mount_point})"
+            )
         Path(target).mkdir(parents=True, exist_ok=True)
         shutil.copytree(source, Path(target) / "Archi.app")
     finally:
-        detach = subprocess.run(["hdiutil", "detach", mount_point],
-                                capture_output=True, text=True)
+        detach = subprocess.run(
+            ["hdiutil", "detach", mount_point], capture_output=True, text=True
+        )
         if detach.returncode != 0:
             # a copytree can leave the volume briefly busy; force as a fallback
-            subprocess.run(["hdiutil", "detach", "-force", mount_point],
-                           capture_output=True, text=True)
+            subprocess.run(
+                ["hdiutil", "detach", "-force", mount_point],
+                capture_output=True,
+                text=True,
+            )
 
 
 def find_or_none():
     """Any already-available Archi binary (installed, on PATH, or cached),
     without triggering a download. Returns a path string or None."""
     from .normalize import find_archi_binary
+
     return find_archi_binary()
 
 
@@ -366,15 +384,15 @@ def download_engine(*, quiet=False) -> Path:
         if not staged_binary.exists():
             raise ModelError(
                 "Archi-engine uitgepakt maar de binary staat niet op de "
-                f"verwachte plek: {staged_binary}")
+                f"verwachte plek: {staged_binary}"
+            )
         if key != "windows":
             staged_binary.chmod(0o755)
         # atomic swap into the real cache location
         shutil.rmtree(version_dir, ignore_errors=True)
         os.replace(staging, version_dir)
     except OSError as exc:
-        raise ModelError(
-            f"Kon de Archi-engine niet ophalen van {url}: {exc}") from exc
+        raise ModelError(f"Kon de Archi-engine niet ophalen van {url}: {exc}") from exc
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 

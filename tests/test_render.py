@@ -1,12 +1,10 @@
-from lxml import etree
-
 from archi_tool.model import XSI_TYPE
 from archi_tool.render import MARKER, render_all, render_view, slugify
+from lxml import etree
 
 
 def test_slugify():
-    assert slugify("Capabilities (relatieweergave)") == \
-        "capabilities-relatieweergave"
+    assert slugify("Capabilities (relatieweergave)") == "capabilities-relatieweergave"
     assert slugify("???") == "view"
 
 
@@ -19,26 +17,51 @@ def test_render_flat_view(model):
     assert "accTitle: Testview" in output
     assert 'n1["Gebied Alfa"]' in output
     assert 'n2["Bouwblok Beta"]' in output
-    assert "n1 --o n2" in output           # aggregation, unlabeled
+    assert "n1 --o n2" in output  # aggregation, unlabeled
     assert "classDef strategy" in output
     assert "class n1,n2 strategy" in output
 
 
 def test_render_nested_view_uses_subgraph(model):
     diagrams_folder = model.folder("diagrams")
-    diagram = etree.SubElement(diagrams_folder, "element", {
-        XSI_TYPE: "archimate:ArchimateDiagramModel",
-        "name": "Genest", "id": "id-view-nested"})
-    outer = etree.SubElement(diagram, "child", {
-        XSI_TYPE: "archimate:DiagramObject", "id": "id-obj-n1",
-        "archimateElement": "id-el-alfa"})
-    etree.SubElement(outer, "child", {
-        XSI_TYPE: "archimate:DiagramObject", "id": "id-obj-n2",
-        "archimateElement": "id-el-beta"})
-    etree.SubElement(outer, "sourceConnection", {
-        XSI_TYPE: "archimate:Connection", "id": "id-conn-n1",
-        "source": "id-obj-n1", "target": "id-obj-n2",
-        "archimateRelationship": "id-rel-agg"})
+    diagram = etree.SubElement(
+        diagrams_folder,
+        "element",
+        {
+            XSI_TYPE: "archimate:ArchimateDiagramModel",
+            "name": "Genest",
+            "id": "id-view-nested",
+        },
+    )
+    outer = etree.SubElement(
+        diagram,
+        "child",
+        {
+            XSI_TYPE: "archimate:DiagramObject",
+            "id": "id-obj-n1",
+            "archimateElement": "id-el-alfa",
+        },
+    )
+    etree.SubElement(
+        outer,
+        "child",
+        {
+            XSI_TYPE: "archimate:DiagramObject",
+            "id": "id-obj-n2",
+            "archimateElement": "id-el-beta",
+        },
+    )
+    etree.SubElement(
+        outer,
+        "sourceConnection",
+        {
+            XSI_TYPE: "archimate:Connection",
+            "id": "id-conn-n1",
+            "source": "id-obj-n1",
+            "target": "id-obj-n2",
+            "archimateRelationship": "id-rel-agg",
+        },
+    )
 
     output = render_view(model, diagram)
     assert 'subgraph n1["Gebied Alfa"]' in output
@@ -51,10 +74,17 @@ def test_render_nested_view_uses_subgraph(model):
 def test_render_labeled_influence_edge(model):
     diagram = model.diagrams()[0]
     obj = model.id_index()["id-obj-beta"]
-    etree.SubElement(obj, "sourceConnection", {
-        XSI_TYPE: "archimate:Connection", "id": "id-conn-2",
-        "source": "id-obj-beta", "target": "id-obj-alfa",
-        "archimateRelationship": "id-rel-inf"})
+    etree.SubElement(
+        obj,
+        "sourceConnection",
+        {
+            XSI_TYPE: "archimate:Connection",
+            "id": "id-conn-2",
+            "source": "id-obj-beta",
+            "target": "id-obj-alfa",
+            "archimateRelationship": "id-rel-inf",
+        },
+    )
     output = render_view(model, diagram)
     assert 'n2 -.->|"draagt bij aan"| n1' in output
 

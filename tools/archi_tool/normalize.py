@@ -5,6 +5,7 @@ exactly as Archi itself would, so git diffs stay small regardless of whether
 the last edit came from this tool or from the Archi GUI. A throwaway
 workspace (-data) avoids lock conflicts with a running Archi GUI.
 """
+
 from __future__ import annotations
 
 import os
@@ -15,12 +16,12 @@ import tempfile
 from .model import ModelError
 
 ARCHI_CANDIDATES = [
-    "/Applications/Archi.app/Contents/MacOS/Archi",   # macOS
-    r"C:\Program Files\Archi\Archi.exe",              # Windows (winget/inno, machine scope)
+    "/Applications/Archi.app/Contents/MacOS/Archi",  # macOS
+    r"C:\Program Files\Archi\Archi.exe",  # Windows (winget/inno, machine scope)
     # Windows Inno installer without admin rights falls back to user scope;
     # %LOCALAPPDATA% stays unexpanded (and never matches) on other platforms
     os.path.expandvars(r"%LOCALAPPDATA%\Programs\Archi\Archi.exe"),
-    "/opt/Archi/Archi",                               # Linux tgz
+    "/opt/Archi/Archi",  # Linux tgz
 ]
 
 
@@ -37,6 +38,7 @@ def find_archi_binary():
     # a previously downloaded engine in the per-user cache, before any PATH
     # lookup, so a fetched engine always wins
     from .engine import cached_binary
+
     cached = cached_binary()
     if cached:
         return str(cached)
@@ -63,20 +65,34 @@ def normalize(path, *, download=True) -> None:
         # nothing installed and downloading is allowed: fetch the pinned
         # engine into the per-user cache (once), then use it
         from .engine import download_engine
+
         binary = str(download_engine())
     if not binary:
         raise ModelError(
             "Archi niet gevonden. Haal de engine op met `archi setup`, "
             "installeer Archi zelf (macOS: brew install --cask archi; "
             "Windows: winget install --id Archi.Archi -e), of zet de env var "
-            "ARCHI_APP naar het pad van de Archi-binary.")
+            "ARCHI_APP naar het pad van de Archi-binary."
+        )
     absolute = os.path.abspath(path)
     with tempfile.TemporaryDirectory() as workspace:
         result = subprocess.run(
-            [binary, "-application", "com.archimatetool.commandline.app",
-             "-consoleLog", "-nosplash", "-data", workspace,
-             "--loadModel", absolute, "--saveModel", absolute],
-            capture_output=True, text=True)
+            [
+                binary,
+                "-application",
+                "com.archimatetool.commandline.app",
+                "-consoleLog",
+                "-nosplash",
+                "-data",
+                workspace,
+                "--loadModel",
+                absolute,
+                "--saveModel",
+                absolute,
+            ],
+            capture_output=True,
+            text=True,
+        )
     if result.returncode != 0:
         output = result.stdout + result.stderr
         if "gtk_init_check" in output or "No more handles" in output:
@@ -87,5 +103,6 @@ def normalize(path, *, download=True) -> None:
                 "normalize onder een virtueel scherm, bijvoorbeeld:\n"
                 "  xvfb-run -a archi normalize\n"
                 "(installeer xvfb, bv. `apt-get install xvfb`). Op een "
-                "desktop met display is dit niet nodig.")
+                "desktop met display is dit niet nodig."
+            )
         raise ModelError("Archi-normalisatie mislukt:\n" + output)

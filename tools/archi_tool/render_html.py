@@ -7,6 +7,7 @@ Boxes are positioned divs, connections an SVG layer clipped to box borders.
 NLDD components and tokens load from the CDN, pinned to a fixed version so
 output stays deterministic.
 """
+
 from __future__ import annotations
 
 import html
@@ -14,13 +15,22 @@ from pathlib import Path
 
 from .links import links_for
 from .model import FOLDER_BY_ELEMENT_TYPE, xsi_type
-from .render import (CONTAINMENT_TYPES, DOTTED_TYPES, LAYER_PALETTE, MARKER,
-                     display_model_path, is_descendant, view_stems,
-                     write_if_changed)
+from .render import (
+    CONTAINMENT_TYPES,
+    DOTTED_TYPES,
+    LAYER_PALETTE,
+    MARKER,
+    display_model_path,
+    is_descendant,
+    view_stems,
+    write_if_changed,
+)
 
 NLDD_VERSION = "0.8.64"
-NLDD_CSS = (f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}"
-            "/dist/css/global.css")
+NLDD_CSS = (
+    f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}"
+    "/dist/css/global.css"
+)
 NLDD_JS = f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}/+esm"
 
 CANVAS_MARGIN = 40
@@ -46,13 +56,13 @@ FAVICON = (
     "stroke='%237F77DD'/%3E"
     "%3Cpath d='M11 14v4h6v1' fill='none' stroke='%235b5b66' "
     "stroke-width='1.5'/%3E"
-    "%3C/svg%3E")
+    "%3C/svg%3E"
+)
 
 
 # view-only child types (no archimateElement): notes, visual groups and
 # references to other views all render, everything else is skipped
-VIEW_ONLY_KINDS = {"Note": "note", "Group": "group",
-                   "DiagramModelReference": "ref"}
+VIEW_ONLY_KINDS = {"Note": "note", "Group": "group", "DiagramModelReference": "ref"}
 
 
 def absolute_boxes(diagram, index) -> list:
@@ -65,21 +75,27 @@ def absolute_boxes(diagram, index) -> list:
             bounds = obj.find("bounds")
             if bounds is None:
                 continue
-            kind = "element" if element is not None else \
-                VIEW_ONLY_KINDS.get(xsi_type(obj))
+            kind = (
+                "element" if element is not None else VIEW_ONLY_KINDS.get(xsi_type(obj))
+            )
             if kind is None:
                 continue
             x = offset_x + int(bounds.get("x", "0"))
             y = offset_y + int(bounds.get("y", "0"))
             children = obj.findall("child")
-            boxes.append({
-                "id": obj.get("id"), "element": element, "kind": kind,
-                "node": obj,
-                "x": x, "y": y,
-                "w": int(bounds.get("width", "120")),
-                "h": int(bounds.get("height", "55")),
-                "container": bool(children),
-            })
+            boxes.append(
+                {
+                    "id": obj.get("id"),
+                    "element": element,
+                    "kind": kind,
+                    "node": obj,
+                    "x": x,
+                    "y": y,
+                    "w": int(bounds.get("width", "120")),
+                    "h": int(bounds.get("height", "55")),
+                    "container": bool(children),
+                }
+            )
             walk(children, x, y)
 
     walk(diagram.findall("child"), 0, 0)
@@ -112,8 +128,7 @@ def diagram_edges(model, diagram, box_by_object_id) -> list:
         rel_type = xsi_type(rel) if rel is not None else ""
         source_obj = index.get(conn.get("source"))
         target_obj = index.get(conn.get("target"))
-        if (rel_type in CONTAINMENT_TYPES
-                and is_descendant(target_obj, source_obj)):
+        if rel_type in CONTAINMENT_TYPES and is_descendant(target_obj, source_obj):
             continue
         source_cx = source["x"] + source["w"] / 2
         source_cy = source["y"] + source["h"] / 2
@@ -121,23 +136,30 @@ def diagram_edges(model, diagram, box_by_object_id) -> list:
         target_cy = target["y"] + target["h"] / 2
         # bendpoint offsets are stored relative to the source center
         waypoints = [
-            (source_cx + int(bp.get("startX", "0")),
-             source_cy + int(bp.get("startY", "0")))
-            for bp in conn.findall("bendpoint")]
+            (
+                source_cx + int(bp.get("startX", "0")),
+                source_cy + int(bp.get("startY", "0")),
+            )
+            for bp in conn.findall("bendpoint")
+        ]
         first = waypoints[0] if waypoints else (target_cx, target_cy)
         last = waypoints[-1] if waypoints else (source_cx, source_cy)
         x1, y1 = border_point(source, *first)
         x2, y2 = border_point(target, *last)
         label = (rel.get("name") if rel is not None else None) or rel_type
-        edges.append({
-            "points": [(x1, y1), *waypoints, (x2, y2)], "label": label,
-            "source_id": conn.get("source"), "target_id": conn.get("target"),
-            "dotted": rel_type in DOTTED_TYPES,
-            "containment": rel_type in CONTAINMENT_TYPES,
-            # a connection without relationship attaches a note: dotted, no
-            # arrowhead, exactly as Archi draws it
-            "note_link": rel is None,
-        })
+        edges.append(
+            {
+                "points": [(x1, y1), *waypoints, (x2, y2)],
+                "label": label,
+                "source_id": conn.get("source"),
+                "target_id": conn.get("target"),
+                "dotted": rel_type in DOTTED_TYPES,
+                "containment": rel_type in CONTAINMENT_TYPES,
+                # a connection without relationship attaches a note: dotted, no
+                # arrowhead, exactly as Archi draws it
+                "note_link": rel is None,
+            }
+        )
     return edges
 
 
@@ -152,7 +174,8 @@ VIEW_REF_ICON = (
     '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/>'
     '<rect x="4" y="5" width="3.4" height="2.6"/>'
     '<rect x="8.8" y="8.6" width="3.4" height="2.6"/>'
-    '<path d="M7.4 6.3h3.1v2.3"/></svg>')
+    '<path d="M7.4 6.3h3.1v2.3"/></svg>'
+)
 
 
 def element_icon(element) -> str:
@@ -161,51 +184,83 @@ def element_icon(element) -> str:
     if not glyph:
         return ""
     _, stroke, _ = LAYER_PALETTE[layer_of(element)]
-    return (f'<svg class="type-icon" viewBox="0 0 16 16" width="14" '
-            f'height="14" fill="none" stroke="currentColor" '
-            f'style="color:{stroke}" aria-hidden="true">{glyph}</svg>')
+    return (
+        f'<svg class="type-icon" viewBox="0 0 16 16" width="14" '
+        f'height="14" fill="none" stroke="currentColor" '
+        f'style="color:{stroke}" aria-hidden="true">{glyph}</svg>'
+    )
 
 
 # behavior glyphs repeat across layers; every element type maps to a glyph
 ICON_BY_TYPE = {
     # strategy
-    "Resource": "Resource", "Capability": "Capability",
-    "CourseOfAction": "CourseOfAction", "ValueStream": "ValueStream",
+    "Resource": "Resource",
+    "Capability": "Capability",
+    "CourseOfAction": "CourseOfAction",
+    "ValueStream": "ValueStream",
     # business
-    "BusinessActor": "BusinessActor", "BusinessRole": "BusinessRole",
+    "BusinessActor": "BusinessActor",
+    "BusinessRole": "BusinessRole",
     "BusinessCollaboration": "Collaboration",
-    "BusinessInterface": "Interface", "BusinessProcess": "Process",
-    "BusinessFunction": "Function", "BusinessInteraction": "Interaction",
-    "BusinessEvent": "Event", "BusinessService": "Service",
-    "BusinessObject": "Object", "Contract": "Contract",
-    "Representation": "Representation", "Product": "Product",
+    "BusinessInterface": "Interface",
+    "BusinessProcess": "Process",
+    "BusinessFunction": "Function",
+    "BusinessInteraction": "Interaction",
+    "BusinessEvent": "Event",
+    "BusinessService": "Service",
+    "BusinessObject": "Object",
+    "Contract": "Contract",
+    "Representation": "Representation",
+    "Product": "Product",
     # application
     "ApplicationComponent": "ApplicationComponent",
     "ApplicationCollaboration": "Collaboration",
-    "ApplicationInterface": "Interface", "ApplicationFunction": "Function",
+    "ApplicationInterface": "Interface",
+    "ApplicationFunction": "Function",
     "ApplicationInteraction": "Interaction",
-    "ApplicationProcess": "Process", "ApplicationEvent": "Event",
-    "ApplicationService": "Service", "DataObject": "Object",
+    "ApplicationProcess": "Process",
+    "ApplicationEvent": "Event",
+    "ApplicationService": "Service",
+    "DataObject": "Object",
     # technology & physical
-    "Node": "Node", "Device": "Device", "SystemSoftware": "SystemSoftware",
+    "Node": "Node",
+    "Device": "Device",
+    "SystemSoftware": "SystemSoftware",
     "TechnologyCollaboration": "Collaboration",
-    "TechnologyInterface": "Interface", "Path": "Path",
+    "TechnologyInterface": "Interface",
+    "Path": "Path",
     "CommunicationNetwork": "CommunicationNetwork",
-    "TechnologyFunction": "Function", "TechnologyProcess": "Process",
-    "TechnologyInteraction": "Interaction", "TechnologyEvent": "Event",
-    "TechnologyService": "Service", "Artifact": "Artifact",
-    "Material": "Material", "Equipment": "Equipment",
-    "Facility": "Facility", "DistributionNetwork": "DistributionNetwork",
+    "TechnologyFunction": "Function",
+    "TechnologyProcess": "Process",
+    "TechnologyInteraction": "Interaction",
+    "TechnologyEvent": "Event",
+    "TechnologyService": "Service",
+    "Artifact": "Artifact",
+    "Material": "Material",
+    "Equipment": "Equipment",
+    "Facility": "Facility",
+    "DistributionNetwork": "DistributionNetwork",
     # motivation
-    "Stakeholder": "Stakeholder", "Driver": "Driver",
-    "Assessment": "Assessment", "Goal": "Goal", "Outcome": "Outcome",
-    "Principle": "Principle", "Requirement": "Requirement",
-    "Constraint": "Constraint", "Meaning": "Meaning", "Value": "Value",
+    "Stakeholder": "Stakeholder",
+    "Driver": "Driver",
+    "Assessment": "Assessment",
+    "Goal": "Goal",
+    "Outcome": "Outcome",
+    "Principle": "Principle",
+    "Requirement": "Requirement",
+    "Constraint": "Constraint",
+    "Meaning": "Meaning",
+    "Value": "Value",
     # implementation & migration
-    "WorkPackage": "WorkPackage", "Deliverable": "Deliverable",
-    "ImplementationEvent": "Event", "Plateau": "Plateau", "Gap": "Gap",
+    "WorkPackage": "WorkPackage",
+    "Deliverable": "Deliverable",
+    "ImplementationEvent": "Event",
+    "Plateau": "Plateau",
+    "Gap": "Gap",
     # other
-    "Location": "Location", "Grouping": "Grouping", "Junction": "Junction",
+    "Location": "Location",
+    "Grouping": "Grouping",
+    "Junction": "Junction",
 }
 
 # inner SVG per glyph for a 16x16 viewBox, ported from the drawIcon()
@@ -308,35 +363,41 @@ def legend_html(boxes, edges) -> str:
     """Legend chips for the layers and line styles present in the view.
     Lives inside the always-light canvas, hence the fixed colors."""
     parts = []
-    for layer in sorted({layer_of(b["element"]) for b in boxes
-                         if b["kind"] == "element"}):
+    for layer in sorted(
+        {layer_of(b["element"]) for b in boxes if b["kind"] == "element"}
+    ):
         fill, stroke, _ = LAYER_PALETTE[layer]
         parts.append(
             f'<span class="legend-item"><span class="swatch" '
             f'style="background:{fill};border-color:{stroke}"></span>'
-            f'{LAYER_LABELS.get(layer, layer)}</span>')
+            f"{LAYER_LABELS.get(layer, layer)}</span>"
+        )
     if any(e["containment"] for e in edges):
         parts.append(
             '<span class="legend-item"><svg width="26" height="10" '
             'viewBox="0 0 26 10" aria-hidden="true">'
             '<line x1="8" y1="5" x2="26" y2="5" class="edge"/>'
             '<path d="M1,5 L5,2 L9,5 L5,8 z" fill="#ffffff" '
-            'stroke="#5b5b66"/></svg>bevat</span>')
+            'stroke="#5b5b66"/></svg>bevat</span>'
+        )
     if any(e["dotted"] for e in edges):
         parts.append(
             '<span class="legend-item"><svg width="26" height="10" '
             'viewBox="0 0 26 10" aria-hidden="true">'
             '<line x1="0" y1="5" x2="20" y2="5" class="edge dotted"/>'
             '<path d="M19,2 L26,5 L19,8 z" fill="#5b5b66"/></svg>'
-            'beïnvloedt of realiseert</span>')
-    if any(not e["dotted"] and not e["containment"] and not e["note_link"]
-           for e in edges):
+            "beïnvloedt of realiseert</span>"
+        )
+    if any(
+        not e["dotted"] and not e["containment"] and not e["note_link"] for e in edges
+    ):
         parts.append(
             '<span class="legend-item"><svg width="26" height="10" '
             'viewBox="0 0 26 10" aria-hidden="true">'
             '<line x1="0" y1="5" x2="20" y2="5" class="edge"/>'
             '<path d="M19,2 L26,5 L19,8 z" fill="#5b5b66"/></svg>'
-            'overige relatie</span>')
+            "overige relatie</span>"
+        )
     if not parts:
         return ""
     return '<div class="legend">' + "".join(parts) + "</div>"
@@ -353,15 +414,18 @@ def view_thumbnail_svg(boxes) -> str:
         if box["kind"] == "element":
             fill, stroke, _ = LAYER_PALETTE[layer_of(box["element"])]
         else:
-            fill, stroke = "#ECECF1", "#9B9BA4"   # notes/groups/refs: neutral
+            fill, stroke = "#ECECF1", "#9B9BA4"  # notes/groups/refs: neutral
         opacity = ' fill-opacity="0.35"' if box["container"] else ""
         rects.append(
             f'<rect x="{box["x"]}" y="{box["y"]}" width="{box["w"]}" '
             f'height="{box["h"]}" rx="6" fill="{fill}"{opacity} '
-            f'stroke="{stroke}" vector-effect="non-scaling-stroke"/>')
-    return (f'<svg class="thumb-svg" viewBox="-12 -12 {width + 24} '
-            f'{height + 24}" preserveAspectRatio="xMidYMid meet" '
-            f'aria-hidden="true">{"".join(rects)}</svg>')
+            f'stroke="{stroke}" vector-effect="non-scaling-stroke"/>'
+        )
+    return (
+        f'<svg class="thumb-svg" viewBox="-12 -12 {width + 24} '
+        f'{height + 24}" preserveAspectRatio="xMidYMid meet" '
+        f'aria-hidden="true">{"".join(rects)}</svg>'
+    )
 
 
 def layer_css() -> str:
@@ -369,11 +433,13 @@ def layer_css() -> str:
     for layer, (fill, stroke, text) in LAYER_PALETTE.items():
         rules.append(
             f"    .leaf.{layer} {{ background: {fill}; "
-            f"border-color: {stroke}; color: {text}; }}")
+            f"border-color: {stroke}; color: {text}; }}"
+        )
         rules.append(
             f"    .container.{layer} {{ background: "
             f"color-mix(in srgb, {fill} 22%, transparent); "
-            f"border-color: {stroke}; color: {text}; }}")
+            f"border-color: {stroke}; color: {text}; }}"
+        )
     return "\n".join(rules)
 
 
@@ -428,11 +494,14 @@ DIAGRAM_CSS = """\
       border: 1px solid; display: inline-block; flex: none; }
 """
 
-PAGE_CSS = """
+PAGE_CSS = (
+    """
     /* NLDD primitives are light-dark() pairs themselves: use a single token
        and it follows the color scheme — never wrap them in light-dark(). */
     .doc { max-width: 72ch; color: var(--primitives-color-neutral-700); }
-""" + DIAGRAM_CSS + """\
+"""
+    + DIAGRAM_CSS
+    + """\
     .card-link { text-decoration: none; color: inherit; display: block;
       height: 100%; }
     /* thumbnails mirror the diagram canvas: always light */
@@ -442,6 +511,7 @@ PAGE_CSS = """
     .thumb-svg { width: 100%; height: 100%; }
     .meta { color: var(--primitives-color-neutral-600); font-size: 14px; }
 """
+)
 
 
 def page_shell(title: str, body: str) -> str:
@@ -473,9 +543,14 @@ def page_shell(title: str, body: str) -> str:
 """
 
 
-def diagram_canvas(model, diagram, marker_prefix: str = "",
-                   ref_base: str = "", dim_ids: set | None = None,
-                   links: dict | None = None) -> dict:
+def diagram_canvas(
+    model,
+    diagram,
+    marker_prefix: str = "",
+    ref_base: str = "",
+    dim_ids: set | None = None,
+    links: dict | None = None,
+) -> dict:
     """Edge SVG and positioned box divs for one diagram, plus metadata.
 
     marker_prefix keeps the SVG marker ids unique when several diagrams
@@ -495,19 +570,20 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
     width = max((b["x"] + b["w"] for b in boxes), default=0) + CANVAS_MARGIN
     height = max((b["y"] + b["h"] for b in boxes), default=0) + CANVAS_MARGIN
 
-    svg = [f'<svg width="{width}" height="{height}" '
-           f'viewBox="0 0 {width} {height}">',
-           '<defs>',
-           f'<marker id="{marker_prefix}arrow" markerWidth="10" '
-           'markerHeight="8" refX="9" '
-           'refY="4" orient="auto" markerUnits="userSpaceOnUse">'
-           '<path d="M0,0 L10,4 L0,8 z" fill="#5b5b66"/></marker>',
-           f'<marker id="{marker_prefix}diamond" markerWidth="14" '
-           'markerHeight="8" refX="1" '
-           'refY="4" orient="auto" markerUnits="userSpaceOnUse">'
-           '<path d="M1,4 L7,0.5 L13,4 L7,7.5 z" fill="#ffffff" '
-           'stroke="#5b5b66"/></marker>',
-           '</defs>']
+    svg = [
+        f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        "<defs>",
+        f'<marker id="{marker_prefix}arrow" markerWidth="10" '
+        'markerHeight="8" refX="9" '
+        'refY="4" orient="auto" markerUnits="userSpaceOnUse">'
+        '<path d="M0,0 L10,4 L0,8 z" fill="#5b5b66"/></marker>',
+        f'<marker id="{marker_prefix}diamond" markerWidth="14" '
+        'markerHeight="8" refX="1" '
+        'refY="4" orient="auto" markerUnits="userSpaceOnUse">'
+        '<path d="M1,4 L7,0.5 L13,4 L7,7.5 z" fill="#ffffff" '
+        'stroke="#5b5b66"/></marker>',
+        "</defs>",
+    ]
     for edge in edges:
         dotted = edge["dotted"] or edge["note_link"]
         classes = "edge dotted" if dotted else "edge"
@@ -523,13 +599,15 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
         svg.append(
             f'<polyline class="{classes}" points="{points}" '
             f'fill="none"{markers}>'
-            f'<title>{html.escape(edge["label"])}</title></polyline>')
+            f"<title>{html.escape(edge['label'])}</title></polyline>"
+        )
     svg.append("</svg>")
 
     divs = []
     for box in boxes:
-        style = (f'left:{box["x"]}px;top:{box["y"]}px;'
-                 f'width:{box["w"]}px;height:{box["h"]}px')
+        style = (
+            f"left:{box['x']}px;top:{box['y']}px;width:{box['w']}px;height:{box['h']}px"
+        )
         dim = " dim" if box["id"] in dim_ids else ""
         if box["kind"] == "element":
             kind = "container" if box["container"] else "leaf"
@@ -538,69 +616,82 @@ def diagram_canvas(model, diagram, marker_prefix: str = "",
             # property only as a fallback for older models.
             description = html.escape(
                 model.documentation(box["element"])
-                or model.properties(box["element"]).get("Omschrijving", ""))
+                or model.properties(box["element"]).get("Omschrijving", "")
+            )
             title_attr = f' title="{description}"' if description else ""
             box_html = (
                 f'<div class="box {kind} {layer_of(box["element"])}{dim}" '
                 f'style="{style}"{title_attr}>'
-                f'{element_icon(box["element"])}{name}</div>')
+                f"{element_icon(box['element'])}{name}</div>"
+            )
             href = (links or {}).get(box["element"].get("name") or "")
             if href:
-                box_html = (f'<a class="box-link" href="{html.escape(href)}">'
-                            f'{box_html}</a>')
+                box_html = (
+                    f'<a class="box-link" href="{html.escape(href)}">{box_html}</a>'
+                )
             divs.append(box_html)
         elif box["kind"] == "note":
             content = box["node"].find("content")
-            text = html.escape(
-                (content.text if content is not None else "") or "")
-            divs.append(
-                f'<div class="box note{dim}" style="{style}">{text}</div>')
+            text = html.escape((content.text if content is not None else "") or "")
+            divs.append(f'<div class="box note{dim}" style="{style}">{text}</div>')
         elif box["kind"] == "group":
             name = html.escape(box["node"].get("name") or "")
-            divs.append(
-                f'<div class="box group{dim}" style="{style}">{name}</div>')
+            divs.append(f'<div class="box group{dim}" style="{style}">{name}</div>')
         else:  # reference to another view
             ref = index.get(box["node"].get("model") or "")
             ref_name = (ref.get("name") or "") if ref is not None else ""
-            stem = (view_stems(model).get(ref.get("id"), "view")
-                    if ref is not None else "view")
+            stem = (
+                view_stems(model).get(ref.get("id"), "view")
+                if ref is not None
+                else "view"
+            )
             href = ref_base + stem + ".html"
             divs.append(
                 f'<div class="box ref{dim}" style="{style}">'
                 f'{VIEW_REF_ICON}<a href="{href}">'
-                f'{html.escape(ref_name or "(view)")}</a></div>')
+                f"{html.escape(ref_name or '(view)')}</a></div>"
+            )
 
-    return {"svg": "".join(svg), "divs": "".join(divs),
-            "width": width, "height": height,
-            "boxes": boxes, "edges": edges}
+    return {
+        "svg": "".join(svg),
+        "divs": "".join(divs),
+        "width": width,
+        "height": height,
+        "boxes": boxes,
+        "edges": edges,
+    }
 
 
 def render_view_html(model, diagram, links: dict | None = None) -> str:
     canvas = diagram_canvas(model, diagram, links=links)
     name = diagram.get("name") or "(naamloze view)"
     documentation = model.documentation(diagram)
-    doc_html = (f"      <p class=\"doc\">{html.escape(documentation)}</p>\n"
-                if documentation else "")
+    doc_html = (
+        f'      <p class="doc">{html.escape(documentation)}</p>\n'
+        if documentation
+        else ""
+    )
     body = (
         f'      <nldd-link href="index.html" size="sm" '
         f'start-icon="arrow-left" text="Alle views"></nldd-link>\n'
         f'      <nldd-spacer size="8"></nldd-spacer>\n'
         f'      <nldd-title size="2"><h1>{html.escape(name)}</h1></nldd-title>\n'
-        f'{doc_html}'
+        f"{doc_html}"
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <div class="diagram-wrap">\n'
         f'        <div class="diagram" '
         f'style="width:{canvas["width"]}px;height:{canvas["height"]}px">\n'
-        f'          {canvas["svg"]}\n'
-        f'          {canvas["divs"]}\n'
-        f'        </div>\n'
-        f'        {legend_html(canvas["boxes"], canvas["edges"])}\n'
-        f'      </div>\n'
+        f"          {canvas['svg']}\n"
+        f"          {canvas['divs']}\n"
+        f"        </div>\n"
+        f"        {legend_html(canvas['boxes'], canvas['edges'])}\n"
+        f"      </div>\n"
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <p class="meta">{len(canvas["boxes"])} elementen, '
-        f'{len(canvas["edges"])} '
-        f'getekende verbindingen · gegenereerd uit '
-        f'<code>{html.escape(display_model_path(model))}</code></p>')
+        f"{len(canvas['edges'])} "
+        f"getekende verbindingen · gegenereerd uit "
+        f"<code>{html.escape(display_model_path(model))}</code></p>"
+    )
     return page_shell(name, body)
 
 
@@ -615,18 +706,21 @@ def render_index_html(model, entries) -> str:
             f'<nldd-spacer size="12"></nldd-spacer>'
             f'<nldd-title size="4"><h2>{html.escape(name)}</h2></nldd-title>'
             f'<p class="meta">{n_boxes} elementen · {n_edges} verbindingen</p>'
-            f'</nldd-container>'
-            f'</nldd-card></a>')
+            f"</nldd-container>"
+            f"</nldd-card></a>"
+        )
     body = (
         f'      <nldd-title size="2"><h1>{html.escape(model.name)}'
-        f'</h1></nldd-title>\n'
+        f"</h1></nldd-title>\n"
         f'      <p class="doc">Views gegenereerd uit '
-        f'<code>{html.escape(display_model_path(model))}</code>, '
-        f'met de layout zoals die in het model is vastgelegd.</p>\n'
+        f"<code>{html.escape(display_model_path(model))}</code>, "
+        f"met de layout zoals die in het model is vastgelegd.</p>\n"
         f'      <nldd-spacer size="16"></nldd-spacer>\n'
         f'      <nldd-collection layout="grid" item-width="320px">\n'
-        + "\n".join(cards) + "\n"
-        '      </nldd-collection>')
+        + "\n".join(cards)
+        + "\n"
+        "      </nldd-collection>"
+    )
     return page_shell(f"{model.name} · views", body)
 
 
@@ -646,14 +740,14 @@ def render_all_html(model, out_dir, links: dict | None = None) -> tuple[list, li
         filename = stems[diagram.get("id")] + ".html"
         path = out / filename
         view_links = links_for(links or {}, stems[diagram.get("id")])
-        if write_if_changed(path, render_view_html(model, diagram,
-                                                   links=view_links)):
+        if write_if_changed(path, render_view_html(model, diagram, links=view_links)):
             written.append(path)
         produced.add(path.name)
         boxes = absolute_boxes(diagram, index)
         edges = diagram_edges(model, diagram, {b["id"]: b for b in boxes})
-        entries.append((name, filename, len(boxes), len(edges),
-                        view_thumbnail_svg(boxes)))
+        entries.append(
+            (name, filename, len(boxes), len(edges), view_thumbnail_svg(boxes))
+        )
 
     index_path = out / "index.html"
     if write_if_changed(index_path, render_index_html(model, entries)):
