@@ -39,6 +39,47 @@ def _fake_extract_into(target):
     dest.write_text("#!/bin/sh\n")
 
 
+def _asset(version=None):
+    pattern, _ = engine._PLATFORMS[engine._platform_key()]
+    return pattern.format(version=version or engine.ARCHI_VERSION)
+
+
+def _fake_network(monkeypatch, texts, latest_tag=None):
+    """Serve SUMSSHA1 files from ``texts`` ({url: text}); any other URL is a
+    404. Records every downloaded URL; the archive bytes are b"archive"."""
+    calls = {"fetched": [], "downloaded": []}
+
+    def fake_fetch(url):
+        calls["fetched"].append(url)
+        return texts.get(url)
+
+    def fake_download(url, dest):
+        calls["downloaded"].append(url)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"archive")
+
+    def fake_latest():
+        if latest_tag is None:
+            raise AssertionError("latest release must not be looked up")
+        return latest_tag
+
+    monkeypatch.setattr(engine, "_fetch_text", fake_fetch)
+    monkeypatch.setattr(engine, "_download", fake_download)
+    monkeypatch.setattr(engine, "_latest_tag", fake_latest)
+    monkeypatch.setattr(engine, "_github_sha256", lambda tag, asset: None)
+    monkeypatch.setattr(engine, "_extract", lambda a, k, t: _fake_extract_into(t))
+    return calls
+
+
+def _sums(version, sha1=None):
+    import hashlib
+    digest = sha1 or hashlib.sha1(b"archive").hexdigest()
+    return f"{digest}    {_asset(version)}\n"
+
+
+RELEASES = "https://github.com/archimatetool/archi.io/releases"
+
+
 class _fake_urlopen:
     """Minimal stand-in for urllib.request.urlopen as a context manager."""
     def __init__(self, text):
@@ -55,8 +96,8 @@ class _fake_urlopen:
 
 
 def test_platform_binary_paths_match_distribution():
-    """The binary paths inside each distribution, verified against the real
-    5.9.0 artifacts. If a version bump changes the layout, this catches it."""
+    """The binary paths inside each distribution, as in the real 5.9.0 and
+    5.10.0 artifacts (engine-e2e checks them for real on every platform)."""
     assert engine._PLATFORMS["linux"][1] == "Archi/Archi"
     assert engine._PLATFORMS["windows"][1] == "Archi/Archi.exe"
     assert engine._PLATFORMS["darwin-arm64"][1] == (
@@ -84,41 +125,65 @@ def test_download_engine_is_reused_when_present(cache, monkeypatch):
     assert engine.download_engine(quiet=True) == binary
 
 
-def test_download_engine_fetches_and_extracts(cache, monkeypatch):
-    calls = {}
+def test_tag_candidates_cover_both_tag_formats():
+    assert engine._tag_candidates("5.9.0") == ["5.9.0", "5.9_0"]
+    assert engine._tag_candidates("5.10.0") == ["5.10.0", "5.10_0"]
 
-    def fake_download(url, dest):
-        calls["url"] = url
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(b"archive")
 
-    def fake_extract(archive, key, target):
-        # simulate the archive laying down the binary at its path under the
-        # extraction target (a staging dir, which the code moves into place)
-        _, rel = engine._PLATFORMS[engine._platform_key()]
-        dest = target / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text("#!/bin/sh\n")
-
-    monkeypatch.setattr(engine, "_download", fake_download)
-    monkeypatch.setattr(engine, "_extract", fake_extract)
-    # skip checksum lookup (would hit the network); covered by its own tests
-    monkeypatch.setattr(engine, "_expected_sha1", lambda asset: None)
+def test_download_uses_pinned_version_under_new_tag_format(cache, monkeypatch):
+    # since 5.10 the tag is "5.10_0" while assets keep "5.10.0"
+    head, _, last = engine.ARCHI_VERSION.rpartition(".")
+    tag = f"{head}_{last}"
+    sums_url = f"{RELEASES}/download/{tag}/Archi-{engine.ARCHI_VERSION}-SUMSSHA1"
+    calls = _fake_network(monkeypatch, {sums_url: _sums(engine.ARCHI_VERSION)})
 
     binary = engine.download_engine(quiet=True)
+    assert binary == cache / engine.ARCHI_VERSION / engine._PLATFORMS[
+        engine._platform_key()][1]
+    assert calls["downloaded"] == [f"{RELEASES}/download/{tag}/{_asset()}"]
+
+
+def test_download_falls_back_to_latest_when_pin_is_gone(cache, monkeypatch,
+                                                       capsys):
+    sums_url = f"{RELEASES}/download/9.1_0/Archi-9.1.0-SUMSSHA1"
+    calls = _fake_network(monkeypatch, {sums_url: _sums("9.1.0")},
+                          latest_tag="9.1_0")
+
+    binary = engine.download_engine()
     assert binary.exists()
-    assert engine.ARCHI_VERSION in calls["url"]
-    assert calls["url"].startswith(
-        "https://github.com/archimatetool/archi.io/releases/download")
+    assert binary.is_relative_to(cache / "9.1.0")
+    assert calls["downloaded"] == [f"{RELEASES}/download/9.1_0/{_asset('9.1.0')}"]
+    err = capsys.readouterr().err
+    assert f"Archi {engine.ARCHI_VERSION} staat niet meer online" in err
+    assert "9.1.0" in err
+
+    # the fallback engine is reused afterwards, without any network access
+    monkeypatch.setattr(engine, "_fetch_text", lambda url: pytest.fail(
+        "a cached fallback engine must not trigger a lookup"))
+    assert engine.cached_binary() == binary
+    assert engine.download_engine(quiet=True) == binary
+
+
+def test_cached_pinned_version_wins_over_other_cached_versions(cache):
+    _, rel = engine._PLATFORMS[engine._platform_key()]
+    other = cache / "99.0.0" / rel
+    other.parent.mkdir(parents=True)
+    other.write_text("#!/bin/sh\n")
+    pinned = _fake_binary(cache)
+    assert engine.cached_binary() == pinned
+
+
+def test_no_release_with_checksums_fails_clearly(cache, monkeypatch):
+    _fake_network(monkeypatch, {}, latest_tag="9.1_0")
+    with pytest.raises(ModelError, match="ARCHI_APP"):
+        engine.download_engine(quiet=True)
 
 
 def test_checksum_mismatch_aborts_download(cache, monkeypatch):
-    def fake_download(url, dest):
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(b"tampered archive")
-
-    monkeypatch.setattr(engine, "_download", fake_download)
-    monkeypatch.setattr(engine, "_expected_sha1", lambda asset: "deadbeef")
+    sums_url = (f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
+                f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1")
+    _fake_network(monkeypatch,
+                  {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
     # extraction must never run on a bad archive
     monkeypatch.setattr(engine, "_extract", lambda *a: pytest.fail(
         "extract must not run after a checksum mismatch"))
@@ -126,16 +191,66 @@ def test_checksum_mismatch_aborts_download(cache, monkeypatch):
         engine.download_engine(quiet=True)
 
 
-def test_checksum_absent_does_not_block(cache, monkeypatch):
-    """A transient failure to fetch SUMSSHA1 must not block install."""
-    def fake_download(url, dest):
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(b"archive")
+def test_stale_checksum_list_is_rescued_by_github_digest(cache, monkeypatch,
+                                                         capsys):
+    """archi.io's SUMSSHA1 for 5.10.0 lists a stale hash for the Windows zip;
+    the digest GitHub recorded at upload settles it."""
+    import hashlib
+    sums_url = (f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
+                f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1")
+    _fake_network(monkeypatch,
+                  {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
+    seen = {}
 
-    monkeypatch.setattr(engine, "_download", fake_download)
-    monkeypatch.setattr(engine, "_expected_sha1", lambda asset: None)
-    monkeypatch.setattr(engine, "_extract", lambda a, k, t: _fake_extract_into(t))
-    assert engine.download_engine(quiet=True).exists()
+    def github_digest(tag, asset):
+        seen["asked"] = (tag, asset)
+        return hashlib.sha256(b"archive").hexdigest()
+
+    monkeypatch.setattr(engine, "_github_sha256", github_digest)
+    assert engine.download_engine().exists()
+    assert seen["asked"] == (engine.ARCHI_VERSION, _asset())
+    assert "verouderde hash" in capsys.readouterr().err
+
+
+def test_checksum_mismatch_fails_when_github_digest_also_differs(cache,
+                                                               monkeypatch):
+    sums_url = (f"{RELEASES}/download/{engine.ARCHI_VERSION}/"
+                f"Archi-{engine.ARCHI_VERSION}-SUMSSHA1")
+    _fake_network(monkeypatch,
+                  {sums_url: _sums(engine.ARCHI_VERSION, sha1="deadbeef")})
+    monkeypatch.setattr(engine, "_github_sha256",
+                        lambda tag, asset: "0" * 64)
+    monkeypatch.setattr(engine, "_extract", lambda *a: pytest.fail(
+        "extract must not run after a checksum mismatch"))
+    with pytest.raises(ModelError, match="Checksum"):
+        engine.download_engine(quiet=True)
+
+
+def test_github_digest_read_from_release_api(monkeypatch):
+    import json
+    release = {"assets": [
+        {"name": "Archi-Win64-5.10.0.zip", "digest": "sha256:ABC123"},
+        {"name": "other.zip", "digest": "sha256:fff"}]}
+    seen = {}
+
+    def fake_urlopen(request):
+        seen["url"] = request.full_url
+        return _fake_urlopen(json.dumps(release))
+
+    monkeypatch.setattr(engine.urllib.request, "urlopen", fake_urlopen)
+    assert engine._github_sha256("5.10_0", "Archi-Win64-5.10.0.zip") == "abc123"
+    assert seen["url"].endswith("/releases/tags/5.10_0")
+
+
+def test_network_failure_is_a_model_error(cache, monkeypatch):
+    import urllib.error
+
+    def offline(url):
+        raise urllib.error.URLError("no route to host")
+
+    monkeypatch.setattr(engine.urllib.request, "urlopen", offline)
+    with pytest.raises(ModelError, match="niet ophalen"):
+        engine.download_engine(quiet=True)
 
 
 def test_which_does_not_return_own_entry_point(tmp_path, monkeypatch):
@@ -238,11 +353,19 @@ def test_arm_linux_is_refused(monkeypatch):
         engine._platform_key()
 
 
-def test_checksum_file_without_asset_line_fails(cache, monkeypatch):
-    """A fetched SUMSSHA1 that lists no hash for our asset is suspicious and
-    must fail, not silently skip verification."""
-    monkeypatch.setattr(
-        engine.urllib.request, "urlopen",
-        lambda url: _fake_urlopen("deadbeef  some-other-file.zip\n"))
+def test_checksum_file_without_asset_line_fails():
+    """A SUMSSHA1 that lists no hash for our asset is suspicious and must
+    fail, not silently skip verification."""
     with pytest.raises(ModelError, match="geen hash"):
-        engine._expected_sha1(f"Archi-Win64-{engine.ARCHI_VERSION}.zip")
+        engine._expected_sha1(f"Archi-Win64-{engine.ARCHI_VERSION}.zip",
+                              "deadbeef  some-other-file.zip\n")
+
+
+def test_latest_tag_read_from_redirect(monkeypatch):
+    class Response(_fake_urlopen):
+        def geturl(self):
+            return f"{RELEASES}/tag/5.10_0"
+
+    monkeypatch.setattr(engine.urllib.request, "urlopen",
+                        lambda url: Response(""))
+    assert engine._latest_tag() == "5.10_0"

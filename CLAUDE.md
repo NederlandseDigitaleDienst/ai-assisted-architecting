@@ -143,8 +143,10 @@ workflow `release.yml`, environment `pypi`). Dat hoeft niet opnieuw.
 - `engine.py`: haalt de Archi-distributie (MIT, gebundelde JRE, ~165 MB) op
   naar `~/.cache/archi-cli/<versie>/` en pakt hem uit; `ARCHI_VERSION` is
   gepind en het archief wordt tegen de SHA-1 uit het `SUMSSHA1`-bestand
-  gecontroleerd. Aangeroepen door `archi setup` en door de auto-fetch in
-  `normalize`. Zie ADR 0005.
+  gecontroleerd. archi.io houdt alleen de nieuwste release online: staat de
+  pin er niet meer, dan valt `resolve_release()` met een waarschuwing terug op
+  de nieuwste release (ADR 0011). Aangeroepen door `archi setup` en door de
+  auto-fetch in `normalize`. Zie ADR 0005.
 - `views.py`: view-generatie met grid- of cluster-layout. `--root` selecteert
   een element plus zijn aggregatie/compositie-closure, `--related` voegt direct
   gerelateerde elementen toe (detailviews per element); het kolomaantal van de

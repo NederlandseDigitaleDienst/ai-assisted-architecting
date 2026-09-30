@@ -1,8 +1,15 @@
 # Echte end-to-end test van de engine-download: haalt de Archi-distributie op
-# (of gebruikt de cache) en draait een echte `normalize` op alle drie de
-# platforms. Bewust géén onderdeel van de PR-CI: het downloadt ~177 MB en is
-# alleen nodig als een nieuwe Archi-release de download-URL of de layout kan
-# breken. Draait wekelijks en handmatig.
+# en draait een echte `normalize` op alle drie de platforms. Bewust géén
+# onderdeel van de PR-CI: het downloadt ~165 MB en is alleen nodig als een
+# nieuwe Archi-release de download-URL of de layout kan breken. Draait
+# wekelijks en handmatig.
+#
+# Bewust zonder cache: juist de download moet elke week echt draaien, anders
+# valt het niet op dat archi.io de gepinde versie heeft verwijderd (archi.io
+# houdt alleen de nieuwste release online). Valt de download terug op een
+# nieuwere versie, dan faalt deze job ook: gebruikers kunnen door, maar de pin
+# moet omhoog. Een geplande run die faalt, opent een issue (of reageert op
+# het openstaande), zodat het niet ongemerkt blijft.
 name: engine-e2e
 
 on:
@@ -27,27 +34,18 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - run: uv sync
 
-      # De engine landt in deze map; cache hem op de gepinde Archi-versie zodat
-      # een version bump verse download forceert en tussenruns de cache delen.
-      - name: Archi-versie bepalen
-        id: archi
-        shell: bash
-        run: |
-          version=$(uv run python -c "from archi_tool.engine import ARCHI_VERSION; print(ARCHI_VERSION)")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Engine-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: engine-cache
-          key: archi-engine-${{ matrix.os }}-${{ steps.archi.outputs.version }}
-
-      - name: Engine ophalen (of uit cache) en normalize draaien
+      - name: Engine ophalen en normalize draaien
         shell: bash
         env:
           ARCHI_CACHE: engine-cache
+          # read-only token: lifts the API rate limit for the checksum fallback
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          uv run archi setup
+          uv run archi setup 2>&1 | tee setup.log
+          if grep -q "staat niet meer online" setup.log; then
+            echo "::error::De gepinde Archi-versie staat niet meer online; verhoog ARCHI_VERSION in tools/archi_tool/engine.py."
+            fallback=1
+          fi
           cp tests/fixtures/klein-model.archimate e2e-model.archimate
           # Archi's CLI vereist op headless Linux een virtueel scherm (xvfb);
           # macOS en Windows hebben dat niet nodig. --model is globaal en staat
@@ -59,3 +57,29 @@ jobs:
             uv run archi --model e2e-model.archimate normalize
           fi
           echo "normalize geslaagd op ${{ matrix.os }}"
+          exit "${fallback:-0}"
+
+  report:
+    needs: engine-e2e
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Issue openen of bijwerken
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="engine-e2e faalt: Archi-engine downloaden of normaliseren werkt niet"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "in:title engine-e2e faalt" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" \
+              --body "Faalt nog steeds: $RUN_URL"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body \
+              "De wekelijkse engine-e2e is gefaald: $RUN_URL
+
+          Meestal heeft archi.io een nieuwe Archi-release gepubliceerd en de gepinde versie verwijderd. Verhoog dan \`ARCHI_VERSION\` in \`tools/archi_tool/engine.py\` (zie ADR 0011)."
+          fi

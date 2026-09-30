@@ -1,6 +1,6 @@
 # ADR 0005 — De Archi-engine ophalen in plaats van vereisen
 
-- **Status**: geaccepteerd
+- **Status**: geaccepteerd; punt 3 aangevuld door ADR 0011 (terugval als de pin verdwijnt)
 - **Datum**: 2026-07-04
 
 ## Context
