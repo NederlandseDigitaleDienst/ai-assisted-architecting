@@ -9,7 +9,8 @@ Het commando is **`archi`** (installeerbaar met `uv tool install archi-cli`).
 
 Views worden onderdeel van het modelbestand zelf. Na `archi render` zijn ze
 ook zichtbaar buiten Archi: als Mermaid op GitHub en als HTML lokaal (de
-locatie hangt af van het project). De slug volgt uit de viewnaam.
+locatie hangt af van het project). De bestandsnaam volgt uit de viewnaam;
+views met botsende namen krijgen een id-suffix.
 
 ## Genereren
 

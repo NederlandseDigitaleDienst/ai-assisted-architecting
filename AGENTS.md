@@ -143,8 +143,9 @@ die marker worden overschreven of opgeruimd. Structurele beslissingen staan in
 Alleen op verzoek van een maintainer; een PyPI-versie is onomkeerbaar.
 
 1. Verhoog de versie volgens [SemVer](https://semver.org/lang/nl/) in
-   `pyproject.toml`, `.claude-plugin/plugin.json` en de `archi-cli`-regel in
-   `uv.lock` (een check in CI bewaakt dat ze gelijk zijn).
+   `pyproject.toml`, `.claude-plugin/plugin.json`, de `archi-cli`-regel in
+   `uv.lock` en `softwareVersion` in `publiccode.yml` (zet daar ook
+   `releaseDate`). `scripts/check_release.py` bewaakt in CI dat ze gelijk zijn.
 2. Zet in `CHANGELOG.md` de inhoud van **Unreleased** onder een nieuwe kop
    `## [X.Y.Z] - JJJJ-MM-DD`.
 3. Merge via een PR, wacht tot CI op `main` groen is, en tag:
