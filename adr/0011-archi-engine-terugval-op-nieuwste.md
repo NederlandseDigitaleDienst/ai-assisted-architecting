@@ -49,6 +49,14 @@ wijzigde.
    moet omhoog), en een mislukte geplande run opent een issue of reageert op
    het openstaande.
 
+6. **Meerdere checksumformaten.** Na onze melding
+   ([archimatetool/archi#1275](https://github.com/archimatetool/archi/issues/1275))
+   verving archi.io het `SUMSSHA1`-bestand door `Archi-<versie>-SHA256.txt`,
+   waardoor 0.2.1 opnieuw geen engine kon ophalen. `engine.py` kent nu een
+   lijst checksumbestanden (nieuwste conventie eerst) en verifieert tegen de
+   upload-digest van GitHub als een release geen bekend checksumbestand
+   heeft. Een volgende naamswijziging breekt de download dus niet meer.
+
 ## Afwegingen
 
 - **Terugvallen boven hard falen.** Hard falen is zuiverder voor

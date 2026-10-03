@@ -369,12 +369,48 @@ def test_arm_linux_is_refused(monkeypatch):
 
 
 def test_checksum_file_without_asset_line_fails():
-    """A SUMSSHA1 that lists no hash for our asset is suspicious and must
+    """A checksum file that lists no hash for our asset is suspicious and must
     fail, not silently skip verification."""
     with pytest.raises(ModelError, match="geen hash"):
-        engine._expected_sha1(
-            f"Archi-Win64-{engine.ARCHI_VERSION}.zip", "deadbeef  some-other-file.zip\n"
+        engine._parse_checksum(
+            f"Archi-Win64-{engine.ARCHI_VERSION}.zip",
+            "deadbeef  some-other-file.zip\n",
         )
+
+
+def test_sha256_checksum_file_is_preferred(cache, monkeypatch):
+    """Since October 2026 archi.io publishes SHA256.txt instead of SUMSSHA1."""
+    import hashlib
+
+    head, _, last = engine.ARCHI_VERSION.rpartition(".")
+    tag = f"{head}_{last}"
+    url = f"{RELEASES}/download/{tag}/Archi-{engine.ARCHI_VERSION}-SHA256.txt"
+    digest = hashlib.sha256(b"archive").hexdigest()
+    calls = _fake_network(monkeypatch, {url: f"{digest}    {_asset()}\n"})
+    assert engine.download_engine(quiet=True).exists()
+    assert url in calls["fetched"]
+    # found under the real tag, so the older name is not tried there
+    assert (
+        f"{RELEASES}/download/{tag}/Archi-{engine.ARCHI_VERSION}-SUMSSHA1"
+        not in (calls["fetched"])
+    )
+
+
+def test_no_checksum_file_falls_back_to_github_digest(cache, monkeypatch, capsys):
+    import hashlib
+
+    head, _, last = engine.ARCHI_VERSION.rpartition(".")
+    tag = f"{head}_{last}"
+    _fake_network(monkeypatch, {}, latest_tag=tag)
+    monkeypatch.setattr(
+        engine,
+        "_github_sha256",
+        lambda t, asset: hashlib.sha256(b"archive").hexdigest(),
+    )
+    assert engine.download_engine().exists()
+    err = capsys.readouterr().err
+    assert "geen bekend checksumbestand" in err
+    assert "staat niet meer online" not in err  # latest is the pinned version
 
 
 def test_latest_tag_read_from_redirect(monkeypatch):

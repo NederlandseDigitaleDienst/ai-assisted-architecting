@@ -146,44 +146,54 @@ def _latest_tag() -> str:
     return tag
 
 
-def _checksums_url(tag: str, version: str) -> str:
-    return f"{RELEASES}/download/{tag}/Archi-{version}-SUMSSHA1"
+# checksum files archi.io has published, newest convention first: SHA256.txt
+# replaced SUMSSHA1 in October 2026 (archimatetool/archi#1275)
+_CHECKSUM_FILES = (
+    ("Archi-{version}-SHA256.txt", "sha256"),
+    ("Archi-{version}-SUMSSHA1", "sha1"),
+)
 
 
-def resolve_release(*, quiet=False) -> tuple[str, str, str]:
-    """(version, tag, SUMSSHA1 text) of the release to download.
+def _fetch_checksums(tag: str, version: str) -> tuple[str, str] | None:
+    """(algorithm, text) of the release's checksum file, or None if it has
+    none under any known name."""
+    for pattern, algorithm in _CHECKSUM_FILES:
+        name = pattern.format(version=version)
+        text = _fetch_text(f"{RELEASES}/download/{tag}/{name}")
+        if text is not None:
+            return algorithm, text
+    return None
+
+
+def resolve_release(*, quiet=False) -> tuple[str, str, tuple[str, str] | None]:
+    """(version, tag, checksums) of the release to download.
 
     The pinned version when it is still online, else the latest release. The
-    checksum file doubles as the existence probe, and fetching it first means
-    every download is verified.
+    checksum file doubles as the existence probe for the pinned version.
+    ``checksums`` is (algorithm, text), or None when the latest release has
+    no checksum file under a known name; the download is then verified
+    against the digest GitHub recorded at upload.
     """
     for tag in _tag_candidates(ARCHI_VERSION):
-        sums = _fetch_text(_checksums_url(tag, ARCHI_VERSION))
-        if sums is not None:
-            return ARCHI_VERSION, tag, sums
+        checksums = _fetch_checksums(tag, ARCHI_VERSION)
+        if checksums is not None:
+            return ARCHI_VERSION, tag, checksums
     tag = _latest_tag()
     version = tag.replace("_", ".")
-    sums = _fetch_text(_checksums_url(tag, version))
-    if sums is None:
-        raise ModelError(
-            f"Archi {ARCHI_VERSION} staat niet meer online en de nieuwste "
-            f"release ({tag}) heeft geen checksumbestand. Installeer Archi "
-            "handmatig en zet ARCHI_APP."
-        )
-    if not quiet:
+    if version != ARCHI_VERSION and not quiet:
         print(
             f"WAARSCHUWING: Archi {ARCHI_VERSION} staat niet meer online; "
             f"de nieuwste versie {version} wordt gebruikt.",
             file=sys.stderr,
         )
-    return version, tag, sums
+    return version, tag, _fetch_checksums(tag, version)
 
 
-def _expected_sha1(asset: str, sums: str) -> str:
-    """The hash for ``asset`` from a SUMSSHA1 text. A checksum file that does
-    not list the asset is suspicious (renamed or tampered manifest), so that
-    raises rather than skipping verification."""
-    for line in sums.splitlines():
+def _parse_checksum(asset: str, text: str) -> str:
+    """The hash for ``asset`` from a checksum file ("<hash>  <name>" lines).
+    A checksum file that does not list the asset is suspicious (renamed or
+    tampered manifest), so that raises rather than skipping verification."""
+    for line in text.splitlines():
         parts = line.split()
         if len(parts) == 2 and parts[1].lstrip("*") == asset:
             return parts[0].lower()
@@ -192,16 +202,37 @@ def _expected_sha1(asset: str, sums: str) -> str:
     )
 
 
+def _expected_hash(
+    asset: str, checksums: tuple[str, str] | None, tag: str, *, quiet=False
+) -> tuple[str, str]:
+    """(algorithm, hex digest) the download must match: from the release's
+    checksum file, or from GitHub's upload digest when there is none."""
+    if checksums is not None:
+        algorithm, text = checksums
+        return algorithm, _parse_checksum(asset, text)
+    github = _github_sha256(tag, asset)
+    if github is None:
+        raise ModelError(
+            f"Archi-release {tag} heeft geen checksumbestand en GitHub gaf geen "
+            "digest; verificatie onmogelijk. Installeer Archi handmatig en zet "
+            "ARCHI_APP."
+        )
+    if not quiet:
+        print(
+            f"WAARSCHUWING: Archi-release {tag} heeft geen bekend "
+            "checksumbestand; de download wordt geverifieerd tegen de SHA-256 "
+            "die GitHub bij de upload vastlegde.",
+            file=sys.stderr,
+        )
+    return "sha256", github
+
+
 def _hash(path, algorithm: str) -> str:
     digest = hashlib.new(algorithm)
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _sha1(path) -> str:
-    return _hash(path, "sha1")
 
 
 def _github_sha256(tag: str, asset: str) -> str | None:
@@ -226,14 +257,16 @@ def _github_sha256(tag: str, asset: str) -> str | None:
     return None
 
 
-def _verify(archive, asset: str, expected_sha1: str, tag: str, *, quiet=False):
-    """Check the download against archi.io's SUMSSHA1 list. That list has
-    been wrong before (5.10.0 lists a stale hash for the Windows zip), so a
-    mismatch is checked against the digest GitHub itself recorded at upload
-    before it fails: a file that matches that is byte-identical to the
-    published asset."""
-    actual = _sha1(archive)
-    if actual == expected_sha1:
+def _verify(
+    archive, asset: str, algorithm: str, expected: str, tag: str, *, quiet=False
+):
+    """Check the download against the expected hash. archi.io's checksum file
+    has been wrong before (the 5.10.0 SUMSSHA1 listed a stale hash for the
+    Windows zip), so a mismatch is checked against the digest GitHub itself
+    recorded at upload before it fails: a file that matches that is
+    byte-identical to the published asset."""
+    actual = _hash(archive, algorithm)
+    if actual == expected:
         return
     github = _github_sha256(tag, asset)
     if github is not None and _hash(archive, "sha256") == github:
@@ -246,7 +279,7 @@ def _verify(archive, asset: str, expected_sha1: str, tag: str, *, quiet=False):
             )
         return
     raise ModelError(
-        f"Checksum van {asset} klopt niet (verwacht {expected_sha1}, "
+        f"Checksum van {asset} klopt niet (verwacht {expected}, "
         f"kreeg {actual}); download afgebroken."
     )
 
@@ -362,9 +395,9 @@ def download_engine(*, quiet=False) -> Path:
         return cached
     key = _platform_key()
     pattern, rel = _PLATFORMS[key]
-    version, tag, sums = resolve_release(quiet=quiet)
+    version, tag, checksums = resolve_release(quiet=quiet)
     asset = pattern.format(version=version)
-    expected = _expected_sha1(asset, sums)
+    algorithm, expected = _expected_hash(asset, checksums, tag, quiet=quiet)
     version_dir = cache_dir() / version
     binary = version_dir / rel
 
@@ -377,7 +410,7 @@ def download_engine(*, quiet=False) -> Path:
     archive = staging / "_download" / asset
     try:
         _download(url, archive)
-        _verify(archive, asset, expected, tag, quiet=quiet)
+        _verify(archive, asset, algorithm, expected, tag, quiet=quiet)
         _extract(archive, key, staging)
         shutil.rmtree(staging / "_download", ignore_errors=True)
         staged_binary = staging / rel
