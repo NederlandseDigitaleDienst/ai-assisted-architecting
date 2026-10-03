@@ -1,22 +1,40 @@
-# archi-cli
+# AI-assisted architecting
 
 [![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 [![Python](https://img.shields.io/pypi/pyversions/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 [![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](LICENSE)
 
-Houd je ArchiMate-model bij zoals code. `archi-cli` is een command line tool
-voor native [Archi](https://www.archimatetool.com/)-modellen: je bekijkt,
-wijzigt en controleert een `.archimate`-bestand vanuit de terminal, en
-genereert er views, webpagina's en presentaties uit. Elke wijziging wordt
-gevalideerd voordat hij wordt opgeslagen, zodat het model nooit kapot raakt.
-Dat maakt de tool geschikt om samen met een AI-assistent aan een model te
-werken, met git als geheugen.
+Houd je ArchiMate-model bij zoals code, zelf of samen met een AI-assistent.
+Deze repository levert daarvoor twee dingen die op elkaar aansluiten:
+
+- **`archi-cli`**, een command line tool voor native
+  [Archi](https://www.archimatetool.com/)-modellen. Je bekijkt, wijzigt en
+  controleert een `.archimate`-bestand vanuit de terminal en genereert er views,
+  webpagina's en presentaties uit. Elke wijziging wordt gevalideerd voordat hij
+  wordt opgeslagen, zodat het model nooit kapot raakt.
+- **Skills voor AI-assistenten**, als plugin voor
+  [Claude Code](https://claude.com/claude-code). Ze leren een assistent hoe hij
+  met `archi-cli` aan je model werkt: wijzigen, views maken en presentaties
+  bouwen, met validatie en normalisatie op de juiste momenten.
+
+De tool werkt prima zonder de skills. De skills hebben de tool nodig, want een
+assistent wijzigt het model uitsluitend via `archi`, nooit door zelf in de XML
+te schrijven.
 
 ![Een gegenereerde presentatie die inzoomt op één capability](docs/img/slide-focus.png)
 
 *Een slide uit het meegeleverde voorbeeld: de camera zoomt in op één
 element en dimt de rest. Gegenereerd uit het model, zonder handwerk.*
+
+## Wat zit erin
+
+| Onderdeel | Wat het doet | Installeren |
+| --- | --- | --- |
+| `archi-cli` | Inspecteren, wijzigen, valideren, normaliseren en publiceren van `.archimate`-modellen | `uv tool install archi-cli` ([PyPI](https://pypi.org/project/archi-cli/)) |
+| Skill `archi-model` | Het model wijzigen: elementen, relaties, properties en documentatie | Claude Code-plugin `archi-tools` |
+| Skill `archi-view` | Views genereren en opruimen, met een automatische layout | Claude Code-plugin `archi-tools` |
+| Skill `archi-slides` | Presentaties samenstellen uit views en tekst | Claude Code-plugin `archi-tools` |
 
 ## Wat het is, en wat niet
 
@@ -28,8 +46,9 @@ element en dimt de rest. Gegenereerd uit het model, zonder handwerk.*
   fout weigert de tool op te slaan. Ids blijven onveranderd.
 - **Deterministisch.** Dezelfde invoer geeft dezelfde uitvoer, zodat diffs klein
   blijven en je de uitvoer in CI kunt controleren.
-- Een set **skills voor Claude Code** die beschrijven hoe een AI-assistent via
-  deze tool aan een model werkt.
+- **Skills** die een AI-assistent dezelfde werkwijze laten volgen als een
+  zorgvuldige architect: eerst kijken, dan via de CLI wijzigen, valideren,
+  normaliseren en de views bijwerken.
 
 **Niet:**
 
@@ -39,12 +58,17 @@ element en dimt de rest. Gegenereerd uit het model, zonder handwerk.*
 - **Geen ArchiMate-validator.** `archi validate` controleert de integriteit van
   het bestand en je eigen conventies, niet of een relatie volgens de
   ArchiMate-specificatie is toegestaan.
-- **Geen AI.** De tool zelf bevat geen AI en stuurt je model nergens heen. Alleen
-  het eenmalig ophalen van de Archi-engine gebruikt het netwerk.
+- **Geen AI in de tool.** `archi-cli` bevat geen AI en stuurt je model nergens
+  heen; alleen het eenmalig ophalen van de Archi-engine gebruikt het netwerk.
+  Gebruik je de skills, dan leest je AI-assistent het model. Waar die zijn
+  gegevens verwerkt, bepaal je met de keuze van je assistent, niet met deze
+  repository.
 - **Geen officieel product of standaard.** Het is open source software in de
   bètafase, zonder garanties of ondersteuningsafspraken.
 
 ## Snel aan de slag
+
+### Met de command line tool
 
 Je hebt [uv](https://docs.astral.sh/uv/) nodig; uv regelt zelf een passende
 Python (3.12 of nieuwer).
@@ -72,7 +96,31 @@ gerenderd.
 Voor je eigen model: draai `archi` in de map met je `.archimate`-bestand, of
 leg het vast in een `archi.toml` (zie [Configuratie](#configuratie)).
 
-## Wat je ermee kunt
+### Met een AI-assistent
+
+Installeer eerst `archi-cli` zoals hierboven, en daarna de skills in
+Claude Code:
+
+```
+/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
+/plugin install archi-tools@archi-marketplace
+```
+
+Open Claude Code in de map van je model (of in
+`examples/vergunningverlening/`) en vraag in gewone taal wat je wilt:
+
+> Voeg een capability "Toezicht" toe onder Vergunningverlening, met een korte
+> omschrijving.
+
+> Maak een view van Vergunningverlening met alles wat eraan gekoppeld is.
+
+> Maak een presentatie die begint bij de capabilitykaart en inzoomt op
+> "Toetsen aan regels".
+
+De assistent kiest zelf de passende skill. Zie [De skills](#de-skills) voor wat
+elke skill doet.
+
+## Wat `archi-cli` kan
 
 | Taak | Commando's |
 | --- | --- |
@@ -143,21 +191,28 @@ RijksSans is uitsluitend bedoeld voor publicaties van de Rijksoverheid en
 partijen die in haar opdracht werken; valt jouw publicatie daaronder, zet dan
 `fonts = "rijkssans"`.
 
-## Werken met een AI-assistent
+## De skills
 
-De skills `archi-model`, `archi-view` en `archi-slides` leren een AI-assistent
-hoe hij via deze tool aan een model werkt: welke commando's, in welke
-volgorde, en wanneer hij moet valideren en normaliseren. Installeer ze in
-Claude Code als plugin:
+Een skill is een korte handleiding in tekst (`SKILL.md`) die een AI-assistent
+laadt wanneer je vraag erbij past. De skills bevatten geen code: ze vertellen
+de assistent welke `archi`-commando's hij gebruikt, in welke volgorde, en waar
+hij op moet letten. Ze staan in [`.claude/skills/`](.claude/skills/).
 
-```
-/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
-/plugin install archi-tools@archi-marketplace
-```
+- **[`archi-model`](.claude/skills/archi-model/SKILL.md)** wijzigt het model.
+  De assistent kijkt eerst wat er staat (`archi show`, `archi list`), wijzigt
+  via de CLI, zet omschrijvingen in het documentatieveld van Archi, valideert,
+  normaliseert en werkt de views bij. Verwijderen met `--cascade` gebeurt alleen
+  bewust.
+- **[`archi-view`](.claude/skills/archi-view/SKILL.md)** maakt views: een
+  selectie op type, property of relatie, of een detailview van één element met
+  alles eromheen, in een raster- of clusterlayout.
+- **[`archi-slides`](.claude/skills/archi-slides/SKILL.md)** schrijft decks in
+  `decks/*.toml`: een lineair verhaal met views uit het model, zoomslides op één
+  element en tekst daartussen, en rendert ze naar HTML.
 
-De plugin brengt alleen de skills mee; het commando `archi` installeer je met
-uv, zoals hierboven. De tool garandeert dat het model technisch klopt, niet dat
-de architectuur klopt. Lees wijzigingen van een assistent na zoals je een pull
+De plugin brengt alleen de skills mee; het commando `archi` installeer je los
+met uv. De tool garandeert dat het model technisch klopt, niet dat de
+architectuur klopt. Lees wijzigingen van een assistent na zoals je een pull
 request van een collega naleest.
 
 ## Grenzen en bekende beperkingen
@@ -175,6 +230,9 @@ request van een collega naleest.
   kleuren en lettertypes uit Archi komen niet in de webpagina's.
 - **De webpagina's laden het design system van een CDN** en hebben dus internet
   nodig om goed te tonen.
+- **De skills zijn geschreven en getest voor Claude Code.** Ze zijn gewone
+  Markdown, dus ook bruikbaar als instructies voor een andere assistent, maar
+  dat testen we niet.
 - **Uitvoer en meldingen zijn Nederlandstalig.**
 
 ## Disclaimer
@@ -196,5 +254,6 @@ Beslissingen over de opzet van de tool staan als ADR's in [`adr/`](adr/).
 
 ## Licentie
 
-[EUPL-1.2](LICENSE). Ontwikkeld door de Nederlandse Digitale Dienst. Archi
+[EUPL-1.2](LICENSE), voor zowel de tool als de skills. Ontwikkeld door de
+Nederlandse Digitale Dienst. Archi
 zelf valt onder de MIT-licentie; zie [NOTICE](NOTICE).
