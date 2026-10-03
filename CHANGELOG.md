@@ -8,6 +8,8 @@ onder 1.0 ligt, kan een minor-versie gedrag veranderen; dat staat dan onder
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-03
+
 ### Toegevoegd
 
 - `archi --version` toont de geïnstalleerde versie.
@@ -128,7 +130,8 @@ Eerste release op PyPI.
 - Het model vinden via `--model`, een `archi.toml` of het enige
   `.archimate`-bestand in de map (ADR 0004).
 
-[Unreleased]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.1.1...v0.2.0

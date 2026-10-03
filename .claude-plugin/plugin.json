@@ -1,7 +1,7 @@
 {
   "name": "archi-tools",
   "displayName": "ArchiMate Tools",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI",
   "author": {
     "name": "Nederlandse Digitale Dienst"
