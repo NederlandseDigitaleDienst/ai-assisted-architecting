@@ -3,7 +3,7 @@
 [![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 [![Python](https://img.shields.io/pypi/pyversions/archi-cli.svg)](https://pypi.org/project/archi-cli/)
-[![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE)
+[![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](LICENSE)
 
 Houd je ArchiMate-model bij zoals code. `archi-cli` is een command line tool
 voor native [Archi](https://www.archimatetool.com/)-modellen: je bekijkt,
@@ -13,7 +13,7 @@ gevalideerd voordat hij wordt opgeslagen, zodat het model nooit kapot raakt.
 Dat maakt de tool geschikt om samen met een AI-assistent aan een model te
 werken, met git als geheugen.
 
-![Een gegenereerde presentatie die inzoomt op één capability](https://raw.githubusercontent.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/main/docs/img/slide-focus.png)
+![Een gegenereerde presentatie die inzoomt op één capability](docs/img/slide-focus.png)
 
 *Een slide uit het meegeleverde voorbeeld: de camera zoomt in op één
 element en dimt de rest. Gegenereerd uit het model, zonder handwerk.*
@@ -66,7 +66,7 @@ archi render                         # views en slides naar views/
 ```
 
 Open daarna `views/html/index.html` in je browser. De Mermaid-versies van de
-views staan [hier op GitHub](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/examples/vergunningverlening/views/README.md) al
+views staan [hier op GitHub](examples/vergunningverlening/views/README.md) al
 gerenderd.
 
 Voor je eigen model: draai `archi` in de map met je `.archimate`-bestand, of
@@ -108,18 +108,18 @@ toont) en naar een webpagina met de layout en de ArchiMate-notatie uit het
 model, gestileerd met het [NLDD Design System](https://github.com/NederlandseDigitaleDienst/design-system).
 Een indexpagina toont alle views met een miniatuur.
 
-![Een gegenereerde view met de layout uit het model](https://raw.githubusercontent.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/main/docs/img/view-dienst-platform.png)
+![Een gegenereerde view met de layout uit het model](docs/img/view-dienst-platform.png)
 
 **Presenteren.** Een deck in `decks/*.toml` beschrijft een lineair verhaal met
 views uit het model, afgewisseld met tekst. `archi slides` maakt er een
 zelfstandige HTML-presentatie van, met zoom-op-een-element, sprekersnotities en
-volledig scherm. Zie [het voorbeelddeck](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/examples/vergunningverlening/decks/rondleiding.toml).
+volledig scherm. Zie [het voorbeelddeck](examples/vergunningverlening/decks/rondleiding.toml).
 
 **Doorklikken.** Met een links-bestand worden elementen in de webpagina's
 klikbaar naar een andere view of een ander bestand, bijvoorbeeld een diagram
-dat je met eigen scripts maakt. Zie [ADR 0010](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/adr/0010-doorklikken-via-links-bestand.md).
+dat je met eigen scripts maakt. Zie [ADR 0010](adr/0010-doorklikken-via-links-bestand.md).
 
-![De indexpagina met alle views](https://raw.githubusercontent.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/main/docs/img/views-index.png)
+![De indexpagina met alle views](docs/img/views-index.png)
 
 ## Configuratie
 
@@ -180,21 +180,21 @@ request van een collega naleest.
 ## Disclaimer
 
 Deze software wordt geleverd zoals hij is, zonder enige garantie; zie de
-artikelen 7 en 8 van de [EUPL-1.2](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE). De tool is in bètafase: tot versie
+artikelen 7 en 8 van de [EUPL-1.2](LICENSE). De tool is in bètafase: tot versie
 1.0 kunnen commando's en uitvoer nog veranderen. Elke wijziging die je moet
-weten staat in de [changelog](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/CHANGELOG.md).
+weten staat in de [changelog](CHANGELOG.md).
 
 ArchiMate is een geregistreerd handelsmerk van The Open Group. Dit project is
 onafhankelijk en niet verbonden aan The Open Group of het Archi-project.
 
 ## Meedoen
 
-Bijdragen zijn welkom: lees [CONTRIBUTING.md](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/CONTRIBUTING.md) voor de
-werkwijze en de [gedragscode](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/CODE_OF_CONDUCT.md). Een beveiligingsprobleem meld
-je volgens [SECURITY.md](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/SECURITY.md), niet in een openbaar issue.
-Beslissingen over de opzet van de tool staan als ADR's in [`adr/`](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/tree/main/adr/).
+Bijdragen zijn welkom: lees [CONTRIBUTING.md](CONTRIBUTING.md) voor de
+werkwijze en de [gedragscode](CODE_OF_CONDUCT.md). Een beveiligingsprobleem meld
+je volgens [SECURITY.md](SECURITY.md), niet in een openbaar issue.
+Beslissingen over de opzet van de tool staan als ADR's in [`adr/`](adr/).
 
 ## Licentie
 
-[EUPL-1.2](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/LICENSE). Ontwikkeld door de Nederlandse Digitale Dienst. Archi
-zelf valt onder de MIT-licentie; zie [NOTICE](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/NOTICE).
+[EUPL-1.2](LICENSE). Ontwikkeld door de Nederlandse Digitale Dienst. Archi
+zelf valt onder de MIT-licentie; zie [NOTICE](NOTICE).

@@ -2,10 +2,11 @@
 name = "archi-cli"
 version = "0.3.0"
 description = "Deterministische command line tool om native Archi-modellen (.archimate) te inspecteren, muteren, valideren en renderen"
-readme = "README.md"
 license = "EUPL-1.2"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
+# the README on PyPI gets absolute links, see [tool.hatch.metadata.hooks.fancy-pypi-readme]
+dynamic = ["readme"]
 authors = [
     { name = "Nederlandse Digitale Dienst" },
 ]
@@ -36,8 +37,24 @@ Changelog = "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-a
 archi = "archi_tool.cli:main"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
+
+# The README in the repo uses relative paths, which GitHub resolves (also in a
+# private repo); PyPI cannot, so the build rewrites them to absolute URLs.
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+path = "README.md"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '!\[([^\]]*)\]\((?!https?://)([^)]+)\)'
+replacement = '![\1](https://raw.githubusercontent.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/main/\2)'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '(?<!!)\[([^\]]*)\]\((?!https?://|#)([^)]+)\)'
+replacement = '[\1](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/\2)'
 
 # Distribution name is archi-cli; the import package stays archi_tool and the
 # command stays `archi`. Point hatchling at the source tree explicitly.

@@ -8,6 +8,12 @@ onder 1.0 ligt, kan een minor-versie gedrag veranderen; dat staat dan onder
 
 ## [Unreleased]
 
+### Opgelost
+
+- De afbeeldingen in de README werkten niet op GitHub zolang de repository
+  privé is. De README gebruikt nu relatieve paden; de build maakt er voor PyPI
+  absolute links van.
+
 ## [0.3.0] - 2026-10-03
 
 ### Toegevoegd
