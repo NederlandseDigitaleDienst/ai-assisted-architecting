@@ -1,15 +1,19 @@
-# Archi-backups en afgeleide artefacten — niet versioneren
+# Archi-backups en afgeleide artefacten
 *.bak
 output/
 *.xml
 *.svg
 *.png
+# behalve de schermafbeeldingen voor de README
+!docs/img/*.png
 
 # Python
 __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+.ruff_cache/
+dist/
 
 # macOS
 .DS_Store

@@ -1,4 +1,4 @@
-"""Tests for model and conventions discovery, in a clean tree with no ADO
+"""Tests for model and conventions discovery, in a clean tree with no project
 context, so nothing leaks in from the repo the tests happen to run in."""
 
 import pytest
@@ -128,3 +128,22 @@ def test_conventions_config_path_without_section_fails(tmp_path):
     model = _write_model(tmp_path / "m.archimate")
     with pytest.raises(ModelError, match="Property-keys-sectie"):
         discover_conventions(model, start=tmp_path)
+
+
+def test_fonts_default_config_and_invalid(tmp_path):
+    import pytest
+    from archi_tool.discovery import discover_fonts
+    from archi_tool.model import ModelError
+
+    model = tmp_path / "m.archimate"
+    model.write_text("<model/>", encoding="utf-8")
+    assert discover_fonts(model) == "system"
+    (tmp_path / "archi.toml").write_text(
+        '[tool.archi]\nfonts = "rijkssans"\n', encoding="utf-8"
+    )
+    assert discover_fonts(model) == "rijkssans"
+    (tmp_path / "archi.toml").write_text(
+        '[tool.archi]\nfonts = "comic-sans"\n', encoding="utf-8"
+    )
+    with pytest.raises(ModelError, match="Ongeldige waarde voor fonts"):
+        discover_fonts(model)

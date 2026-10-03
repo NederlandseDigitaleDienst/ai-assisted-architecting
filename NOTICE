@@ -1,15 +1,24 @@
 archi-cli
-Copyright (c) 2026 Bureau Architectuur Digitale Overheid
+Copyright (c) 2026 Nederlandse Digitale Dienst
 Licensed under the EUPL-1.2 (see LICENSE).
 
 This tool downloads and drives the Archi engine for its `normalize` command.
 Archi is a separate work and is not distributed as part of this package; it is
 fetched at runtime from the official release on first use.
 
-  Archi — ArchiMate modelling tool
+  Archi, the ArchiMate modelling tool
   Copyright (c) Phillip Beauvoir, Jean-Baptiste Sarrodie and contributors
   Licensed under the MIT License
   https://github.com/archimatetool/archi
 
 The Archi distribution bundles an OpenJDK runtime; its own licensing applies to
 that runtime.
+
+The HTML views and slide decks load the NLDD Design System
+(@nldd/design-system) from a CDN at view time. Its fonts (RijksSans) are
+intended for publications by and on behalf of the Dutch central government;
+see the design system's NOTICES.md for the conditions.
+
+ArchiMate is a registered trademark of The Open Group. archi-cli is an
+independent project and is not affiliated with or endorsed by The Open Group
+or the Archi project.

@@ -1,7 +1,7 @@
-# Publiceer archi-cli naar PyPI bij een versie-tag (v1.2.3). Gebruikt PyPI
-# Trusted Publishing (OIDC): geen API-token of secret nodig — PyPI vertrouwt
-# deze workflow op basis van de repo + workflow-naam, eenmalig te koppelen in
-# de PyPI-projectinstellingen. De job draait alleen op tags, niet op elke push.
+# Publiceer archi-cli bij een versie-tag (v1.2.3): naar PyPI via Trusted
+# Publishing (OIDC, geen API-token of secret; PyPI vertrouwt deze workflow op
+# basis van repo en workflownaam) en als GitHub Release met de tekst uit
+# CHANGELOG.md. De workflow draait alleen op tags, niet op elke push.
 name: release
 
 on:
@@ -23,15 +23,12 @@ jobs:
         with:
           enable-cache: false   # geen cache in een publicerende workflow
 
-      - name: Tag matcht de versie in pyproject
-        run: |
-          tag="${GITHUB_REF_NAME#v}"
-          pkg=$(uv version --short)
-          if [ "$tag" != "$pkg" ]; then
-            echo "Tag $GITHUB_REF_NAME (=$tag) ≠ pyproject-versie $pkg" >&2
-            exit 1
-          fi
-          echo "Versie $pkg klopt met de tag."
+      # tag, versies in alle bestanden en de changelogsectie moeten kloppen;
+      # de changelogsectie wordt de tekst van de GitHub Release
+      - name: Tag, versies en changelog controleren
+        run: >-
+          uv run --no-project python scripts/check_release.py
+          --tag "$GITHUB_REF_NAME" --notes release-notes.md
 
       # Nooit een versie publiceren die zijn eigen tests niet haalt: de
       # tag kan op een commit staan waar CI nooit groen op is geweest.
@@ -45,6 +42,10 @@ jobs:
         with:
           name: dist
           path: dist/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: release-notes
+          path: release-notes.md
 
   publish:
     needs: build
@@ -58,3 +59,24 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # release/v1
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # vereist om een release aan te maken
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: release-notes
+      - name: GitHub Release aanmaken
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME" dist/*
+          --repo "$GITHUB_REPOSITORY" --verify-tag
+          --title "${GITHUB_REF_NAME#v}" --notes-file release-notes.md

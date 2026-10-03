@@ -26,11 +26,16 @@ from .render import (
     write_if_changed,
 )
 
-NLDD_VERSION = "0.8.64"
-NLDD_CSS = (
-    f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}"
-    "/dist/css/global.css"
-)
+NLDD_VERSION = "0.8.93"
+_NLDD_DIST = f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}/dist/css"
+# RijksSans is meant for publications by and on behalf of the Dutch central
+# government only, so the default stylesheet leaves it out and falls back to
+# the system font; `[tool.archi] fonts = "rijkssans"` opts in.
+NLDD_STYLESHEETS = {
+    "system": f"{_NLDD_DIST}/global-system-font.css",
+    "rijkssans": f"{_NLDD_DIST}/global.css",
+}
+DEFAULT_FONTS = "system"
 NLDD_JS = f"https://cdn.jsdelivr.net/npm/@nldd/design-system@{NLDD_VERSION}/+esm"
 
 CANVAS_MARGIN = 40
@@ -514,7 +519,7 @@ PAGE_CSS = (
 )
 
 
-def page_shell(title: str, body: str) -> str:
+def page_shell(title: str, body: str, fonts: str = DEFAULT_FONTS) -> str:
     return f"""{MARKER}
 <!doctype html>
 <html lang="nl">
@@ -523,7 +528,7 @@ def page_shell(title: str, body: str) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title>
 <link rel="icon" href="{FAVICON}">
-<link rel="stylesheet" href="{NLDD_CSS}">
+<link rel="stylesheet" href="{NLDD_STYLESHEETS[fonts]}">
 <script type="module">import "{NLDD_JS}";</script>
 <style>
 {layer_css()}
@@ -662,7 +667,9 @@ def diagram_canvas(
     }
 
 
-def render_view_html(model, diagram, links: dict | None = None) -> str:
+def render_view_html(
+    model, diagram, links: dict | None = None, fonts: str = DEFAULT_FONTS
+) -> str:
     canvas = diagram_canvas(model, diagram, links=links)
     name = diagram.get("name") or "(naamloze view)"
     documentation = model.documentation(diagram)
@@ -692,10 +699,10 @@ def render_view_html(model, diagram, links: dict | None = None) -> str:
         f"getekende verbindingen · gegenereerd uit "
         f"<code>{html.escape(display_model_path(model))}</code></p>"
     )
-    return page_shell(name, body)
+    return page_shell(name, body, fonts)
 
 
-def render_index_html(model, entries) -> str:
+def render_index_html(model, entries, fonts: str = DEFAULT_FONTS) -> str:
     cards = []
     for name, filename, n_boxes, n_edges, thumbnail in entries:
         cards.append(
@@ -721,10 +728,12 @@ def render_index_html(model, entries) -> str:
         + "\n"
         "      </nldd-collection>"
     )
-    return page_shell(f"{model.name} · views", body)
+    return page_shell(f"{model.name} · views", body, fonts)
 
 
-def render_all_html(model, out_dir, links: dict | None = None) -> tuple[list, list]:
+def render_all_html(
+    model, out_dir, links: dict | None = None, fonts: str = DEFAULT_FONTS
+) -> tuple[list, list]:
     """Render every view to HTML; returns (written, removed) path lists.
 
     links is the parsed links file ({source: {element name: target}}); a view
@@ -740,7 +749,9 @@ def render_all_html(model, out_dir, links: dict | None = None) -> tuple[list, li
         filename = stems[diagram.get("id")] + ".html"
         path = out / filename
         view_links = links_for(links or {}, stems[diagram.get("id")])
-        if write_if_changed(path, render_view_html(model, diagram, links=view_links)):
+        if write_if_changed(
+            path, render_view_html(model, diagram, links=view_links, fonts=fonts)
+        ):
             written.append(path)
         produced.add(path.name)
         boxes = absolute_boxes(diagram, index)
@@ -750,7 +761,7 @@ def render_all_html(model, out_dir, links: dict | None = None) -> tuple[list, li
         )
 
     index_path = out / "index.html"
-    if write_if_changed(index_path, render_index_html(model, entries)):
+    if write_if_changed(index_path, render_index_html(model, entries, fonts)):
         written.append(index_path)
     produced.add(index_path.name)
 

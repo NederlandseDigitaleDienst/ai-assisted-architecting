@@ -1,7 +1,7 @@
 {
   "name": "archi-marketplace",
   "owner": {
-    "name": "Bureau Architectuur Digitale Overheid"
+    "name": "Nederlandse Digitale Dienst"
   },
   "description": "Plugins voor het werken met native .archimate-modellen",
   "plugins": [

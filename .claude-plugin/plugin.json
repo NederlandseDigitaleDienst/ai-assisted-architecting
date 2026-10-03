@@ -4,7 +4,7 @@
   "version": "0.2.2",
   "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI",
   "author": {
-    "name": "Bureau Architectuur Digitale Overheid"
+    "name": "Nederlandse Digitale Dienst"
   },
   "homepage": "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting",
   "repository": "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting",

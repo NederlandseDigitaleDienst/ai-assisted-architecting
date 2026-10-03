@@ -1,0 +1,75 @@
+# Machine-leesbare metadata volgens de publiccode.yml-standaard, voor de
+# open-sourcecatalogus op developer.overheid.nl. softwareVersion en
+# releaseDate horen bij elke release mee te gaan; CI controleert dat
+# softwareVersion gelijk is aan de versie in pyproject.toml.
+
+publiccodeYmlVersion: "0.7"
+
+name: archi-cli
+url: "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting"
+landingURL: "https://pypi.org/project/archi-cli/"
+
+softwareVersion: "0.2.2"
+releaseDate: "2026-10-03"
+
+softwareType: standalone/other
+developmentStatus: beta
+
+platforms:
+  - linux
+  - mac
+  - windows
+
+categories:
+  - it-development
+  - knowledge-management
+
+description:
+  nl:
+    shortDescription: >-
+      Command line tool om native Archi-modellen te inspecteren, wijzigen,
+      valideren en renderen, geschikt voor werken met AI-assistenten.
+    longDescription: >-
+      archi-cli leest en schrijft het native bestandsformaat van Archi, het
+      open source modelleerprogramma voor ArchiMate. Architecten bekijken en
+      wijzigen een model vanuit de terminal, en elke wijziging wordt gevalideerd
+      voordat hij wordt opgeslagen, zodat het model nooit kapot raakt. Uit het
+      model genereert de tool Mermaid-diagrammen die GitHub direct toont,
+      webpagina's in de stijl van het NLDD Designsysteem met de layout en de
+      ArchiMate-notatie uit het model, en presentaties.
+
+      De tool is deterministisch: dezelfde invoer geeft dezelfde uitvoer, zodat
+      een model in git kan worden beheerd en in CI gecontroleerd. Normaliseren
+      gebeurt door Archi zelf, waarvan de tool de engine geverifieerd ophaalt.
+      De repository levert ook skills waarmee een AI-assistent zoals Claude Code
+      via de tool aan een model werkt.
+    features:
+      - ArchiMate-modellen bewerken vanuit de terminal
+      - Validatie bij elke wijziging
+      - Mermaid- en HTML-views uit het model
+      - Presentaties uit het model
+      - Skills voor AI-assistenten
+
+legal:
+  license: EUPL-1.2
+  mainCopyrightOwner: Nederlandse Digitale Dienst
+
+maintenance:
+  type: internal
+  contacts:
+    - name: Nederlandse Digitale Dienst
+      email: opensource@minbzk.nl
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - nl
+
+dependsOn:
+  open:
+    - name: Archi
+      optional: true
+
+intendedAudience:
+  countries:
+    - NL

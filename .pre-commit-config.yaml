@@ -30,6 +30,12 @@ repos:
       - id: uv-lock
   - repo: local
     hooks:
+      - id: release-versions
+        name: versies gelijk (pyproject, plugin, uv.lock, publiccode)
+        entry: uv run --no-project python scripts/check_release.py
+        language: system
+        files: ^(pyproject\.toml|uv\.lock|publiccode\.yml|\.claude-plugin/plugin\.json|scripts/check_release\.py)$
+        pass_filenames: false
       - id: pytest
         name: pytest (archi_tool)
         entry: uv run pytest -q

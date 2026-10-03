@@ -1,0 +1,32 @@
+title = "Vergunningverlening in beeld"
+speaker = "Voorbeeld"
+affiliation = "archi-cli"
+
+[[slides]]
+type = "title"
+
+[[slides]]
+type = "text"
+title = "Waar dit over gaat"
+body = """
+Een fictief voorbeeld van een gemeente die vergunningen verleent. Het model is
+volledig met de archi-CLI opgebouwd en dient als oefenmateriaal.
+"""
+
+[[slides]]
+type = "view"
+view = "Capabilitykaart"
+
+[[slides]]
+type = "view"
+view = "Capabilitykaart"
+focus = "Toetsen aan regels"
+
+[[slides]]
+type = "view"
+view = "Van dienst tot platform"
+
+[[slides]]
+type = "closing"
+title = "Zelf proberen"
+link = { href = "https://pypi.org/project/archi-cli/", label = "archi-cli op PyPI" }

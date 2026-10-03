@@ -22,9 +22,10 @@ from .links import links_for
 from .model import ModelError
 from .render import MARKER, is_descendant, slugify, view_stems, write_if_changed
 from .render_html import (
+    DEFAULT_FONTS,
     DIAGRAM_CSS,
     FAVICON,
-    NLDD_CSS,
+    NLDD_STYLESHEETS,
     absolute_boxes,
     diagram_canvas,
     layer_css,
@@ -639,7 +640,9 @@ def render_slide_html(
     )
 
 
-def render_deck_html(model, deck: dict, links: dict | None = None) -> str:
+def render_deck_html(
+    model, deck: dict, links: dict | None = None, fonts: str = DEFAULT_FONTS
+) -> str:
     """One self-contained HTML document for a validated deck. links is the
     parsed links file; embedded views pick up their own section."""
     total = len(deck["slides"])
@@ -655,7 +658,7 @@ def render_deck_html(model, deck: dict, links: dict | None = None) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(deck["title"])}</title>
 <link rel="icon" href="{FAVICON}">
-<link rel="stylesheet" href="{NLDD_CSS}">
+<link rel="stylesheet" href="{NLDD_STYLESHEETS[fonts]}">
 <style>
 {layer_css()}
 {DIAGRAM_CSS}{DECK_CSS}</style>
@@ -682,7 +685,7 @@ n notities &middot; a autoplay</div>
 
 
 def render_all_slides(
-    model, decks_dir, out_dir, links: dict | None = None
+    model, decks_dir, out_dir, links: dict | None = None, fonts: str = DEFAULT_FONTS
 ) -> tuple[list, list]:
     """Render every decks/*.toml; returns (written, removed) path lists.
     A missing or empty decks dir is not an error: nothing is rendered and
@@ -705,7 +708,9 @@ def render_all_slides(
     written, produced = [], set()
     for deck in decks:
         path = out / f"{deck['slug']}.html"
-        if write_if_changed(path, render_deck_html(model, deck, links=links)):
+        if write_if_changed(
+            path, render_deck_html(model, deck, links=links, fonts=fonts)
+        ):
             written.append(path)
         produced.add(path.name)
 

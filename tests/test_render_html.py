@@ -178,3 +178,14 @@ def test_render_all_html_index_and_cleanup(model, tmp_path):
 
     written, removed = render_all_html(model, out)
     assert written == [] and removed == []
+
+
+def test_stylesheet_defaults_to_system_font(model):
+    output = render_view_html(model, model.diagrams()[0])
+    assert "/dist/css/global-system-font.css" in output
+    assert "/dist/css/global.css" not in output
+
+
+def test_rijkssans_is_opt_in(model):
+    output = render_view_html(model, model.diagrams()[0], fonts="rijkssans")
+    assert "/dist/css/global.css" in output

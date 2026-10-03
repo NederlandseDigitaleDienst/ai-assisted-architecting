@@ -69,3 +69,11 @@ def test_missing_model_exit_code_one(tmp_path):
     )
     assert result.exit_code == 1
     assert "Modelbestand niet gevonden" in result.output
+
+
+def test_version_flag_prints_package_version():
+    from importlib.metadata import version
+
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == f"archi-cli {version('archi-cli')}"

@@ -115,6 +115,25 @@ def discover_links(model_path, start=None):
     return path
 
 
+FONT_CHOICES = ("system", "rijkssans")
+
+
+def discover_fonts(model_path, start=None) -> str:
+    """The font choice for rendered HTML: ``[tool.archi] fonts``, default
+    "system". "rijkssans" is reserved for the Dutch central government and
+    parties working on its behalf (see NOTICE)."""
+    start = Path(start or Path(model_path).resolve().parent)
+    table, config_path = _read_archi_config(start)
+    fonts = table.get("fonts", "system")
+    if fonts not in FONT_CHOICES:
+        allowed = ", ".join(f'"{c}"' for c in FONT_CHOICES)
+        raise ModelError(
+            f"Ongeldige waarde voor fonts in {config_path.name}: {fonts!r}. "
+            f"Kies uit {allowed}."
+        )
+    return fonts
+
+
 def discover_conventions(model_path, start=None):
     """Return (allowed_property_keys, source_label).
 

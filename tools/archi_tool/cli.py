@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import sys
 from collections import Counter
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as package_version
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Optional
@@ -17,7 +19,12 @@ from typing import Optional
 import typer
 from lxml import etree
 
-from .discovery import discover_conventions, discover_links, discover_model
+from .discovery import (
+    discover_conventions,
+    discover_fonts,
+    discover_links,
+    discover_model,
+)
 from .links import check_link_files, load_links
 from .model import ArchiModel, ModelError, is_element, xsi_type
 from .normalize import normalize
@@ -299,11 +306,14 @@ def cmd_setup(model, args):
 
 def cmd_render(model, args):
     links = load_links(discover_links(args.model))
+    fonts = discover_fonts(args.model)
     written, removed = render_all(model, args.out)
     html_dir = Path(args.out) / "html"
-    html_written, html_removed = render_all_html(model, html_dir, links=links)
+    html_written, html_removed = render_all_html(
+        model, html_dir, links=links, fonts=fonts
+    )
     deck_written, deck_removed = render_all_slides(
-        model, Path(args.decks), html_dir / "slides", links=links
+        model, Path(args.decks), html_dir / "slides", links=links, fonts=fonts
     )
     for path in written + html_written + deck_written:
         print(f"Geschreven: {path}")
@@ -328,18 +338,21 @@ def cmd_render(model, args):
 
 def cmd_slides(model, args):
     links = load_links(discover_links(args.model))
+    fonts = discover_fonts(args.model)
     if args.deck:
         written = []
         for deck_path in args.deck:
             deck = load_deck(Path(deck_path), model)
             path = Path(args.out) / f"{deck['slug']}.html"
             path.parent.mkdir(parents=True, exist_ok=True)
-            if write_if_changed(path, render_deck_html(model, deck, links=links)):
+            if write_if_changed(
+                path, render_deck_html(model, deck, links=links, fonts=fonts)
+            ):
                 written.append(path)
         removed = []
     else:
         written, removed = render_all_slides(
-            model, Path(args.decks), Path(args.out), links=links
+            model, Path(args.decks), Path(args.out), links=links, fonts=fonts
         )
     for path in written:
         print(f"Geschreven: {path}")
@@ -382,8 +395,27 @@ ModelOption = typer.Option(
 )
 
 
+def _show_version(value: bool) -> None:
+    if not value:
+        return
+    try:
+        typer.echo(f"archi-cli {package_version('archi-cli')}")
+    except PackageNotFoundError:  # running from a source tree without install
+        typer.echo("archi-cli (onbekende versie)")
+    raise typer.Exit()
+
+
 @app.callback()
-def _main(model: Optional[str] = ModelOption):
+def _main(
+    model: Optional[str] = ModelOption,
+    version: bool = typer.Option(
+        False,
+        "--version",
+        callback=_show_version,
+        is_eager=True,
+        help="versie tonen en stoppen",
+    ),
+):
     _state.model = model
 
 
