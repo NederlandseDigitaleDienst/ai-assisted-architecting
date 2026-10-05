@@ -1,12 +1,12 @@
 {
-  "name": "archi-marketplace",
+  "name": "nldd-archi",
   "owner": {
     "name": "Nederlandse Digitale Dienst"
   },
   "description": "Plugins voor het werken met native .archimate-modellen",
   "plugins": [
     {
-      "name": "archi-tools",
+      "name": "nldd-archi",
       "source": "./",
       "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI"
     }

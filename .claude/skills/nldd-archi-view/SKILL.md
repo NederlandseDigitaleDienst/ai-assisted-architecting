@@ -1,5 +1,5 @@
 ---
-name: archi-view
+name: nldd-archi-view
 description: Genereer of verwijder een view (diagram) in een .archimate-model met deterministische layout met de archi-CLI. Gebruik bij "maak een view", "genereer een diagram", "visualiseer een selectie elementen", "verwijder view", of als een selectie zichtbaar moet worden in Archi of op GitHub.
 ---
 

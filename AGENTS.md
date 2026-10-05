@@ -15,8 +15,8 @@ beschrijven hoe een AI-assistent via de tool aan een model werkt.
   op `tests/fixtures/klein-model.archimate` en er is een voorbeeld in
   `examples/vergunningverlening/`.
 - Gepubliceerd op PyPI als `archi-cli` (importnaam `archi_tool`). De repo is
-  tegelijk een Claude Code plugin (`archi-tools`) en marketplace
-  (`archi-marketplace`), via `.claude-plugin/`.
+  tegelijk een Claude Code plugin en marketplace, allebei `nldd-archi`, via
+  `.claude-plugin/` (ADR 0012).
 - Uitgebracht door de Nederlandse Digitale Dienst onder de EUPL-1.2.
 
 ## Omgeving opzetten
@@ -167,7 +167,7 @@ uitvoer van bestaande gebruikers zichtbaar verandert.
 
 - XML in een modelbestand met de hand bewerken. Alle mutaties gaan via de
   `archi`-CLI, die valideert en weigert op te slaan bij fouten. Gebruik daarvoor
-  de skills `archi-model`, `archi-view` en `archi-slides`.
+  de skills `nldd-archi-model`, `nldd-archi-view` en `nldd-archi-slides`.
 - Ids (`id-<uuid4>`) wijzigen; de tooling maakt nieuwe aan.
 - Hooks overslaan (`--no-verify`) of secrets, tokens en persoonsgegevens
   committen.

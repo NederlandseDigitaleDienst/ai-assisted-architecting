@@ -1,6 +1,6 @@
 # ADR 0008 — Tool en model uit elkaar getrokken
 
-- **Status**: geaccepteerd
+- **Status**: geaccepteerd; de plugin- en marketplacenaam zijn gewijzigd door ADR 0012
 - **Datum**: 2026-07-04
 
 ## Context

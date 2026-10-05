@@ -1,6 +1,6 @@
 {
-  "name": "archi-tools",
-  "displayName": "ArchiMate Tools",
+  "name": "nldd-archi",
+  "displayName": "NLDD Archi",
   "version": "0.3.0",
   "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI",
   "author": {

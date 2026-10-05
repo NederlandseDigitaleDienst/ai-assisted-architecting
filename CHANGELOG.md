@@ -14,6 +14,11 @@ onder 1.0 ligt, kan een minor-versie gedrag veranderen; dat staat dan onder
   Digitale Dienst: `NederlandseDigitaleDienst/ai-assisted-architecting`. Wie de
   plugin al had, voegt de marketplace opnieuw toe met
   `/plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting`.
+- De plugin heet nu `nldd-archi` en de skills `nldd-archi-model`,
+  `nldd-archi-view` en `nldd-archi-slides`; de marketplace in deze repository
+  heet ook `nldd-archi` (ADR 0012). Installeren gaat met
+  `/plugin install nldd-archi@nldd-archi`. Het pakket `archi-cli` en het
+  commando `archi` blijven hetzelfde.
 
 ### Opgelost
 
