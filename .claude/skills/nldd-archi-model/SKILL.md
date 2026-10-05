@@ -1,5 +1,5 @@
 ---
-name: archi-model
+name: nldd-archi-model
 description: Werkwijze voor het bewerken van een native .archimate-model met de archi-CLI - elementen, relaties en properties toevoegen of wijzigen, valideren en normaliseren. Gebruik bij "voeg element/relatie/doel toe", "wijzig het model", "verwijder element", "hernoem", of vragen over de archi-CLI.
 ---
 

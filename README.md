@@ -32,9 +32,9 @@ element en dimt de rest. Gegenereerd uit het model, zonder handwerk.*
 | Onderdeel | Wat het doet | Installeren |
 | --- | --- | --- |
 | `archi-cli` | Inspecteren, wijzigen, valideren, normaliseren en publiceren van `.archimate`-modellen | `uv tool install archi-cli` ([PyPI](https://pypi.org/project/archi-cli/)) |
-| Skill `archi-model` | Het model wijzigen: elementen, relaties, properties en documentatie | Claude Code-plugin `archi-tools` |
-| Skill `archi-view` | Views genereren en opruimen, met een automatische layout | Claude Code-plugin `archi-tools` |
-| Skill `archi-slides` | Presentaties samenstellen uit views en tekst | Claude Code-plugin `archi-tools` |
+| Skill `nldd-archi-model` | Het model wijzigen: elementen, relaties, properties en documentatie | Claude Code-plugin `nldd-archi` |
+| Skill `nldd-archi-view` | Views genereren en opruimen, met een automatische layout | Claude Code-plugin `nldd-archi` |
+| Skill `nldd-archi-slides` | Presentaties samenstellen uit views en tekst | Claude Code-plugin `nldd-archi` |
 
 ## Wat het is, en wat niet
 
@@ -103,7 +103,7 @@ Claude Code:
 
 ```
 /plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting
-/plugin install archi-tools@archi-marketplace
+/plugin install nldd-archi@nldd-archi
 ```
 
 Open Claude Code in de map van je model (of in
@@ -198,15 +198,15 @@ laadt wanneer je vraag erbij past. De skills bevatten geen code: ze vertellen
 de assistent welke `archi`-commando's hij gebruikt, in welke volgorde, en waar
 hij op moet letten. Ze staan in [`.claude/skills/`](.claude/skills/).
 
-- **[`archi-model`](.claude/skills/archi-model/SKILL.md)** wijzigt het model.
+- **[`nldd-archi-model`](.claude/skills/nldd-archi-model/SKILL.md)** wijzigt het model.
   De assistent kijkt eerst wat er staat (`archi show`, `archi list`), wijzigt
   via de CLI, zet omschrijvingen in het documentatieveld van Archi, valideert,
   normaliseert en werkt de views bij. Verwijderen met `--cascade` gebeurt alleen
   bewust.
-- **[`archi-view`](.claude/skills/archi-view/SKILL.md)** maakt views: een
+- **[`nldd-archi-view`](.claude/skills/nldd-archi-view/SKILL.md)** maakt views: een
   selectie op type, property of relatie, of een detailview van één element met
   alles eromheen, in een raster- of clusterlayout.
-- **[`archi-slides`](.claude/skills/archi-slides/SKILL.md)** schrijft decks in
+- **[`nldd-archi-slides`](.claude/skills/nldd-archi-slides/SKILL.md)** schrijft decks in
   `decks/*.toml`: een lineair verhaal met views uit het model, zoomslides op één
   element en tekst daartussen, en rendert ze naar HTML.
 

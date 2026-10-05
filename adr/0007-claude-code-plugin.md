@@ -1,6 +1,6 @@
 # ADR 0007 — De repo als Claude Code plugin en marketplace
 
-- **Status**: geaccepteerd
+- **Status**: geaccepteerd; de namen zijn gewijzigd door ADR 0012
 - **Datum**: 2026-07-04
 
 ## Context

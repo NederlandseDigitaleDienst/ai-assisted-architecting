@@ -1,5 +1,5 @@
 ---
-name: archi-slides
+name: nldd-archi-slides
 description: Genereer HTML-slidedecks uit een .archimate-model met de archi-CLI, vanuit decks/*.toml - een lineair verhaal met views uit het model afgewisseld met tekst. Gebruik bij "maak een presentatie", "genereer slides", "maak een slidedeck", "presenteer de views", of als een deck moet worden toegevoegd, aangepast of verwijderd.
 ---
 
@@ -91,7 +91,7 @@ noemt de containers in de view.
 Een sterke verhaallijn is: overzichtsview → `focus`-slide op één element →
 detailview van dat element. Detailviews genereer je met
 `archi add-view --layout cluster --root "<element>" --related`
-(zie de skill archi-view).
+(zie de skill nldd-archi-view).
 
 ## In de browser
 
