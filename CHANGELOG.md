@@ -8,6 +8,12 @@ onder 1.0 ligt, kan een minor-versie gedrag veranderen; dat staat dan onder
 
 ## [Unreleased]
 
+### Toegevoegd
+
+- De README legt uit hoe je de plugin in `.claude/settings.json` van een project
+  aanzet, zodat iedereen die eraan werkt hem krijgt. Deze repository doet dat
+  zelf ook.
+
 ## [0.4.0] - 2026-10-05
 
 ### Gewijzigd

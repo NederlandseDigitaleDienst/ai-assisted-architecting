@@ -17,7 +17,9 @@ beschrijven hoe een AI-assistent via de tool aan een model werkt.
 - Gepubliceerd op PyPI als `archi-cli` (importnaam `archi_tool`). De repo is
   ook de plugin `nldd-archi` voor Claude Code (`.claude-plugin/`) en Cursor
   (`.cursor-plugin/`), en staat in de marketplace van de NLDD,
-  `NederlandseDigitaleDienst/ai-plugins` (ADR 0012).
+  `NederlandseDigitaleDienst/ai-plugins` (ADR 0012). `.claude/settings.json`
+  zet hier de gepubliceerde plugin aan; een skill-wijziging probeer je uit met
+  `claude --plugin-dir .`.
 - Uitgebracht door de Nederlandse Digitale Dienst onder de EUPL-1.2.
 
 ## Omgeving opzetten
