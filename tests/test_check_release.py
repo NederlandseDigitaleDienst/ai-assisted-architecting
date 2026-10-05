@@ -16,8 +16,9 @@ spec.loader.exec_module(check_release)
 def copy_repo_files(tmp_path):
     for name in ("pyproject.toml", "uv.lock", "publiccode.yml", "CHANGELOG.md"):
         shutil.copy(ROOT / name, tmp_path / name)
-    (tmp_path / ".claude-plugin").mkdir()
-    shutil.copy(ROOT / ".claude-plugin" / "plugin.json", tmp_path / ".claude-plugin")
+    for manifest in (".claude-plugin", ".cursor-plugin"):
+        (tmp_path / manifest).mkdir()
+        shutil.copy(ROOT / manifest / "plugin.json", tmp_path / manifest)
     return tmp_path
 
 

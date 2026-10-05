@@ -13,14 +13,16 @@ onder 1.0 ligt, kan een minor-versie gedrag veranderen; dat staat dan onder
 ### Gewijzigd
 
 - De repository is verhuisd naar de GitHub-organisatie van de Nederlandse
-  Digitale Dienst: `NederlandseDigitaleDienst/ai-assisted-architecting`. Wie de
-  plugin al had, voegt de marketplace opnieuw toe met
-  `/plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting`.
+  Digitale Dienst: `NederlandseDigitaleDienst/ai-assisted-architecting`.
 - De plugin heet nu `nldd-archi` en de skills `nldd-archi-model`,
-  `nldd-archi-view` en `nldd-archi-slides`; de marketplace in deze repository
-  heet ook `nldd-archi` (ADR 0012). Installeren gaat met
-  `/plugin install nldd-archi@nldd-archi`. Het pakket `archi-cli` en het
-  commando `archi` blijven hetzelfde.
+  `nldd-archi-view` en `nldd-archi-slides` (ADR 0012). Hij staat in de
+  marketplace van de NLDD; deze repository heeft geen eigen marketplace meer.
+  Overstappen: `/plugin marketplace remove archi-marketplace`, dan
+  `/plugin marketplace add NederlandseDigitaleDienst/ai-plugins` en
+  `/plugin install nldd-archi@nldd`. Het pakket `archi-cli` en het commando
+  `archi` blijven hetzelfde.
+- De skills staan in `skills/` in de root, en de plugin heeft een manifest voor
+  Cursor (`.cursor-plugin/plugin.json`).
 
 ### Opgelost
 

@@ -18,19 +18,24 @@ en `archi-` alleen botst makkelijk met andere ArchiMate-gereedschappen.
 
 1. De plugin heet `nldd-archi`, met als weergavenaam *NLDD Archi*.
 2. De skills heten `nldd-archi-model`, `nldd-archi-view` en `nldd-archi-slides`.
-3. De marketplace in deze repository heet ook `nldd-archi`. Installeren gaat met
-   `/plugin install nldd-archi@nldd-archi`. Komt de plugin in de marketplace van
-   de NLDD, dan wordt dat `nldd-archi@nldd`; de entry daar wijst met een
-   GitHub-bron naar deze repository.
+3. Deze repository heeft geen eigen marketplace meer. De plugin staat in de
+   marketplace van de NLDD, `NederlandseDigitaleDienst/ai-plugins`, en installeren
+   gaat met `/plugin install nldd-archi@nldd`. De entry daar wijst met een
+   GitHub-bron naar deze repository. Daarvoor volgt de plugin de eisen van die
+   marketplace: een manifest voor Claude Code en voor Cursor met dezelfde naam,
+   beschrijving en versie, en de skills in `skills/` in de root.
 4. Het pakket op PyPI blijft `archi-cli` en het commando blijft `archi`. Die
    namen staan in scripts, CI en documentatie van gebruikers, en het voorvoegsel
    voegt daar niets toe.
 
 ## Gevolgen
 
-- Wie de plugin had, voegt de marketplace opnieuw toe en installeert
-  `nldd-archi`. Dat moest door de verhuizing toch al.
+- Wie de plugin had, verwijdert de oude marketplace, voegt die van de NLDD toe
+  en installeert `nldd-archi@nldd`. Dat moest door de verhuizing toch al.
+- In deze repository laadt Claude Code de skills niet meer vanzelf als
+  projectskills; wie eraan werkt, installeert de plugin of leest
+  `skills/*/SKILL.md`.
 - De lange vorm van een skillnaam wordt `nldd-archi:nldd-archi-model`. Een
   assistent die zelf een skill kiest, merkt er niets van.
 - Projecten die de plugin in hun `.claude/settings.json` hebben aangezet,
-  passen `enabledPlugins` aan naar `nldd-archi@nldd-archi`.
+  passen `enabledPlugins` aan naar `nldd-archi@nldd`.
