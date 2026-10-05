@@ -9,8 +9,8 @@ name: archi-cli
 url: "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting"
 landingURL: "https://pypi.org/project/archi-cli/"
 
-softwareVersion: "0.3.0"
-releaseDate: "2026-10-03"
+softwareVersion: "0.4.0"
+releaseDate: "2026-10-05"
 
 softwareType: standalone/other
 developmentStatus: beta

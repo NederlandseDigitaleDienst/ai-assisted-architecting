@@ -1,7 +1,7 @@
 {
   "name": "nldd-archi",
   "displayName": "NLDD Archi",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI",
   "author": {
     "name": "Nederlandse Digitale Dienst"
