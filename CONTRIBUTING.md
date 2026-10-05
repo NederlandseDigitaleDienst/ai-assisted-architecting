@@ -72,6 +72,11 @@ een model werkt. Houd ze generiek: gebruik placeholders in plaats van namen uit
 een specifiek model, en laat ze dezelfde commando's en opties noemen als de
 tool echt heeft.
 
+`.claude/settings.json` zet in deze repository de gepubliceerde plugin aan. Wil
+je een wijziging aan een skill uitproberen voordat hij is uitgebracht, start
+Claude Code dan met `claude --plugin-dir .`; dan laadt hij de plugin uit je
+werkmap.
+
 ## Versies en releases
 
 De versies volgen [Semantic Versioning](https://semver.org/lang/nl/): een

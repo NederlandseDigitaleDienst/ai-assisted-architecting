@@ -15,5 +15,9 @@ __pycache__/
 .ruff_cache/
 dist/
 
+# Claude Code: persoonlijke instellingen en werkmappen
+.claude/settings.local.json
+.claude/worktrees/
+
 # macOS
 .DS_Store

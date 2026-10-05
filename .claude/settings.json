@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "nldd": {
+      "source": {
+        "source": "github",
+        "repo": "NederlandseDigitaleDienst/ai-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "nldd-archi@nldd": true
+  }
+}

@@ -121,6 +121,23 @@ Open Claude Code in de map van je model (of in
 > Maak een presentatie die begint bij de capabilitykaart en inzoomt op
 > "Toetsen aan regels".
 
+Wil je dat iedereen die aan een project werkt de plugin krijgt, zet hem dan in
+`.claude/settings.json` van dat project. Claude Code vraagt dan bij het openen
+of de plugin geïnstalleerd mag worden:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "nldd": {
+      "source": { "source": "github", "repo": "NederlandseDigitaleDienst/ai-plugins" }
+    }
+  },
+  "enabledPlugins": {
+    "nldd-archi@nldd": true
+  }
+}
+```
+
 De assistent kiest zelf de passende skill. Zie [De skills](#de-skills) voor wat
 elke skill doet.
 

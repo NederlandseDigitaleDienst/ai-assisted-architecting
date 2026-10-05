@@ -32,9 +32,10 @@ en `archi-` alleen botst makkelijk met andere ArchiMate-gereedschappen.
 
 - Wie de plugin had, verwijdert de oude marketplace, voegt die van de NLDD toe
   en installeert `nldd-archi@nldd`. Dat moest door de verhuizing toch al.
-- In deze repository laadt Claude Code de skills niet meer vanzelf als
-  projectskills; wie eraan werkt, installeert de plugin of leest
-  `skills/*/SKILL.md`.
+- In deze repository laden de skills niet meer als projectskills uit
+  `.claude/skills/`. `.claude/settings.json` zet daarom de plugin uit de
+  marketplace van de NLDD aan, zodat Claude Code hem bij het openen aanbiedt;
+  een skill-wijziging probeer je uit met `claude --plugin-dir .`.
 - De lange vorm van een skillnaam wordt `nldd-archi:nldd-archi-model`. Een
   assistent die zelf een skill kiest, merkt er niets van.
 - Projecten die de plugin in hun `.claude/settings.json` hebben aangezet,
