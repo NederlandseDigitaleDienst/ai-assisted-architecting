@@ -6,8 +6,8 @@
   "author": {
     "name": "Nederlandse Digitale Dienst"
   },
-  "homepage": "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting",
-  "repository": "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting",
+  "homepage": "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting",
+  "repository": "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting",
   "license": "EUPL-1.2",
   "keywords": ["archimate", "archi", "enterprise-architecture", "modeling"],
   "skills": ["./.claude/skills/"]

@@ -35,7 +35,7 @@ installeerbare Claude Code plugin, met een marketplace die ernaar verwijst.
 ## Installatie voor gebruikers
 
 ```
-/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
+/plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting
 /plugin install archi-tools@archi-marketplace
 ```
 

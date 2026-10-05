@@ -40,7 +40,8 @@ vertrouwt. Op https://pypi.org, na inloggen:
 1. Publiceer eerst handmatig een eerste release, óf maak het project aan via de
    "pending publisher"-route (Account → Publishing) zonder dat het project al
    bestaat.
-2. Koppel als Trusted Publisher: owner `BureauArchitectuurDigitaleOverheid`,
+2. Koppel als Trusted Publisher: owner `NederlandseDigitaleDienst` (tot
+   oktober 2026 `BureauArchitectuurDigitaleOverheid`, vóór de verhuizing),
    repository `ai-assisted-architecting`, workflow `release.yml`, environment
    `pypi`.
 3. Daarna publiceert elke tag `vX.Y.Z` (die met de pyproject-versie matcht)

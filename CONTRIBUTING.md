@@ -23,7 +23,7 @@ Je hebt [uv](https://docs.astral.sh/uv/) en [just](https://just.systems/) nodig;
 uv regelt Python zelf.
 
 ```bash
-git clone https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting.git
+git clone https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting.git
 cd ai-assisted-architecting
 just setup     # venv, dependencies en de pre-commit hooks
 just test      # de testsuite

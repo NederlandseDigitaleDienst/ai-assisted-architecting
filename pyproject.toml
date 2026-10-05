@@ -28,10 +28,10 @@ classifiers = [
 dependencies = ["lxml>=6.1.3", "typer>=0.26"]
 
 [project.urls]
-Homepage = "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting"
-Repository = "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting"
-Issues = "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/issues"
-Changelog = "https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting"
+Repository = "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting"
+Issues = "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/issues"
+Changelog = "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/blob/main/CHANGELOG.md"
 
 [project.scripts]
 archi = "archi_tool.cli:main"
@@ -50,11 +50,11 @@ path = "README.md"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 pattern = '!\[([^\]]*)\]\((?!https?://)([^)]+)\)'
-replacement = '![\1](https://raw.githubusercontent.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/main/\2)'
+replacement = '![\1](https://raw.githubusercontent.com/NederlandseDigitaleDienst/ai-assisted-architecting/main/\2)'
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 pattern = '(?<!!)\[([^\]]*)\]\((?!https?://|#)([^)]+)\)'
-replacement = '[\1](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/blob/main/\2)'
+replacement = '[\1](https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/blob/main/\2)'
 
 # Distribution name is archi-cli; the import package stays archi_tool and the
 # command stays `archi`. Point hatchling at the source tree explicitly.

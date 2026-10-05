@@ -1,6 +1,6 @@
 # AI-assisted architecting
 
-[![checks](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/actions/workflows/ci.yml)
+[![checks](https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/actions/workflows/ci.yml/badge.svg)](https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 [![Python](https://img.shields.io/pypi/pyversions/archi-cli.svg)](https://pypi.org/project/archi-cli/)
 [![licentie: EUPL-1.2](https://img.shields.io/badge/licentie-EUPL--1.2-blue.svg)](LICENSE)
@@ -82,7 +82,7 @@ Probeer het op het meegeleverde voorbeeld, een fictief model van een gemeente
 die vergunningen verleent:
 
 ```bash
-git clone https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting.git
+git clone https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting.git
 cd ai-assisted-architecting/examples/vergunningverlening
 archi stats                          # wat zit er in het model
 archi show "Toetsen aan regels"      # één element met zijn relaties
@@ -102,7 +102,7 @@ Installeer eerst `archi-cli` zoals hierboven, en daarna de skills in
 Claude Code:
 
 ```
-/plugin marketplace add BureauArchitectuurDigitaleOverheid/ai-assisted-architecting
+/plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting
 /plugin install archi-tools@archi-marketplace
 ```
 

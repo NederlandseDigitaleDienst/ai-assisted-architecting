@@ -8,6 +8,13 @@ onder 1.0 ligt, kan een minor-versie gedrag veranderen; dat staat dan onder
 
 ## [Unreleased]
 
+### Gewijzigd
+
+- De repository is verhuisd naar de GitHub-organisatie van de Nederlandse
+  Digitale Dienst: `NederlandseDigitaleDienst/ai-assisted-architecting`. Wie de
+  plugin al had, voegt de marketplace opnieuw toe met
+  `/plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting`.
+
 ### Opgelost
 
 - De afbeeldingen in de README werkten niet op GitHub zolang de repository
@@ -136,10 +143,10 @@ Eerste release op PyPI.
 - Het model vinden via `--model`, een `archi.toml` of het enige
   `.archimate`-bestand in de map (ADR 0004).
 
-[Unreleased]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.2...v0.3.0
-[0.2.2]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.1...v0.2.2
-[0.2.1]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/compare/v0.1.1...v0.2.0
-[0.1.1]: https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/releases/tag/v0.1.1
+[Unreleased]: https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/compare/v0.2.2...v0.3.0
+[0.2.2]: https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/releases/tag/v0.1.1
 [0.1.0]: https://pypi.org/project/archi-cli/0.1.0/

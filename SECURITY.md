@@ -2,7 +2,7 @@
 
 Ontdek je een kwetsbaarheid in `archi-cli`, meld hem dan vertrouwelijk via GitHub:
 
-**https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting/security/advisories/new**
+**https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting/security/advisories/new**
 
 Je melding is dan alleen zichtbaar voor jou en de beheerders van deze
 repository. Meld een kwetsbaarheid niet in een openbaar issue.
@@ -13,7 +13,7 @@ via het Nationaal Cyber Security Centrum:
 **https://www.ncsc.nl/contact/kwetsbaarheid-melden**
 
 Vermeld daarbij dat het gaat om `archi-cli` van de Nederlandse Digitale Dienst
-(https://github.com/BureauArchitectuurDigitaleOverheid/ai-assisted-architecting). Het NCSC brengt je melding dan bij ons onder de aandacht.
+(https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting). Het NCSC brengt je melding dan bij ons onder de aandacht.
 
 ## Wat er onder valt
 
