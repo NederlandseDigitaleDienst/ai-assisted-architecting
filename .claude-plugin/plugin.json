@@ -2,13 +2,17 @@
   "name": "nldd-archi",
   "displayName": "NLDD Archi",
   "version": "0.4.0",
-  "description": "AI-assisted bewerking van native .archimate-modellen: elementen, relaties, views en slidedecks via de archi-CLI",
+  "description": "Werk aan native ArchiMate-modellen (.archimate) met de archi-CLI. Drie skills: nldd-archi-model om het model te wijzigen, nldd-archi-view om views te genereren en nldd-archi-slides om presentaties te maken. Vereist archi-cli (uv tool install archi-cli).",
   "author": {
     "name": "Nederlandse Digitale Dienst"
   },
   "homepage": "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting",
   "repository": "https://github.com/NederlandseDigitaleDienst/ai-assisted-architecting",
   "license": "EUPL-1.2",
-  "keywords": ["archimate", "archi", "enterprise-architecture", "modeling"],
-  "skills": ["./.claude/skills/"]
+  "keywords": [
+    "archimate",
+    "archi",
+    "enterprise-architecture",
+    "modeling"
+  ]
 }

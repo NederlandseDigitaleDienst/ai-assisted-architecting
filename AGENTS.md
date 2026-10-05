@@ -8,15 +8,16 @@ voor bijdragers in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 `archi-cli`: een deterministische command line tool (`tools/archi_tool/`,
 commando `archi`) voor het inspecteren, muteren, valideren en renderen van
-native Archi-modellen (`.archimate`), plus de skills (`.claude/skills/`) die
+native Archi-modellen (`.archimate`), plus de skills (`skills/`) die
 beschrijven hoe een AI-assistent via de tool aan een model werkt.
 
 - De tool is generiek. Er zit geen echt model in deze repo; de tests draaien
   op `tests/fixtures/klein-model.archimate` en er is een voorbeeld in
   `examples/vergunningverlening/`.
 - Gepubliceerd op PyPI als `archi-cli` (importnaam `archi_tool`). De repo is
-  tegelijk een Claude Code plugin en marketplace, allebei `nldd-archi`, via
-  `.claude-plugin/` (ADR 0012).
+  ook de plugin `nldd-archi` voor Claude Code (`.claude-plugin/`) en Cursor
+  (`.cursor-plugin/`), en staat in de marketplace van de NLDD,
+  `NederlandseDigitaleDienst/ai-plugins` (ADR 0012).
 - Uitgebracht door de Nederlandse Digitale Dienst onder de EUPL-1.2.
 
 ## Omgeving opzetten
@@ -143,7 +144,7 @@ die marker worden overschreven of opgeruimd. Structurele beslissingen staan in
 Alleen op verzoek van een maintainer; een PyPI-versie is onomkeerbaar.
 
 1. Verhoog de versie volgens [SemVer](https://semver.org/lang/nl/) in
-   `pyproject.toml`, `.claude-plugin/plugin.json`, de `archi-cli`-regel in
+   `pyproject.toml`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`, de `archi-cli`-regel in
    `uv.lock` en `softwareVersion` in `publiccode.yml` (zet daar ook
    `releaseDate`). `scripts/check_release.py` bewaakt in CI dat ze gelijk zijn.
 2. Zet in `CHANGELOG.md` de inhoud van **Unreleased** onder een nieuwe kop

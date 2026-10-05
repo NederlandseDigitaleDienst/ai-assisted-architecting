@@ -29,6 +29,9 @@ def versions(root: Path = ROOT) -> dict[str, str]:
         ".claude-plugin/plugin.json": json.loads(
             (root / ".claude-plugin" / "plugin.json").read_text("utf-8")
         )["version"],
+        ".cursor-plugin/plugin.json": json.loads(
+            (root / ".cursor-plugin" / "plugin.json").read_text("utf-8")
+        )["version"],
     }
     lock = tomllib.loads((root / "uv.lock").read_text("utf-8"))
     found["uv.lock"] = next(

@@ -32,9 +32,9 @@ element en dimt de rest. Gegenereerd uit het model, zonder handwerk.*
 | Onderdeel | Wat het doet | Installeren |
 | --- | --- | --- |
 | `archi-cli` | Inspecteren, wijzigen, valideren, normaliseren en publiceren van `.archimate`-modellen | `uv tool install archi-cli` ([PyPI](https://pypi.org/project/archi-cli/)) |
-| Skill `nldd-archi-model` | Het model wijzigen: elementen, relaties, properties en documentatie | Claude Code-plugin `nldd-archi` |
-| Skill `nldd-archi-view` | Views genereren en opruimen, met een automatische layout | Claude Code-plugin `nldd-archi` |
-| Skill `nldd-archi-slides` | Presentaties samenstellen uit views en tekst | Claude Code-plugin `nldd-archi` |
+| Skill `nldd-archi-model` | Het model wijzigen: elementen, relaties, properties en documentatie | Plugin `nldd-archi` |
+| Skill `nldd-archi-view` | Views genereren en opruimen, met een automatische layout | Plugin `nldd-archi` |
+| Skill `nldd-archi-slides` | Presentaties samenstellen uit views en tekst | Plugin `nldd-archi` |
 
 ## Wat het is, en wat niet
 
@@ -98,13 +98,17 @@ leg het vast in een `archi.toml` (zie [Configuratie](#configuratie)).
 
 ### Met een AI-assistent
 
-Installeer eerst `archi-cli` zoals hierboven, en daarna de skills in
-Claude Code:
+Installeer eerst `archi-cli` zoals hierboven, en daarna de plugin `nldd-archi`
+uit de [marketplace van de NLDD](https://github.com/NederlandseDigitaleDienst/ai-plugins).
+In Claude Code:
 
 ```
-/plugin marketplace add NederlandseDigitaleDienst/ai-assisted-architecting
-/plugin install nldd-archi@nldd-archi
+/plugin marketplace add NederlandseDigitaleDienst/ai-plugins
+/plugin install nldd-archi@nldd
 ```
+
+In Cursor importeer je de marketplace via **Dashboard → Settings → Plugins →
+Import** met de repository `NederlandseDigitaleDienst/ai-plugins`.
 
 Open Claude Code in de map van je model (of in
 `examples/vergunningverlening/`) en vraag in gewone taal wat je wilt:
@@ -196,17 +200,17 @@ partijen die in haar opdracht werken; valt jouw publicatie daaronder, zet dan
 Een skill is een korte handleiding in tekst (`SKILL.md`) die een AI-assistent
 laadt wanneer je vraag erbij past. De skills bevatten geen code: ze vertellen
 de assistent welke `archi`-commando's hij gebruikt, in welke volgorde, en waar
-hij op moet letten. Ze staan in [`.claude/skills/`](.claude/skills/).
+hij op moet letten. Ze staan in [`skills/`](skills/).
 
-- **[`nldd-archi-model`](.claude/skills/nldd-archi-model/SKILL.md)** wijzigt het model.
+- **[`nldd-archi-model`](skills/nldd-archi-model/SKILL.md)** wijzigt het model.
   De assistent kijkt eerst wat er staat (`archi show`, `archi list`), wijzigt
   via de CLI, zet omschrijvingen in het documentatieveld van Archi, valideert,
   normaliseert en werkt de views bij. Verwijderen met `--cascade` gebeurt alleen
   bewust.
-- **[`nldd-archi-view`](.claude/skills/nldd-archi-view/SKILL.md)** maakt views: een
+- **[`nldd-archi-view`](skills/nldd-archi-view/SKILL.md)** maakt views: een
   selectie op type, property of relatie, of een detailview van één element met
   alles eromheen, in een raster- of clusterlayout.
-- **[`nldd-archi-slides`](.claude/skills/nldd-archi-slides/SKILL.md)** schrijft decks in
+- **[`nldd-archi-slides`](skills/nldd-archi-slides/SKILL.md)** schrijft decks in
   `decks/*.toml`: een lineair verhaal met views uit het model, zoomslides op één
   element en tekst daartussen, en rendert ze naar HTML.
 
@@ -230,9 +234,8 @@ request van een collega naleest.
   kleuren en lettertypes uit Archi komen niet in de webpagina's.
 - **De webpagina's laden het design system van een CDN** en hebben dus internet
   nodig om goed te tonen.
-- **De skills zijn geschreven en getest voor Claude Code.** Ze zijn gewone
-  Markdown, dus ook bruikbaar als instructies voor een andere assistent, maar
-  dat testen we niet.
+- **De skills zijn geschreven en getest voor Claude Code.** De plugin heeft ook
+  een manifest voor Cursor, maar in Cursor is hij nog niet geprobeerd.
 - **Uitvoer en meldingen zijn Nederlandstalig.**
 
 ## Disclaimer

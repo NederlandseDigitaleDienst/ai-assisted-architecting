@@ -2,7 +2,7 @@
 
 Fijn dat je wilt bijdragen aan `archi-cli`. Deze repository bevat de tool zelf
 (Python, in `tools/archi_tool/`) en de skills voor AI-assistenten (in
-`.claude/skills/`). Een foutmelding, een idee of een verbetering in de
+`skills/`). Een foutmelding, een idee of een verbetering in de
 documentatie is net zo welkom als code.
 
 Iedereen die meedoet, houdt zich aan de [gedragscode](CODE_OF_CONDUCT.md). Een
@@ -67,7 +67,7 @@ is net zo bruikbaar voor mensen.
 
 ## De skills
 
-De skills in `.claude/skills/` beschrijven hoe een AI-assistent via de tool aan
+De skills in `skills/` beschrijven hoe een AI-assistent via de tool aan
 een model werkt. Houd ze generiek: gebruik placeholders in plaats van namen uit
 een specifiek model, en laat ze dezelfde commando's en opties noemen als de
 tool echt heeft.
